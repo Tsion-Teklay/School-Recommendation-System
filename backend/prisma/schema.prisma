@@ -4,8 +4,7 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -62,6 +61,24 @@ enum UrgencyLevel {
 enum InteractionResult {
   OPENED  @map("opened")
   IGNORED @map("ignored")
+}
+
+enum ReportTargetType {
+  REVIEW @map("review")
+  SCHOOL @map("school")
+  ANNOUNCEMENT @map("announcement")
+}
+
+enum ReportStatus {
+  PENDING  @map("pending")
+  REVIEWED @map("reviewed")
+  RESOLVED @map("resolved")
+}
+
+enum NotificationRecipientType {
+  PARENT       @map("parent")
+  SCHOOL_ADMIN @map("school_admin")
+  MOE          @map("moe")
 }
 
 model User {
@@ -149,7 +166,7 @@ model Announcement {
   createdAt     DateTime             @default(now()) @map("created_at")
   category      AnnouncementCategory
   attachments   String?              @db.VarChar(255)
-  datePosted    DateTime             @default(now()) @map("date_posted") @db.Date
+  datePosted    DateTime             @default(now()) @map("date_posted")
   urgencyLevel  UrgencyLevel         @map("urgency_level")
 
   publisher     User                 @relation(fields: [publisherId], references: [id])
@@ -160,10 +177,10 @@ model Announcement {
 model Report {
   id         Int               @id @default(autoincrement()) @map("report_id")
   reporterId Int               @map("reporter_id")
-  targetType String            @map("target_type") @db.VarChar(30)
+  targetType ReportTargetType  @map("target_type")
   targetId   Int               @map("target_id")
   reason     String            @db.VarChar(255)
-  status     String            @db.VarChar(20)
+  status     ReportStatus      @map("status")
   createdAt  DateTime          @default(now()) @map("created_at")
 
   reporter   User              @relation("Reporter", fields: [reporterId], references: [id])
@@ -173,14 +190,13 @@ model Report {
 }
 
 model Parent {
-  userId       Int      @id @map("user_id")
-  preferenceId Int      @map("preference_id")
-  address      String   @db.VarChar(255)
-  latitude     Decimal  @db.Decimal(10, 8)
-  longitude    Decimal  @db.Decimal(11, 8)
+  userId       Int         @id @map("user_id")
+  address      String      @db.VarChar(255)
+  latitude     Decimal     @db.Decimal(10, 8)
+  longitude    Decimal     @db.Decimal(11, 8)
 
-  user         User      @relation(fields: [userId], references: [id])
-  preference   Preference @relation(fields: [preferenceId], references: [id])
+  user         User        @relation(fields: [userId], references: [id])
+  preference   Preference?
 
   @@map("parent")
 }
@@ -287,7 +303,7 @@ model ModeratorAction {
 model Notification {
   id              Int      @id @default(autoincrement()) @map("notification_id")
   recipientId     Int      @map("recipient_id")
-  recipientType   String   @map("recipient_type") @db.VarChar(255)
+  recipientType   NotificationRecipientType @map("recipient_type")
   message         String   @db.Text
   sourceReference Int      @map("source_reference")
   isRead          Boolean  @default(false) @map("is_read")
@@ -313,12 +329,13 @@ model SchoolUpdate {
 
 model Preference {
   id         Int        @id @default(autoincrement()) @map("preference_id")
+  parentId   Int        @unique @map("parent_id")
   minBudget  Decimal    @map("min_budget")
   maxBudget  Decimal    @map("max_budget")
   curriculum Curriculum
   distance   Int
 
-  parents    Parent[]
+  parent     Parent     @relation(fields: [parentId], references: [userId])
 
   @@map("preference")
 }
