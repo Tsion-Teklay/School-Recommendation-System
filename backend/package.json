@@ -1,7 +1,7 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "server.js", 
   "type": "module",
   "scripts": {
     "dev": "node --env-file-if-exists=.env --watch src/app.js",
@@ -15,9 +15,12 @@
     "@prisma/adapter-mariadb": "^7.5.0",
     "@prisma/client": "^7.5.0",
     "dotenv": "^17.3.1",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
     "express": "^5.2.1"
   },
   "devDependencies": {
-    "prisma": "^7.5.0"
+    "prisma": "^7.5.0",
+     "nodemon": "^3.1.14"
   }
 }
