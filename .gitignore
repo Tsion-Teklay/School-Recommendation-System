@@ -5,6 +5,8 @@ node_modules/
 .env
 .env.*
 
+/backend/generated
+
 # logs
 logs
 *.log
