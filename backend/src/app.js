@@ -10,4 +10,8 @@ app.get("/", (req, res) => {
   res.send("API running");
 });
 
+app.use("/api/auth", (await import("./routes/auth.routes.js")).default);
+
+app.use("/api/test", (await import("./routes/test.routes.js")).default);
+
 export default app;
