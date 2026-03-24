@@ -2,6 +2,8 @@ import {
   createSchool,
   getAllSchools,
   getSchoolById,
+  updateSchool,
+  deleteSchool
 } from "../services/school.service.js";
 
 // ✅ Create
@@ -43,5 +45,40 @@ export async function getOne(req, res) {
     });
   } catch (err) {
     res.status(404).json({ error: err.message });
+  }
+}
+
+// ✅ Update
+export async function update(req, res) {
+  try {
+    const school = await updateSchool(
+      req.params.id,
+      req.body,
+      req.user.id
+    );
+
+    res.json({
+      message: "School updated successfully",
+      school,
+    });
+  } catch (err) {
+    if (err.message.includes("authorized")) {
+      return res.status(403).json({ error: err.message });
+    }
+    res.status(400).json({ error: err.message });
+  }
+}
+
+// ✅ Delete
+export async function remove(req, res) {
+  try {
+    const result = await deleteSchool(req.params.id, req.user.id);
+
+    res.json(result);
+  } catch (err) {
+    if (err.message.includes("authorized")) {
+      return res.status(403).json({ error: err.message });
+    }
+    res.status(400).json({ error: err.message });
   }
 }
