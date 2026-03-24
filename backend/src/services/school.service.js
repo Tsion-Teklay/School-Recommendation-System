@@ -72,3 +72,44 @@ export async function getSchoolById(id) {
 
   return school;
 }
+
+// ✅ Update School
+export async function updateSchool(id, data, userId) {
+  const school = await db.school.findUnique({
+    where: { id: Number(id) },
+  });
+
+  if (!school) throw new Error("School not found");
+
+  // 🔐 Ownership check
+  if (school.adminId !== userId) {
+    throw new Error("Not authorized to update this school");
+  }
+
+  const updated = await db.school.update({
+    where: { id: Number(id) },
+    data,
+  });
+
+  return updated;
+}
+
+// ✅ Delete School
+export async function deleteSchool(id, userId) {
+  const school = await db.school.findUnique({
+    where: { id: Number(id) },
+  });
+
+  if (!school) throw new Error("School not found");
+
+  // 🔐 Ownership check
+  if (school.adminId !== userId) {
+    throw new Error("Not authorized to delete this school");
+  }
+
+  await db.school.delete({
+    where: { id: Number(id) },
+  });
+
+  return { message: "School deleted successfully" };
+}
