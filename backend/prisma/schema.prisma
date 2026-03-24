@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -82,34 +77,31 @@ enum NotificationRecipientType {
 }
 
 model User {
-  id          Int           @id @default(autoincrement())
-  fullName    String        @map("full_name") @db.VarChar(100)
-  email       String        @unique @db.VarChar(100)
-  phone       String        @unique @db.VarChar(10)
-  password    String        @db.VarChar(255)
-  accountStatus AccountStatus @map("account_status")
-  role        UserRole
-  createdAt   DateTime      @default(now()) @map("created_at")
+  id            Int           @id @default(autoincrement())
+  fullName      String        @map("full_name") @db.VarChar(100)
+  email         String        @unique @db.VarChar(100)
+  phone         String        @unique @db.VarChar(15)
+  password      String        @db.VarChar(255)
+  accountStatus AccountStatus @default(ACTIVE) @map("account_status")
+  role          UserRole
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt
 
-  // Parent related stuff
-  parentProfile            Parent?
-  recommendationHistories  RecommendationHistory[]
-  comparisons              Comparison[]
-  favorites                Favorite[]
-  reviews                  Review[]
+  parentProfile           Parent?
+  recommendationHistories RecommendationHistory[]
+  comparisons             Comparison[]
+  favorites               Favorite[]
+  reviews                 Review[]
 
-  // School admin related stuff
-  administeredSchools      School[]         @relation("SchoolAdmin")
+  administeredSchools School[] @relation("SchoolAdmin")
 
-  // MoE related stuff
-  moeOfficerProfile        MoEOfficer?
-  moderatorActions         ModeratorAction[] @relation("Moderator")
+  moeOfficerProfile MoEOfficer?
+  moderatorActions  ModeratorAction[] @relation("Moderator")
 
-  // Shared
-  announcements            Announcement[]
-  reports                  Report[]         @relation("Reporter")
-  forumPosts               DiscussionForum[]
-  notifications            Notification[]
+  announcements Announcement[]
+  reports       Report[] @relation("Reporter")
+  forumPosts    DiscussionForum[]
+  notifications Notification[]
 
   @@map("user")
 }
@@ -120,23 +112,28 @@ model School {
   schoolName         String             @map("school_name") @db.VarChar(150)
   address            String             @db.VarChar(255)
   contactEmail       String             @map("contact_email") @db.VarChar(100)
-  contactPhone       String             @map("contact_phone") @db.VarChar(10)
+  contactPhone       String             @map("contact_phone") @db.VarChar(15)
   curriculum         Curriculum
-  tuitionFee         Decimal            @map("tuition_fee")
+  tuitionFee         Decimal            @db.Decimal(10,2) @map("tuition_fee")
   facilities         String?            @db.Text
-  verificationStatus VerificationStatus @map("verification_status")
+  verificationStatus VerificationStatus @default(PENDING) @map("verification_status")
   latitude           Decimal            @db.Decimal(10, 8)
   longitude          Decimal            @db.Decimal(11, 8)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
 
   admin              User               @relation("SchoolAdmin", fields: [adminId], references: [id])
   analytics          Analytics[]
   comparisonSchools  ComparisonSchool[]
   facilityImages     FacilityImage[]
   favorites          Favorite[]
-  notifications      Notification[]
   recommendedSchools RecommendedSchool[]
   reviews            Review[]
   updates            SchoolUpdate[]
+
+  @@index([schoolName])
+  @@index([curriculum])
+  @@index([verificationStatus])
 
   @@map("school")
 }
@@ -148,10 +145,11 @@ model Review {
   rating      Int
   comment     String?           @db.Text
   createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt
   categoryTag ReviewCategoryTag @map("category_tag")
 
-  parent      User              @relation(fields: [parentId], references: [id])
-  school      School            @relation(fields: [schoolId], references: [id])
+  parent User   @relation(fields: [parentId], references: [id])
+  school School @relation(fields: [schoolId], references: [id])
 
   @@map("review")
 }
@@ -164,12 +162,13 @@ model Announcement {
   content       String               @db.Text
   imgUrl        String?              @map("img_url") @db.VarChar(255)
   createdAt     DateTime             @default(now()) @map("created_at")
+  updatedAt     DateTime             @updatedAt
   category      AnnouncementCategory
   attachments   String?              @db.VarChar(255)
   datePosted    DateTime             @default(now()) @map("date_posted")
-  urgencyLevel  UrgencyLevel         @map("urgency_level")
+  urgencyLevel  UrgencyLevel         @default(NORMAL) @map("urgency_level")
 
-  publisher     User                 @relation(fields: [publisherId], references: [id])
+  publisher User @relation(fields: [publisherId], references: [id])
 
   @@map("announcement")
 }
@@ -180,23 +179,23 @@ model Report {
   targetType ReportTargetType  @map("target_type")
   targetId   Int               @map("target_id")
   reason     String            @db.VarChar(255)
-  status     ReportStatus      @map("status")
+  status     ReportStatus      @default(PENDING) @map("status")
   createdAt  DateTime          @default(now()) @map("created_at")
 
-  reporter   User              @relation("Reporter", fields: [reporterId], references: [id])
-  actions    ModeratorAction[]
+  reporter User @relation("Reporter", fields: [reporterId], references: [id])
+  actions  ModeratorAction[]
 
   @@map("report")
 }
 
 model Parent {
-  userId       Int         @id @map("user_id")
-  address      String      @db.VarChar(255)
-  latitude     Decimal     @db.Decimal(10, 8)
-  longitude    Decimal     @db.Decimal(11, 8)
+  userId    Int     @id @map("user_id")
+  address   String  @db.VarChar(255)
+  latitude  Decimal @db.Decimal(10, 8)
+  longitude Decimal @db.Decimal(11, 8)
 
-  user         User        @relation(fields: [userId], references: [id])
-  preference   Preference?
+  user       User        @relation(fields: [userId], references: [id])
+  preference Preference?
 
   @@map("parent")
 }
@@ -206,7 +205,7 @@ model FacilityImage {
   schoolId Int    @map("school_id")
   imageUrl String @map("image_url") @db.VarChar(255)
 
-  school   School @relation(fields: [schoolId], references: [id])
+  school School @relation(fields: [schoolId], references: [id])
 
   @@map("facility_images")
 }
@@ -215,7 +214,7 @@ model MoEOfficer {
   userId      Int    @id @map("user_id")
   officerRole String @map("officer_role") @db.VarChar(255)
 
-  user        User   @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 
   @@map("moe_officer")
 }
@@ -228,9 +227,9 @@ model DiscussionForum {
   threadId  Int?              @map("thread_id")
   isEdited  Boolean           @default(false) @map("is_edited")
 
-  author    User              @relation(fields: [authorId], references: [id])
-  thread    DiscussionForum?  @relation("ForumThread", fields: [threadId], references: [id])
-  replies   DiscussionForum[] @relation("ForumThread")
+  author  User              @relation(fields: [authorId], references: [id])
+  thread  DiscussionForum?  @relation("ForumThread", fields: [threadId], references: [id])
+  replies DiscussionForum[] @relation("ForumThread")
 
   @@map("discussion_forum")
 }
@@ -241,20 +240,20 @@ model Favorite {
   schoolId  Int      @map("school_id")
   createdAt DateTime @default(now()) @map("created_at")
 
-  parent    User     @relation(fields: [parentId], references: [id])
-  school    School   @relation(fields: [schoolId], references: [id])
+  parent User   @relation(fields: [parentId], references: [id])
+  school School @relation(fields: [schoolId], references: [id])
 
   @@unique([parentId, schoolId])
   @@map("favorite")
 }
 
 model RecommendationHistory {
-  id                Int                   @id @default(autoincrement()) @map("recommendation_id")
-  parentId          Int                   @map("parent_id")
-  generatedOn       DateTime              @default(now()) @map("generated_on")
-  interactionResult InteractionResult     @map("interaction_result")
+  id                Int               @id @default(autoincrement()) @map("recommendation_id")
+  parentId          Int               @map("parent_id")
+  generatedOn       DateTime          @default(now()) @map("generated_on")
+  interactionResult InteractionResult @map("interaction_result")
 
-  parent            User                  @relation(fields: [parentId], references: [id])
+  parent             User                            @relation(fields: [parentId], references: [id])
   recommendedSchools RecommendedSchool[]
   preferenceCriteria RecommendationPreferenceCriteria[]
 
@@ -262,12 +261,12 @@ model RecommendationHistory {
 }
 
 model Comparison {
-  id              Int                @id @default(autoincrement()) @map("comparison_id")
-  parentId        Int                @map("parent_id")
-  metricsUsed     String             @map("metrics_used") @db.Text
-  createdAt       DateTime           @default(now()) @map("created_at")
+  id          Int      @id @default(autoincrement()) @map("comparison_id")
+  parentId    Int      @map("parent_id")
+  metricsUsed String   @map("metrics_used") @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
 
-  parent          User               @relation(fields: [parentId], references: [id])
+  parent            User               @relation(fields: [parentId], references: [id])
   comparisonSchools ComparisonSchool[]
 
   @@map("comparison")
@@ -277,11 +276,11 @@ model Analytics {
   id           Int      @id @default(autoincrement()) @map("data_id")
   schoolId     Int      @map("school_id")
   metricType   String   @map("metric_type") @db.VarChar(255)
-  metricValue  Decimal  @map("metric_value")
+  metricValue  Decimal  @db.Decimal(10,2) @map("metric_value")
   academicYear Int      @map("academic_year")
   source       String   @db.VarChar(255)
 
-  school       School   @relation(fields: [schoolId], references: [id])
+  school School @relation(fields: [schoolId], references: [id])
 
   @@map("analytics")
 }
@@ -294,24 +293,28 @@ model ModeratorAction {
   notes       String?  @db.Text
   actionDate  DateTime @default(now()) @map("action_date")
 
-  moderator   User     @relation("Moderator", fields: [moderatorId], references: [id])
-  report      Report   @relation(fields: [reportId], references: [id])
+  moderator User   @relation("Moderator", fields: [moderatorId], references: [id])
+  report    Report @relation(fields: [reportId], references: [id])
 
   @@map("moderator_action")
 }
 
 model Notification {
-  id              Int      @id @default(autoincrement()) @map("notification_id")
-  recipientId     Int      @map("recipient_id")
-  recipientType   NotificationRecipientType @map("recipient_type")
-  message         String   @db.Text
-  sourceReference Int      @map("source_reference")
-  isRead          Boolean  @default(false) @map("is_read")
-  createdAt       DateTime @default(now()) @map("created_at")
+  id            Int      @id @default(autoincrement()) @map("notification_id")
+  recipientId   Int      @map("recipient_id")
+  recipientType NotificationRecipientType @map("recipient_type")
+  message       String   @db.Text
 
-  recipient       User     @relation(fields: [recipientId], references: [id])
-  sourceSchool    School   @relation(fields: [sourceReference], references: [id])
+  // 🔥 FIXED (generic source)
+  sourceType    String   @map("source_type")
+  sourceId      Int      @map("source_id")
 
+  isRead        Boolean  @default(false) @map("is_read")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  recipient User @relation(fields: [recipientId], references: [id])
+
+  @@index([recipientId])
   @@map("notification")
 }
 
@@ -322,7 +325,7 @@ model SchoolUpdate {
   description String?  @db.Text
   createdAt   DateTime @default(now()) @map("created_at")
 
-  school      School   @relation(fields: [schoolId], references: [id])
+  school School @relation(fields: [schoolId], references: [id])
 
   @@map("school_update")
 }
@@ -330,49 +333,47 @@ model SchoolUpdate {
 model Preference {
   id         Int        @id @default(autoincrement()) @map("preference_id")
   parentId   Int        @unique @map("parent_id")
-  minBudget  Decimal    @map("min_budget")
-  maxBudget  Decimal    @map("max_budget")
+  minBudget  Decimal    @db.Decimal(10,2) @map("min_budget")
+  maxBudget  Decimal    @db.Decimal(10,2) @map("max_budget")
   curriculum Curriculum
   distance   Int
 
-  parent     Parent     @relation(fields: [parentId], references: [userId])
+  parent Parent @relation(fields: [parentId], references: [userId])
 
   @@map("preference")
 }
 
 model RecommendedSchool {
-  id               Int                   @id @default(autoincrement()) @map("recommended_school_id")
-  recommendationId Int                   @map("recommendation_id")
-  schoolId         Int                   @map("school_id")
+  id               Int @id @default(autoincrement()) @map("recommended_school_id")
+  recommendationId Int @map("recommendation_id")
+  schoolId         Int @map("school_id")
 
-  recommendation   RecommendationHistory @relation(fields: [recommendationId], references: [id])
-  school           School                @relation(fields: [schoolId], references: [id])
+  recommendation RecommendationHistory @relation(fields: [recommendationId], references: [id])
+  school         School                @relation(fields: [schoolId], references: [id])
 
   @@map("recommended_school")
 }
 
 model RecommendationPreferenceCriteria {
-  id               Int                   @id @default(autoincrement()) @map("preference_criteria_id")
-  recommendationId Int                   @map("recommendation_id")
-  minBudget        Decimal               @map("min_budget")
-  maxBudget        Decimal               @map("max_budget")
+  id               Int        @id @default(autoincrement()) @map("preference_criteria_id")
+  recommendationId Int        @map("recommendation_id")
+  minBudget        Decimal    @db.Decimal(10,2) @map("min_budget")
+  maxBudget        Decimal    @db.Decimal(10,2) @map("max_budget")
   curriculum       Curriculum
   distance         Int
 
-  recommendation   RecommendationHistory @relation(fields: [recommendationId], references: [id])
+  recommendation RecommendationHistory @relation(fields: [recommendationId], references: [id])
 
   @@map("recommendation_preference_criteria")
 }
 
 model ComparisonSchool {
-  id           Int        @id @default(autoincrement()) @map("comparison_school_id")
-  comparisonId Int        @map("comparison_id")
-  schoolId     Int        @map("school_id")
+  id           Int @id @default(autoincrement()) @map("comparison_school_id")
+  comparisonId Int @map("comparison_id")
+  schoolId     Int @map("school_id")
 
-  comparison   Comparison @relation(fields: [comparisonId], references: [id])
-  school       School     @relation(fields: [schoolId], references: [id])
+  comparison Comparison @relation(fields: [comparisonId], references: [id])
+  school     School     @relation(fields: [schoolId], references: [id])
 
   @@map("comparison_school")
 }
-
-

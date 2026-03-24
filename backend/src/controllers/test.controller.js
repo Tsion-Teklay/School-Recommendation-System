@@ -1,7 +1,7 @@
 export function createTestResource(req, res) {
   res.json({
     message: "Resource created successfully",
-    user: req.user, // shows decoded JWT
+    user: req.user,
   });
 }
 

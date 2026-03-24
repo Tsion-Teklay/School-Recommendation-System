@@ -3,11 +3,12 @@ CREATE TABLE `user` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `full_name` VARCHAR(100) NOT NULL,
     `email` VARCHAR(100) NOT NULL,
-    `phone` VARCHAR(10) NOT NULL,
+    `phone` VARCHAR(15) NOT NULL,
     `password` VARCHAR(255) NOT NULL,
-    `account_status` ENUM('active', 'deactivated') NOT NULL,
+    `account_status` ENUM('active', 'deactivated') NOT NULL DEFAULT 'active',
     `role` ENUM('parent', 'school_admin', 'moe_officer', 'moderator') NOT NULL,
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
 
     UNIQUE INDEX `user_email_key`(`email`),
     UNIQUE INDEX `user_phone_key`(`phone`),
@@ -21,14 +22,19 @@ CREATE TABLE `school` (
     `school_name` VARCHAR(150) NOT NULL,
     `address` VARCHAR(255) NOT NULL,
     `contact_email` VARCHAR(100) NOT NULL,
-    `contact_phone` VARCHAR(10) NOT NULL,
+    `contact_phone` VARCHAR(15) NOT NULL,
     `curriculum` ENUM('local', 'international') NOT NULL,
-    `tuition_fee` DECIMAL(65, 30) NOT NULL,
+    `tuition_fee` DECIMAL(10, 2) NOT NULL,
     `facilities` TEXT NULL,
-    `verification_status` ENUM('verified', 'pending', 'rejected') NOT NULL,
+    `verification_status` ENUM('verified', 'pending', 'rejected') NOT NULL DEFAULT 'pending',
     `latitude` DECIMAL(10, 8) NOT NULL,
     `longitude` DECIMAL(11, 8) NOT NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
 
+    INDEX `school_school_name_idx`(`school_name`),
+    INDEX `school_curriculum_idx`(`curriculum`),
+    INDEX `school_verification_status_idx`(`verification_status`),
     PRIMARY KEY (`school_id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -40,6 +46,7 @@ CREATE TABLE `review` (
     `rating` INTEGER NOT NULL,
     `comment` TEXT NULL,
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
     `category_tag` ENUM('safety', 'teaching_quality', 'other') NOT NULL,
 
     PRIMARY KEY (`review_id`)
@@ -54,10 +61,11 @@ CREATE TABLE `announcement` (
     `content` TEXT NOT NULL,
     `img_url` VARCHAR(255) NULL,
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
     `category` ENUM('admissions', 'policy', 'fee', 'other') NOT NULL,
     `attachments` VARCHAR(255) NULL,
     `date_posted` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-    `urgency_level` ENUM('normal', 'high', 'emergency') NOT NULL,
+    `urgency_level` ENUM('normal', 'high', 'emergency') NOT NULL DEFAULT 'normal',
 
     PRIMARY KEY (`announcement_id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -69,7 +77,7 @@ CREATE TABLE `report` (
     `target_type` ENUM('review', 'school', 'announcement') NOT NULL,
     `target_id` INTEGER NOT NULL,
     `reason` VARCHAR(255) NOT NULL,
-    `status` ENUM('pending', 'reviewed', 'resolved') NOT NULL,
+    `status` ENUM('pending', 'reviewed', 'resolved') NOT NULL DEFAULT 'pending',
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     PRIMARY KEY (`report_id`)
@@ -150,7 +158,7 @@ CREATE TABLE `analytics` (
     `data_id` INTEGER NOT NULL AUTO_INCREMENT,
     `school_id` INTEGER NOT NULL,
     `metric_type` VARCHAR(255) NOT NULL,
-    `metric_value` DECIMAL(65, 30) NOT NULL,
+    `metric_value` DECIMAL(10, 2) NOT NULL,
     `academic_year` INTEGER NOT NULL,
     `source` VARCHAR(255) NOT NULL,
 
@@ -175,10 +183,12 @@ CREATE TABLE `notification` (
     `recipient_id` INTEGER NOT NULL,
     `recipient_type` ENUM('parent', 'school_admin', 'moe') NOT NULL,
     `message` TEXT NOT NULL,
-    `source_reference` INTEGER NOT NULL,
+    `source_type` VARCHAR(191) NOT NULL,
+    `source_id` INTEGER NOT NULL,
     `is_read` BOOLEAN NOT NULL DEFAULT false,
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
+    INDEX `notification_recipient_id_idx`(`recipient_id`),
     PRIMARY KEY (`notification_id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -197,8 +207,8 @@ CREATE TABLE `school_update` (
 CREATE TABLE `preference` (
     `preference_id` INTEGER NOT NULL AUTO_INCREMENT,
     `parent_id` INTEGER NOT NULL,
-    `min_budget` DECIMAL(65, 30) NOT NULL,
-    `max_budget` DECIMAL(65, 30) NOT NULL,
+    `min_budget` DECIMAL(10, 2) NOT NULL,
+    `max_budget` DECIMAL(10, 2) NOT NULL,
     `curriculum` ENUM('local', 'international') NOT NULL,
     `distance` INTEGER NOT NULL,
 
@@ -219,8 +229,8 @@ CREATE TABLE `recommended_school` (
 CREATE TABLE `recommendation_preference_criteria` (
     `preference_criteria_id` INTEGER NOT NULL AUTO_INCREMENT,
     `recommendation_id` INTEGER NOT NULL,
-    `min_budget` DECIMAL(65, 30) NOT NULL,
-    `max_budget` DECIMAL(65, 30) NOT NULL,
+    `min_budget` DECIMAL(10, 2) NOT NULL,
+    `max_budget` DECIMAL(10, 2) NOT NULL,
     `curriculum` ENUM('local', 'international') NOT NULL,
     `distance` INTEGER NOT NULL,
 
@@ -289,9 +299,6 @@ ALTER TABLE `moderator_action` ADD CONSTRAINT `moderator_action_report_id_fkey` 
 
 -- AddForeignKey
 ALTER TABLE `notification` ADD CONSTRAINT `notification_recipient_id_fkey` FOREIGN KEY (`recipient_id`) REFERENCES `user`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE `notification` ADD CONSTRAINT `notification_source_reference_fkey` FOREIGN KEY (`source_reference`) REFERENCES `school`(`school_id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `school_update` ADD CONSTRAINT `school_update_school_id_fkey` FOREIGN KEY (`school_id`) REFERENCES `school`(`school_id`) ON DELETE RESTRICT ON UPDATE CASCADE;
