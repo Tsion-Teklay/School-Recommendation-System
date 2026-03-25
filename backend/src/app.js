@@ -22,4 +22,6 @@ app.use("/api/preferences/", (await import("./routes/preference.routes.js")).def
 
 app.use("/api/favorites/", (await import("./routes/favorite.routes.js")).default);
 
+app.use("/api/reviews/", (await import("./routes/review.routes.js")).default);
+
 export default app;
