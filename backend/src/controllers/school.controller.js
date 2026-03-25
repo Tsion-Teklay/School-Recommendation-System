@@ -23,11 +23,11 @@ export async function create(req, res) {
 // ✅ Get All (PUBLIC)
 export async function getAll(req, res) {
   try {
-    const schools = await getAllSchools();
+    const result = await getAllSchools(req.query);
 
     res.json({
       message: "Schools fetched successfully",
-      data: schools,
+      ...result, // ✅ spreads data + meta correctly
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

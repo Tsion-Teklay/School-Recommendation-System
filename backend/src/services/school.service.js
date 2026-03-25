@@ -39,18 +39,62 @@ export async function createSchool(data, userId) {
 }
 
 // ✅ Get All Schools (PUBLIC)
-export async function getAllSchools() {
-  return db.school.findMany({
-    include: {
-      admin: {
-        select: {
-          id: true,
-          fullName: true,
-          email: true,
-        },
+export async function getAllSchools(query) {
+  const {
+    search,
+    curriculum,
+    minFee,
+    maxFee,
+    page = 1,
+    limit = 10,
+  } = query;
+
+  const filters = {};
+
+  // 🔍 Search by school name
+  if (search) {
+    filters.schoolName = {
+      contains: search,
+      //mode: "insensitive",
+    };
+  }
+
+  // 🎓 Filter by curriculum
+  if (curriculum) {
+    filters.curriculum = curriculum;
+  }
+
+  // 💰 Filter by fee range
+  if (minFee || maxFee) {
+    filters.tuitionFee = {};
+    if (minFee) filters.tuitionFee.gte = Number(minFee);
+    if (maxFee) filters.tuitionFee.lte = Number(maxFee);
+  }
+
+  // 📄 Pagination
+  const skip = (Number(page) - 1) * Number(limit);
+
+  const [schools, total] = await Promise.all([
+    db.school.findMany({
+      where: filters,
+      skip,
+      take: Number(limit),
+      orderBy: {
+        createdAt: "desc", // optional (if you add createdAt later)
       },
+    }),
+    db.school.count({ where: filters }),
+  ]);
+
+  return {
+    data: schools,
+    meta: {
+      total,
+      page: Number(page),
+      limit: Number(limit),
+      totalPages: Math.ceil(total / limit),
     },
-  });
+  };
 }
 
 // ✅ Get Single School
