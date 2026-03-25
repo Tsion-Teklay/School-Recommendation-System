@@ -138,6 +138,14 @@ it("should paginate results", async () => {
   expect(res.body.meta).toHaveProperty("totalPages");
 });
 
+it("should return recommended schools", async () => {
+  const res = await request(app).get("/api/recommendations?curriculum=LOCAL");
+
+  expect(res.statusCode).toBe(200);
+  expect(Array.isArray(res.body.data)).toBe(true);
+  expect(res.body.data[0]).toHaveProperty("score");
+});
+
   // ✅ UPDATE OWN
   it("should update own school", async () => {
     const res = await request(app)
