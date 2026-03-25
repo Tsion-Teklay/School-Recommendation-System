@@ -7,7 +7,10 @@ let parentToken;
 beforeAll(async () => {
   // 1. Clean up to avoid "Unique Constraint" errors on re-run
   // Order matters: Delete children (preferences) before parents
+  await db.review.deleteMany();      // Added
   await db.preference.deleteMany();
+  await db.favorite.deleteMany();    // Added
+  await db.school.deleteMany();      // This fixes the admin_id error!
   await db.parent.deleteMany();
   await db.user.deleteMany();
 
