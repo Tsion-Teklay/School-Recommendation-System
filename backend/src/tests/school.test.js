@@ -7,8 +7,14 @@ let otherAdminToken;
 let schoolId;
 
 beforeAll(async () => {
-  // Clean DB to ensure a fresh state
+  // 1. Clean DB in order of dependency (Children -> Parents)
+  // Preferences depend on Parents, so they go first
+  await db.preference.deleteMany();
+  // Parents depend on Users
+  await db.parent.deleteMany();
+  // Schools depend on Users (via owner/adminId)
   await db.school.deleteMany();
+  // Now it is safe to delete the Users
   await db.user.deleteMany();
 
   // Create SCHOOL_ADMIN 1

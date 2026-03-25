@@ -18,4 +18,6 @@ app.use("/api/test", (await import("./routes/test.routes.js")).default);
 
 app.use("/api/recommendations", (await import("./routes/recommendation.routes.js")).default);
 
+app.use("/api/preferences/", (await import("./routes/preference.routes.js")).default);
+
 export default app;
