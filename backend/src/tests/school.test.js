@@ -116,6 +116,28 @@ describe("School CRUD", () => {
     expect(Array.isArray(res.body.data)).toBe(true);
   });
 
+  it("should filter by curriculum", async () => {
+  const res = await request(app).get("/api/schools?curriculum=LOCAL");
+
+  expect(res.statusCode).toBe(200);
+  expect(Array.isArray(res.body.data)).toBe(true);
+});
+
+it("should search by school name", async () => {
+  const res = await request(app).get("/api/schools?search=Test");
+
+  expect(res.statusCode).toBe(200);
+  expect(res.body.data.length).toBeGreaterThan(0);
+});
+
+it("should paginate results", async () => {
+  const res = await request(app).get("/api/schools?page=1&limit=1");
+
+  expect(res.statusCode).toBe(200);
+  expect(res.body.data.length).toBeLessThanOrEqual(1);
+  expect(res.body.meta).toHaveProperty("totalPages");
+});
+
   // ✅ UPDATE OWN
   it("should update own school", async () => {
     const res = await request(app)
@@ -155,3 +177,4 @@ describe("School CRUD", () => {
     expect(res.statusCode).toBe(200);
   });
 });
+
