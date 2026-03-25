@@ -12,6 +12,10 @@ app.get("/", (req, res) => {
 
 app.use("/api/auth", (await import("./routes/auth.routes.js")).default);
 
+app.use("/api/schools", (await import("./routes/school.routes.js")).default);
+
 app.use("/api/test", (await import("./routes/test.routes.js")).default);
+
+app.use("/api/recommendations", (await import("./routes/recommendation.routes.js")).default);
 
 export default app;
