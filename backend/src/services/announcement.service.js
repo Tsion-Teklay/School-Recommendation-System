@@ -1,4 +1,5 @@
 import { db } from "../config/db.js";
+import { createNotification } from "./notification.service.js"; // 1. Import the service
 
 // ✅ Create
 export async function createAnnouncement(data, user) {
@@ -13,8 +14,33 @@ export async function createAnnouncement(data, user) {
     },
   });
 
+  // 🚀 INTEGRATION: Notify all Parents
+  try {
+    const parents = await db.user.findMany({
+      where: { role: "PARENT" },
+      select: { id: true } // Only fetch IDs to keep it fast
+    });
+
+    // Fire and forget notifications in parallel
+    await Promise.all(
+      parents.map((p) =>
+        createNotification({
+          recipientId: p.id,
+          recipientType: "PARENT",
+          message: `New announcement: ${announcement.title}`, // Use announcement.title from the created record
+          sourceReference: announcement.id, // Good practice to link back to the announcement
+        })
+      )
+    );
+  } catch (error) {
+    console.error("Notification Error:", error.message);
+    // We don't throw the error here because the announcement WAS created successfully.
+    // We don't want to fail the whole request just because a notification failed.
+  }
+
   return announcement;
 }
+
 
 // ✅ Get All (with filters + pagination)
 export async function getAllAnnouncements(query) {

@@ -1,6 +1,7 @@
 import { db } from "../../config/db.js";
 
 export const cleanDatabase = async () => {
+  await db.notification.deleteMany();
   await db.moderatorAction.deleteMany();
   await db.report.deleteMany();
   await db.review.deleteMany();
