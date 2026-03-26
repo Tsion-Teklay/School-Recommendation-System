@@ -1,6 +1,7 @@
 import request from "supertest";
 import app from "../app.js";
 import { db } from "../config/db.js";
+import { cleanDatabase } from "./utils/cleanup.js";
 
 let parentToken;
 let otherParentToken;
@@ -8,15 +9,10 @@ let schoolId;
 let reviewId;
 
 beforeAll(async () => {
-  // 1. Correct Cleanup Order (Children -> Parents)
-  await db.review.deleteMany();
-  await db.preference.deleteMany();
-  await db.favorite.deleteMany();
-  await db.school.deleteMany();
-  await db.parent.deleteMany();
-  await db.user.deleteMany();
+  // Use the central utility for a complete, order-safe wipe
+  await cleanDatabase();
 
-  // 2. Create Parent 1 + Manual Profile
+  // 1. Create Parent 1 + Manual Profile
   await request(app).post("/api/auth/register").send({
     fullName: "Parent One",
     email: "parent1@test.com",
@@ -33,7 +29,7 @@ beforeAll(async () => {
     data: { userId: login1.body.user.id, address: "Addis", latitude: 9.0, longitude: 38.0 }
   });
 
-  // 3. Create Parent 2 + Manual Profile
+  // 2. Create Parent 2 + Manual Profile
   await request(app).post("/api/auth/register").send({
     fullName: "Parent Two",
     email: "parent2@test.com",
@@ -50,7 +46,7 @@ beforeAll(async () => {
     data: { userId: login2.body.user.id, address: "Addis", latitude: 9.0, longitude: 38.0 }
   });
 
-  // 4. Create SCHOOL_ADMIN + school
+  // 3. Create SCHOOL_ADMIN + school
   await request(app).post("/api/auth/register").send({
     fullName: "Admin",
     email: "admin@test.com",

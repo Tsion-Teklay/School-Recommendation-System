@@ -1,21 +1,17 @@
 import request from "supertest";
 import app from "../app.js";
 import { db } from "../config/db.js";
+import { cleanDatabase } from "./utils/cleanup.js";
 
 let moeToken;
 let adminToken;
 let announcementId;
 
 beforeAll(async () => {
-  await db.announcement.deleteMany();
-  await db.review.deleteMany();      // Added: Prevents user_id violation
-  await db.preference.deleteMany();  // Added: Prevents user_id violation
-  await db.favorite.deleteMany();    // Added: Prevents user_id violation
-  await db.school.deleteMany();      // Added: Prevents admin_id violation
-  await db.parent.deleteMany();
-  await db.user.deleteMany();
+  // Use the central utility to wipe all tables in the correct order
+  await cleanDatabase();
 
-  // MOE
+  // Register Ministry of Education (MOE) Officer
   await request(app).post("/api/auth/register").send({
     fullName: "MOE User",
     email: "moe@test.com",
@@ -31,7 +27,7 @@ beforeAll(async () => {
 
   moeToken = moeLogin.body.token;
 
-  // Admin
+  // Register School Admin
   await request(app).post("/api/auth/register").send({
     fullName: "Admin User",
     email: "admin@test.com",
