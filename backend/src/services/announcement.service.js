@@ -27,8 +27,9 @@ export async function createAnnouncement(data, user) {
         createNotification({
           recipientId: p.id,
           recipientType: "PARENT",
-          message: `New announcement: ${announcement.title}`, // Use announcement.title from the created record
-          sourceReference: announcement.id, // Good practice to link back to the announcement
+          message: `New announcement: ${announcement.title}`,
+          sourceId: announcement.id, // Passes as Number
+          sourceType: "ANNOUNCEMENT",
         })
       )
     );
