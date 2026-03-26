@@ -5,14 +5,16 @@ export async function createNotification({
   recipientId,
   recipientType,
   message,
-  sourceReference,
+  sourceType,
+  sourceId, // 1. Add this
 }) {
   return db.notification.create({
     data: {
       recipientId,
       recipientType,
       message,
-      sourceReference,
+      sourceType,
+      sourceId: Number(sourceId), // 2. Add this (ensure it's a number)
     },
   });
 }
@@ -26,7 +28,7 @@ export async function getMyNotifications(userId, query) {
     ...(unread === "true" && { isRead: false }),
   };
 
-  const skip = (page - 1) * limit;
+  const skip = (Number(page) - 1) * Number(limit); // Ensure these are numbers
 
   const [notifications, total] = await Promise.all([
     db.notification.findMany({
@@ -43,7 +45,7 @@ export async function getMyNotifications(userId, query) {
     meta: {
       total,
       page: Number(page),
-      totalPages: Math.ceil(total / limit),
+      totalPages: Math.ceil(total / Number(limit)),
     },
   };
 }
