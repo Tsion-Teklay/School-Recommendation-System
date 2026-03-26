@@ -1,21 +1,15 @@
 import request from "supertest";
 import app from "../app.js";
 import { db } from "../config/db.js";
+import { cleanDatabase } from "./utils/cleanup.js";
 
 let adminToken;
 let otherAdminToken;
 let schoolId;
 
 beforeAll(async () => {
-  // 1. Clean DB in order of dependency (Children -> Parents)
-  // Preferences depend on Parents, so they go first
-  await db.preference.deleteMany();
-  // Parents depend on Users
-  await db.parent.deleteMany();
-  // Schools depend on Users (via owner/adminId)
-  await db.school.deleteMany();
-  // Now it is safe to delete the Users
-  await db.user.deleteMany();
+  // Use the central utility to wipe the slate clean
+  await cleanDatabase();
 
   // Create SCHOOL_ADMIN 1
   await request(app).post("/api/auth/register").send({
@@ -65,13 +59,12 @@ describe("School CRUD", () => {
         address: "Addis Ababa",
         contactEmail: "school@test.com",
         contactPhone: "0912345678",
-        curriculum: "LOCAL", // Matches UserRole enum logic
+        curriculum: "LOCAL", 
         tuitionFee: 5000,
-        latitude: 9.0331,    // Required by Schema
-        longitude: 38.7501   // Required by Schema
+        latitude: 9.0331,
+        longitude: 38.7501 
       });
 
-    // Helpful debug log if it still fails
     if (res.statusCode !== 201) {
       console.log("Create Error Response:", res.body);
     }
@@ -114,43 +107,40 @@ describe("School CRUD", () => {
     expect(res.statusCode).toBe(403);
   });
 
-  // ✅ GET ALL
+  // ✅ GET ALL & Search/Filter
   it("should get all schools", async () => {
     const res = await request(app).get("/api/schools");
-
     expect(res.statusCode).toBe(200);
     expect(Array.isArray(res.body.data)).toBe(true);
   });
 
   it("should filter by curriculum", async () => {
-  const res = await request(app).get("/api/schools?curriculum=LOCAL");
+    const res = await request(app).get("/api/schools?curriculum=LOCAL");
+    expect(res.statusCode).toBe(200);
+    expect(Array.isArray(res.body.data)).toBe(true);
+  });
 
-  expect(res.statusCode).toBe(200);
-  expect(Array.isArray(res.body.data)).toBe(true);
-});
+  it("should search by school name", async () => {
+    const res = await request(app).get("/api/schools?search=Test");
+    expect(res.statusCode).toBe(200);
+    expect(res.body.data.length).toBeGreaterThan(0);
+  });
 
-it("should search by school name", async () => {
-  const res = await request(app).get("/api/schools?search=Test");
+  it("should paginate results", async () => {
+    const res = await request(app).get("/api/schools?page=1&limit=1");
+    expect(res.statusCode).toBe(200);
+    expect(res.body.data.length).toBeLessThanOrEqual(1);
+    expect(res.body.meta).toHaveProperty("totalPages");
+  });
 
-  expect(res.statusCode).toBe(200);
-  expect(res.body.data.length).toBeGreaterThan(0);
-});
-
-it("should paginate results", async () => {
-  const res = await request(app).get("/api/schools?page=1&limit=1");
-
-  expect(res.statusCode).toBe(200);
-  expect(res.body.data.length).toBeLessThanOrEqual(1);
-  expect(res.body.meta).toHaveProperty("totalPages");
-});
-
-it("should return recommended schools", async () => {
-  const res = await request(app).get("/api/recommendations?curriculum=LOCAL");
-
-  expect(res.statusCode).toBe(200);
-  expect(Array.isArray(res.body.data)).toBe(true);
-  expect(res.body.data[0]).toHaveProperty("score");
-});
+  // 🎯 RECOMMENDATIONS
+  it("should return recommended schools", async () => {
+    const res = await request(app).get("/api/recommendations?curriculum=LOCAL");
+    expect(res.statusCode).toBe(200);
+    expect(Array.isArray(res.body.data)).toBe(true);
+    // Based on your recommendation controller, results should have a calculated score
+    expect(res.body.data[0]).toHaveProperty("score");
+  });
 
   // ✅ UPDATE OWN
   it("should update own school", async () => {
@@ -191,4 +181,3 @@ it("should return recommended schools", async () => {
     expect(res.statusCode).toBe(200);
   });
 });
-
