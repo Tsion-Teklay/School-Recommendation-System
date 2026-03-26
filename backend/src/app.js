@@ -28,6 +28,8 @@ app.use("/api/announcements/", (await import("./routes/announcement.routes.js"))
 
 app.use("/api/reports/", (await import("./routes/report.routes.js")).default);
 
+app.use("/api/notifications/", (await import("./routes/notification.routes.js")).default);
+
 // Global error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
