@@ -1,19 +1,16 @@
 import request from "supertest";
 import app from "../app.js";
 import { db } from "../config/db.js";
+import { cleanDatabase } from "./utils/cleanup.js";
 
 let parentToken;
 let schoolId;
 
 beforeAll(async () => {
-  // 1. DELETE IN CORRECT ORDER (Deepest children first)
-  await db.preference.deleteMany(); // Added: This is what was causing your fail
-  await db.favorite.deleteMany();
-  await db.school.deleteMany();
-  await db.parent.deleteMany();
-  await db.user.deleteMany();
+  // Use the central utility to wipe all tables in the correct order
+  await cleanDatabase();
 
-  // 2. Create parent
+  // 1. Create parent
   await request(app).post("/api/auth/register").send({
     fullName: "Parent User",
     email: "fav@test.com",
@@ -40,7 +37,7 @@ beforeAll(async () => {
     }
   });
 
-  // 3. Create school (need admin)
+  // 2. Create school (need admin)
   await request(app).post("/api/auth/register").send({
     fullName: "Admin",
     email: "adminfav@test.com",

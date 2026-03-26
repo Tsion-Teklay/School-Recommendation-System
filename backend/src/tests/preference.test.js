@@ -1,20 +1,16 @@
 import request from "supertest";
 import app from "../app.js";
 import { db } from "../config/db.js";
+import { cleanDatabase } from "./utils/cleanup.js";
 
 let parentToken;
 
 beforeAll(async () => {
-  // 1. Clean up to avoid "Unique Constraint" errors on re-run
-  // Order matters: Delete children (preferences) before parents
-  await db.review.deleteMany();      // Added
-  await db.preference.deleteMany();
-  await db.favorite.deleteMany();    // Added
-  await db.school.deleteMany();      // This fixes the admin_id error!
-  await db.parent.deleteMany();
-  await db.user.deleteMany();
+  // Use the central utility to wipe all tables in the correct order
+  // This prevents reporter_id and other FK constraint violations
+  await cleanDatabase();
 
-  // 2. Register a User
+  // 1. Register a User
   await request(app).post("/api/auth/register").send({
     fullName: "Parent User",
     email: "parent2@test.com",
@@ -23,7 +19,7 @@ beforeAll(async () => {
     role: "PARENT",
   });
 
-  // 3. Login to get the Token and User ID
+  // 2. Login to get the Token and User ID
   const login = await request(app).post("/api/auth/login").send({
     email: "parent2@test.com",
     password: "123456",
@@ -32,8 +28,8 @@ beforeAll(async () => {
   parentToken = login.body.token;
   const userId = login.body.user.id;
 
-  // 4. MANUALLY CREATE PARENT PROFILE
-  // This is the fix: Preference needs a row in 'parent' to exist first.
+  // 3. MANUALLY CREATE PARENT PROFILE
+  // Preference needs a row in 'parent' to exist first.
   await db.parent.create({
     data: {
       userId: userId,

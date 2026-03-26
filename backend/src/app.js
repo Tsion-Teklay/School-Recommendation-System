@@ -26,4 +26,12 @@ app.use("/api/reviews/", (await import("./routes/review.routes.js")).default);
 
 app.use("/api/announcements/", (await import("./routes/announcement.routes.js")).default);
 
+app.use("/api/reports/", (await import("./routes/report.routes.js")).default);
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: "Something went wrong!" });
+});
+
 export default app;
