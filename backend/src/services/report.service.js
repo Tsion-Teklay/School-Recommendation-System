@@ -1,5 +1,5 @@
 import { db } from "../config/db.js";
-import { createNotification } from "./notification.service.js"; // 1. Import the service
+import { createNotification } from "./notification.service.js";
 
 // ✅ Create Report
 export async function createReport(data, userId) {
@@ -67,7 +67,7 @@ export async function takeAction(reportId, data, moderatorId) {
     },
   });
 
-  const updatedReport = await db.report.update({
+  await db.report.update({
     where: { id: Number(reportId) },
     data: {
       status: "REVIEWED",
@@ -76,16 +76,16 @@ export async function takeAction(reportId, data, moderatorId) {
 
   // 🚀 INTEGRATION: Notify the reporter
   try {
-    await createNotification({
-      recipientId: report.reporterId, // Send to the person who made the report
-      recipientType: "PARENT",        // Assuming reporters are parents/users
-      message: `Your report (ID: ${reportId}) has been reviewed by a moderator.`,
-      sourceReference: reportId,      // Link back to the report
-    });
-  } catch (error) {
-    console.error("Report Notification Error:", error.message);
-    // Don't crash the moderator action if notification fails
-  }
+  await createNotification({
+  recipientId: report.reporterId,
+  recipientType: "PARENT", 
+  message: `Your report (ID: ${reportId}) has been reviewed.`,
+  sourceId: reportId, // Passes as Number
+  sourceType: "REPORT",
+});
+} catch (error) {
+  console.error("Report Notification Error:", error.message);
+}
 
   return action;
 }

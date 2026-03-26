@@ -30,6 +30,8 @@ app.use("/api/reports/", (await import("./routes/report.routes.js")).default);
 
 app.use("/api/notifications/", (await import("./routes/notification.routes.js")).default);
 
+app.use("/api/analytics/", (await import("./routes/analytics.routes.js")).default);
+
 // Global error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
