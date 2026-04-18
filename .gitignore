@@ -1,9 +1,10 @@
 # dependencies
 node_modules/
 
-# environment variables
+# environment variables (keep .env.example tracked)
 .env
 .env.*
+!.env.example
 
 /backend/generated
 
