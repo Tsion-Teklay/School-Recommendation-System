@@ -1,4 +1,5 @@
 import { db } from "../config/db.js";
+import { ForbiddenError, NotFoundError } from "../utils/errors.js";
 
 // ✅ Create Notification (internal use)
 export async function createNotification({
@@ -56,10 +57,10 @@ export async function markAsRead(id, userId) {
     where: { id: Number(id) },
   });
 
-  if (!notification) throw new Error("Notification not found");
+  if (!notification) throw new NotFoundError("Notification not found");
 
   if (notification.recipientId !== userId) {
-    throw new Error("Not authorized");
+    throw new ForbiddenError("Not authorized to read this notification");
   }
 
   return db.notification.update({

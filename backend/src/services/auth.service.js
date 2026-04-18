@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { db } from "../config/db.js";
+import { ConflictError, UnauthorizedError, ValidationError } from "../utils/errors.js";
 
 const SALT_ROUNDS = 10;
 
@@ -17,9 +18,9 @@ export async function registerUser({
   password,
   role,
 }) {
-  // ✅ Basic validation
+  // ✅ Basic validation (belt & suspenders; route-level Zod schema is authoritative)
   if (!fullName || !email || !password || !role) {
-    throw new Error("Missing required fields");
+    throw new ValidationError("Missing required fields");
   }
 
   const normalizedEmail = email.toLowerCase();
@@ -29,7 +30,7 @@ export async function registerUser({
     where: { email: normalizedEmail },
   });
 
-  if (existing) throw new Error("Email already registered");
+  if (existing) throw new ConflictError("Email already registered");
 
   // 2. Hash password
   const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
@@ -51,7 +52,7 @@ export async function registerUser({
 
 export async function loginUser({ email, password }) {
   if (!email || !password) {
-    throw new Error("Email and password are required");
+    throw new ValidationError("Email and password are required");
   }
 
   const normalizedEmail = email.toLowerCase();
@@ -60,15 +61,15 @@ export async function loginUser({ email, password }) {
     where: { email: normalizedEmail },
   });
 
-  if (!user) throw new Error("Invalid credentials");
+  if (!user) throw new UnauthorizedError("Invalid credentials");
 
   // 🚫 Block deactivated users
   if (user.accountStatus !== "ACTIVE") {
-    throw new Error("Account is deactivated");
+    throw new UnauthorizedError("Account is deactivated");
   }
 
   const match = await bcrypt.compare(password, user.password);
-  if (!match) throw new Error("Invalid credentials");
+  if (!match) throw new UnauthorizedError("Invalid credentials");
 
   // Generate JWT
   const token = jwt.sign(

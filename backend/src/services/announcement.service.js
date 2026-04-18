@@ -1,5 +1,7 @@
 import { db } from "../config/db.js";
-import { createNotification } from "./notification.service.js"; // 1. Import the service
+import { ForbiddenError, NotFoundError } from "../utils/errors.js";
+import { logger } from "../config/logger.js";
+import { createNotification } from "./notification.service.js";
 
 // ✅ Create
 export async function createAnnouncement(data, user) {
@@ -34,9 +36,9 @@ export async function createAnnouncement(data, user) {
       )
     );
   } catch (error) {
-    console.error("Notification Error:", error.message);
-    // We don't throw the error here because the announcement WAS created successfully.
-    // We don't want to fail the whole request just because a notification failed.
+    logger.warn({ err: error }, "Announcement notification fan-out failed");
+    // Announcement creation succeeded — don't fail the request if notifications did.
+    // NOTE: Phase 4 will replace this blast-all with a Subscription/Follow-driven fan-out.
   }
 
   return announcement;
@@ -80,7 +82,7 @@ export async function getAnnouncementById(id) {
     where: { id: Number(id) },
   });
 
-  if (!announcement) throw new Error("Announcement not found");
+  if (!announcement) throw new NotFoundError("Announcement not found");
 
   return announcement;
 }
@@ -91,10 +93,10 @@ export async function updateAnnouncement(id, data, userId) {
     where: { id: Number(id) },
   });
 
-  if (!announcement) throw new Error("Announcement not found");
+  if (!announcement) throw new NotFoundError("Announcement not found");
 
   if (announcement.publisherId !== userId) {
-    throw new Error("Not authorized");
+    throw new ForbiddenError("Not authorized to update this announcement");
   }
 
   return db.announcement.update({
@@ -109,10 +111,10 @@ export async function deleteAnnouncement(id, userId) {
     where: { id: Number(id) },
   });
 
-  if (!announcement) throw new Error("Announcement not found");
+  if (!announcement) throw new NotFoundError("Announcement not found");
 
   if (announcement.publisherId !== userId) {
-    throw new Error("Not authorized");
+    throw new ForbiddenError("Not authorized to delete this announcement");
   }
 
   await db.announcement.delete({
