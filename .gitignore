@@ -1,9 +1,10 @@
 # dependencies
 node_modules/
 
-# environment variables
+# environment variables (keep .env.example tracked)
 .env
 .env.*
+!.env.example
 
 /backend/generated
 
@@ -18,6 +19,9 @@ yarn-error.log*
 dist/
 build/
 coverage/
+
+# user uploads (served from backend/uploads at runtime; keep out of VCS)
+backend/uploads/
 
 # cache
 .npm

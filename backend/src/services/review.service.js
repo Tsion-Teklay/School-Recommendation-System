@@ -1,4 +1,5 @@
 import { db } from "../config/db.js";
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../utils/errors.js";
 
 // ✅ Create review
 export async function createReview(userId, schoolId, data) {
@@ -6,7 +7,7 @@ export async function createReview(userId, schoolId, data) {
     where: { userId },
   });
 
-  if (!parent) throw new Error("Parent profile not found");
+  if (!parent) throw new NotFoundError("Parent profile not found");
 
   const existing = await db.review.findFirst({
     where: {
@@ -16,11 +17,11 @@ export async function createReview(userId, schoolId, data) {
   });
 
   if (existing) {
-    throw new Error("You already reviewed this school");
+    throw new ConflictError("You already reviewed this school");
   }
 
   if (data.rating < 1 || data.rating > 5) {
-    throw new Error("Rating must be between 1 and 5");
+    throw new ValidationError("Rating must be between 1 and 5");
   }
 
   const review = await db.review.create({
@@ -54,10 +55,10 @@ export async function updateReview(userId, reviewId, data) {
     where: { id: Number(reviewId) },
   });
 
-  if (!review) throw new Error("Review not found");
+  if (!review) throw new NotFoundError("Review not found");
 
   if (review.parentId !== userId) {
-    throw new Error("Not authorized to update this review");
+    throw new ForbiddenError("Not authorized to update this review");
   }
 
   return db.review.update({
@@ -72,10 +73,10 @@ export async function deleteReview(userId, reviewId) {
     where: { id: Number(reviewId) },
   });
 
-  if (!review) throw new Error("Review not found");
+  if (!review) throw new NotFoundError("Review not found");
 
   if (review.parentId !== userId) {
-    throw new Error("Not authorized to delete this review");
+    throw new ForbiddenError("Not authorized to delete this review");
   }
 
   await db.review.delete({

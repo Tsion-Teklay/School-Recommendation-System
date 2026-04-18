@@ -1,4 +1,6 @@
 import { db } from "../config/db.js";
+import { NotFoundError } from "../utils/errors.js";
+import { logger } from "../config/logger.js";
 import { createNotification } from "./notification.service.js";
 
 // ✅ Create Report
@@ -45,7 +47,7 @@ export async function getReportById(id) {
     },
   });
 
-  if (!report) throw new Error("Report not found");
+  if (!report) throw new NotFoundError("Report not found");
 
   return report;
 }
@@ -56,7 +58,7 @@ export async function takeAction(reportId, data, moderatorId) {
     where: { id: Number(reportId) },
   });
 
-  if (!report) throw new Error("Report not found");
+  if (!report) throw new NotFoundError("Report not found");
 
   const action = await db.moderatorAction.create({
     data: {
@@ -76,16 +78,16 @@ export async function takeAction(reportId, data, moderatorId) {
 
   // 🚀 INTEGRATION: Notify the reporter
   try {
-  await createNotification({
-  recipientId: report.reporterId,
-  recipientType: "PARENT", 
-  message: `Your report (ID: ${reportId}) has been reviewed.`,
-  sourceId: reportId, // Passes as Number
-  sourceType: "REPORT",
-});
-} catch (error) {
-  console.error("Report Notification Error:", error.message);
-}
+    await createNotification({
+      recipientId: report.reporterId,
+      recipientType: "PARENT",
+      message: `Your report (ID: ${reportId}) has been reviewed.`,
+      sourceId: reportId,
+      sourceType: "REPORT",
+    });
+  } catch (error) {
+    logger.warn({ err: error, reportId }, "Report notification failed");
+  }
 
   return action;
 }

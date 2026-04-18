@@ -1,4 +1,5 @@
 import { db } from "../config/db.js";
+import { ForbiddenError, NotFoundError, ValidationError } from "../utils/errors.js";
 
 // ✅ Create School
 export async function createSchool(data, userId) {
@@ -14,9 +15,9 @@ export async function createSchool(data, userId) {
     longitude,
   } = data;
 
-  // Basic validation
-  if (!schoolName || !address || !contactEmail || !curriculum || !tuitionFee) {
-    throw new Error("Missing required fields");
+  // Basic validation (also enforced at route level via Zod)
+  if (!schoolName || !address || !contactEmail || !curriculum || tuitionFee === undefined) {
+    throw new ValidationError("Missing required fields");
   }
 
   const school = await db.school.create({
@@ -112,7 +113,7 @@ export async function getSchoolById(id) {
     },
   });
 
-  if (!school) throw new Error("School not found");
+  if (!school) throw new NotFoundError("School not found");
 
   return school;
 }
@@ -123,11 +124,11 @@ export async function updateSchool(id, data, userId) {
     where: { id: Number(id) },
   });
 
-  if (!school) throw new Error("School not found");
+  if (!school) throw new NotFoundError("School not found");
 
   // 🔐 Ownership check
   if (school.adminId !== userId) {
-    throw new Error("Not authorized to update this school");
+    throw new ForbiddenError("Not authorized to update this school");
   }
 
   const updated = await db.school.update({
@@ -144,11 +145,11 @@ export async function deleteSchool(id, userId) {
     where: { id: Number(id) },
   });
 
-  if (!school) throw new Error("School not found");
+  if (!school) throw new NotFoundError("School not found");
 
   // 🔐 Ownership check
   if (school.adminId !== userId) {
-    throw new Error("Not authorized to delete this school");
+    throw new ForbiddenError("Not authorized to delete this school");
   }
 
   await db.school.delete({
