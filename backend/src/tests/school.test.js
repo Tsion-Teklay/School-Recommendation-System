@@ -5,6 +5,7 @@ import { cleanDatabase } from "./utils/cleanup.js";
 
 let adminToken;
 let otherAdminToken;
+let parentToken;
 let schoolId;
 
 beforeAll(async () => {
@@ -42,6 +43,22 @@ beforeAll(async () => {
   });
 
   otherAdminToken = login2.body.token;
+
+  // Create a PARENT for protected endpoints (e.g. /api/recommendations)
+  await request(app).post("/api/auth/register").send({
+    fullName: "Parent User",
+    email: "parent@test.com",
+    phone: "0933333333",
+    password: "123456",
+    role: "PARENT",
+  });
+
+  const parentLogin = await request(app).post("/api/auth/login").send({
+    email: "parent@test.com",
+    password: "123456",
+  });
+
+  parentToken = parentLogin.body.token;
 });
 
 afterAll(async () => {
@@ -77,22 +94,9 @@ describe("School CRUD", () => {
 
   // ❌ CREATE with wrong role
   it("should fail if not SCHOOL_ADMIN", async () => {
-    await request(app).post("/api/auth/register").send({
-      fullName: "Parent User",
-      email: "parent@test.com",
-      phone: "0933333333",
-      password: "123456",
-      role: "PARENT",
-    });
-
-    const login = await request(app).post("/api/auth/login").send({
-      email: "parent@test.com",
-      password: "123456",
-    });
-
     const res = await request(app)
       .post("/api/schools")
-      .set("Authorization", `Bearer ${login.body.token}`)
+      .set("Authorization", `Bearer ${parentToken}`)
       .send({
         schoolName: "Fail School",
         address: "Addis",
@@ -134,11 +138,25 @@ describe("School CRUD", () => {
   });
 
   // 🎯 RECOMMENDATIONS
-  it("should return recommended schools", async () => {
+  it("should reject unauthenticated recommendation requests", async () => {
     const res = await request(app).get("/api/recommendations?curriculum=LOCAL");
+    expect(res.statusCode).toBe(401);
+  });
+
+  it("should forbid non-parent users from getting recommendations", async () => {
+    const res = await request(app)
+      .get("/api/recommendations?curriculum=LOCAL")
+      .set("Authorization", `Bearer ${adminToken}`);
+    expect(res.statusCode).toBe(403);
+  });
+
+  it("should return recommended schools for a parent", async () => {
+    const res = await request(app)
+      .get("/api/recommendations?curriculum=LOCAL")
+      .set("Authorization", `Bearer ${parentToken}`);
     expect(res.statusCode).toBe(200);
     expect(Array.isArray(res.body.data)).toBe(true);
-    // Based on your recommendation controller, results should have a calculated score
+    // Results should have a calculated score
     expect(res.body.data[0]).toHaveProperty("score");
   });
 

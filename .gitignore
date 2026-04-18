@@ -19,6 +19,9 @@ dist/
 build/
 coverage/
 
+# user uploads (served from backend/uploads at runtime; keep out of VCS)
+backend/uploads/
+
 # cache
 .npm
 .cache

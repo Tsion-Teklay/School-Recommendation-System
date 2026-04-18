@@ -1,4 +1,5 @@
 import { db } from "../config/db.js";
+import { NotFoundError } from "../utils/errors.js";
 
 export async function upsertPreference(userId, data) {
   // Check if parent profile exists
@@ -7,7 +8,7 @@ export async function upsertPreference(userId, data) {
   });
 
   if (!parent) {
-    throw new Error("Parent profile not found");
+    throw new NotFoundError("Parent profile not found");
   }
 
   // Upsert preference
@@ -37,7 +38,7 @@ export async function getMyPreference(userId) {
   });
 
   if (!preference) {
-    throw new Error("Preference not found");
+    throw new NotFoundError("Preference not found");
   }
 
   return preference;
