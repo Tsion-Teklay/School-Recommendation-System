@@ -1,4 +1,5 @@
 import { db } from "../config/db.js";
+import { NotFoundError } from "../utils/errors.js";
 
 // ✅ Add favorite
 export async function addFavorite(userId, schoolId) {
@@ -7,14 +8,14 @@ export async function addFavorite(userId, schoolId) {
     where: { userId },
   });
 
-  if (!parent) throw new Error("Parent profile not found");
+  if (!parent) throw new NotFoundError("Parent profile not found");
 
   // Check school exists
   const school = await db.school.findUnique({
     where: { id: Number(schoolId) },
   });
 
-  if (!school) throw new Error("School not found");
+  if (!school) throw new NotFoundError("School not found");
 
   // Create favorite (unique constraint prevents duplicates)
   const favorite = await db.favorite.create({
@@ -50,7 +51,7 @@ export async function removeFavorite(userId, schoolId) {
     },
   });
 
-  if (!favorite) throw new Error("Favorite not found");
+  if (!favorite) throw new NotFoundError("Favorite not found");
 
   await db.favorite.delete({
     where: { id: favorite.id },

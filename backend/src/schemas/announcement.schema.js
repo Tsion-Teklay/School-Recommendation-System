@@ -1,0 +1,25 @@
+import { z } from "zod";
+import { paginationQuery } from "./common.schema.js";
+
+const categoryEnum = z.enum(["ADMISSIONS", "POLICY", "FEE", "OTHER"]);
+const urgencyEnum = z.enum(["NORMAL", "HIGH", "EMERGENCY"]);
+
+export const createAnnouncementBodySchema = z.object({
+  title: z.string().trim().min(1).max(200),
+  content: z.string().trim().min(1),
+  category: categoryEnum,
+  urgencyLevel: urgencyEnum.default("NORMAL"),
+  schoolId: z.coerce.number().int().positive().optional(),
+});
+
+export const updateAnnouncementBodySchema = createAnnouncementBodySchema
+  .partial()
+  .refine((val) => Object.keys(val).length > 0, {
+    message: "At least one field is required",
+  });
+
+export const listAnnouncementsQuerySchema = z.object({
+  category: categoryEnum.optional(),
+  urgencyLevel: urgencyEnum.optional(),
+  ...paginationQuery,
+});
