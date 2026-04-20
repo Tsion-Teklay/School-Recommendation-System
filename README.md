@@ -6,7 +6,7 @@ and a forum for community Q&A.
 
 - **Backend**: Node.js + Express 5 (ESM) + Prisma 7 (MariaDB adapter) + JWT auth.
 - **Frontend**: _coming in Phase 7_ (Next.js + Leaflet, PWA-first).
-- **Status**: Phase 0 — foundation hygiene.
+- **Status**: Phase 1 — auth completeness (email verification, forgot/reset password, profile management).
 
 Active development happens on `develop`; `main` only receives the final release.
 
@@ -60,7 +60,7 @@ npx prisma migrate dev
 npm run dev
 ```
 
-The server defaults to `http://localhost:5000`:
+The server defaults to `http://localhost:5050` (port 5000 is reserved by Windows in many setups):
 
 - `GET /` → `API running`
 - `GET /api/healthz` → `{ "status": "ok" }`
@@ -88,9 +88,14 @@ required ones in dev are:
 
 Optional:
 
-- `PORT` (default `5000`), `NODE_ENV` (default `development`),
+- `PORT` (default `5050`), `NODE_ENV` (default `development`),
   `LOG_LEVEL` (default `debug` in dev, `info` in prod, `silent` in test),
   `JWT_EXPIRES_IN` (default `1d`).
+- `APP_URL` — base URL used in email verification / reset links (default `http://localhost:5050`).
+- `SMTP_URL` — optional real SMTP endpoint. Leave empty in dev and Nodemailer
+  will auto-create an [Ethereal](https://ethereal.email) test inbox on first
+  send and log a preview URL to the console.
+- `MAIL_FROM` — sender address on outbound mail (default `no-reply@schoolrec.local`).
 
 ---
 
@@ -153,6 +158,32 @@ frontend/                 (empty until Phase 7)
 | `MODERATOR`    | reports queue + actions (cannot submit reports)           |
 
 See `src/middlewares/role.middleware.js` and each route file's JSDoc.
+
+---
+
+## Phase 1 auth endpoints
+
+Every new account is created unverified and **login is blocked until the
+email is verified**. Dev email delivery goes to Ethereal — watch the server
+log for the preview URL after every send.
+
+| Method | Path                               | Auth   | Purpose                             |
+| ------ | ---------------------------------- | ------ | ----------------------------------- |
+| POST   | `/api/auth/register`               | —      | Create account + email verify link  |
+| POST   | `/api/auth/login`                  | —      | Exchange credentials for JWT        |
+| POST   | `/api/auth/verify-email`           | —      | Activate account with token         |
+| POST   | `/api/auth/resend-verification`    | —      | Issue a fresh verification token    |
+| POST   | `/api/auth/forgot-password`        | —      | Email a reset link                  |
+| POST   | `/api/auth/reset-password`         | —      | Set a new password via reset token  |
+| POST   | `/api/auth/change-password`        | JWT    | Swap password while logged in       |
+| GET    | `/api/users/me`                    | JWT    | Current user's sanitized profile    |
+| PUT    | `/api/users/me`                    | JWT    | Update `fullName` / `phone`         |
+| POST   | `/api/users/me/deactivate`         | JWT    | Self-deactivate account             |
+
+`resend-verification` and `forgot-password` always return **200** regardless
+of whether the email is registered — this prevents account enumeration. Login
+returns `{ code: "EMAIL_NOT_VERIFIED" }` for unverified accounts so the
+frontend can prompt for resend.
 
 ---
 

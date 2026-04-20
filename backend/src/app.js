@@ -20,15 +20,28 @@ app.use(express.json({ limit: "1mb" }));
 app.use(httpLogger);
 
 // Basic global rate limit to protect against brute-force + accidental loops.
-// Tightened per-endpoint limits (e.g. /api/auth/login) land in Phase 1.
 const globalLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   limit: 300, // 300 req/min/IP — well above normal usage, blocks abuse
   standardHeaders: "draft-7",
   legacyHeaders: false,
 });
+
+// Tighter limit on /api/auth/* — resists credential stuffing + reset spam.
+const authLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  limit: 20, // 20 req/10min/IP across all auth endpoints
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: {
+    error: "Too many auth requests, try again later",
+    code: "RATE_LIMITED",
+  },
+});
+
 if (process.env.NODE_ENV !== "test") {
   app.use(globalLimiter);
+  app.use("/api/auth", authLimiter);
 }
 
 // --- Health + docs -----------------------------------------------------------
@@ -45,6 +58,7 @@ app.get("/api/docs.json", (req, res) => res.json(openApiSpec));
 
 // --- Feature routes ----------------------------------------------------------
 app.use("/api/auth", (await import("./routes/auth.routes.js")).default);
+app.use("/api/users", (await import("./routes/user.routes.js")).default);
 app.use("/api/schools", (await import("./routes/school.routes.js")).default);
 app.use(
   "/api/recommendations",

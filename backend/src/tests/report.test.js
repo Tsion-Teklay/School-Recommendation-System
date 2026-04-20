@@ -2,6 +2,7 @@ import request from "supertest";
 import app from "../app.js";
 import { db } from "../config/db.js";
 import { cleanDatabase } from "./utils/cleanup.js";
+import { registerVerifiedUser } from "./utils/auth.js";
 
 let userToken;
 let moderatorToken;
@@ -12,37 +13,19 @@ beforeAll(async () => {
   // This is critical for clearing the Report and ModeratorAction tables
   await cleanDatabase();
 
-  // Normal User
-  await request(app).post("/api/auth/register").send({
+  ({ token: userToken } = await registerVerifiedUser({
     fullName: "User",
     email: "user@test.com",
     phone: "0911111111",
-    password: "123456",
     role: "PARENT",
-  });
+  }));
 
-  const userLogin = await request(app).post("/api/auth/login").send({
-    email: "user@test.com",
-    password: "123456",
-  });
-
-  userToken = userLogin.body.token;
-
-  // Moderator
-  await request(app).post("/api/auth/register").send({
+  ({ token: moderatorToken } = await registerVerifiedUser({
     fullName: "Moderator",
     email: "mod@test.com",
     phone: "0922222222",
-    password: "123456",
     role: "MODERATOR",
-  });
-
-  const modLogin = await request(app).post("/api/auth/login").send({
-    email: "mod@test.com",
-    password: "123456",
-  });
-
-  moderatorToken = modLogin.body.token;
+  }));
 });
 
 afterAll(async () => {

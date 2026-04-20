@@ -1,7 +1,8 @@
 import request from "supertest";
 import app from "../app.js";
 import { db } from "../config/db.js";
-import { cleanDatabase } from "./utils/cleanup.js"; // 1. Import the utility
+import { cleanDatabase } from "./utils/cleanup.js";
+import { registerVerifiedUser } from "./utils/auth.js";
 
 let token;
 
@@ -9,20 +10,12 @@ beforeAll(async () => {
   // 2. Use the central utility instead of manual deletes
   await cleanDatabase();
 
-  await request(app).post("/api/auth/register").send({
+  ({ token } = await registerVerifiedUser({
     fullName: "User",
     email: "notif@test.com",
     phone: "0910000000",
-    password: "123456",
     role: "PARENT",
-  });
-
-  const login = await request(app).post("/api/auth/login").send({
-    email: "notif@test.com",
-    password: "123456",
-  });
-
-  token = login.body.token;
+  }));
 });
 
 afterAll(async () => {
