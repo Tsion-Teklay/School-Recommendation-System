@@ -2,6 +2,7 @@ import request from "supertest";
 import app from "../app.js";
 import { db } from "../config/db.js";
 import { cleanDatabase } from "./utils/cleanup.js";
+import { registerVerifiedUser } from "./utils/auth.js";
 
 let parentToken;
 
@@ -10,29 +11,18 @@ beforeAll(async () => {
   // This prevents reporter_id and other FK constraint violations
   await cleanDatabase();
 
-  // 1. Register a User
-  await request(app).post("/api/auth/register").send({
+  const parent = await registerVerifiedUser({
     fullName: "Parent User",
     email: "parent2@test.com",
     phone: "0944444444",
-    password: "123456",
     role: "PARENT",
   });
+  parentToken = parent.token;
 
-  // 2. Login to get the Token and User ID
-  const login = await request(app).post("/api/auth/login").send({
-    email: "parent2@test.com",
-    password: "123456",
-  });
-
-  parentToken = login.body.token;
-  const userId = login.body.user.id;
-
-  // 3. MANUALLY CREATE PARENT PROFILE
   // Preference needs a row in 'parent' to exist first.
   await db.parent.create({
     data: {
-      userId: userId,
+      userId: parent.user.id,
       address: "Addis Ababa",
       latitude: 9.0331,
       longitude: 38.7501,

@@ -2,6 +2,7 @@ import request from "supertest";
 import app from "../app.js";
 import { db } from "../config/db.js";
 import { cleanDatabase } from "./utils/cleanup.js";
+import { registerVerifiedUser } from "./utils/auth.js";
 
 let adminToken;
 let otherAdminToken;
@@ -12,53 +13,26 @@ beforeAll(async () => {
   // Use the central utility to wipe the slate clean
   await cleanDatabase();
 
-  // Create SCHOOL_ADMIN 1
-  await request(app).post("/api/auth/register").send({
+  ({ token: adminToken } = await registerVerifiedUser({
     fullName: "Admin One",
     email: "admin1@test.com",
     phone: "0911111111",
-    password: "123456",
     role: "SCHOOL_ADMIN",
-  });
+  }));
 
-  const login1 = await request(app).post("/api/auth/login").send({
-    email: "admin1@test.com",
-    password: "123456",
-  });
-
-  adminToken = login1.body.token;
-
-  // Create SCHOOL_ADMIN 2
-  await request(app).post("/api/auth/register").send({
+  ({ token: otherAdminToken } = await registerVerifiedUser({
     fullName: "Admin Two",
     email: "admin2@test.com",
     phone: "0922222222",
-    password: "123456",
     role: "SCHOOL_ADMIN",
-  });
+  }));
 
-  const login2 = await request(app).post("/api/auth/login").send({
-    email: "admin2@test.com",
-    password: "123456",
-  });
-
-  otherAdminToken = login2.body.token;
-
-  // Create a PARENT for protected endpoints (e.g. /api/recommendations)
-  await request(app).post("/api/auth/register").send({
+  ({ token: parentToken } = await registerVerifiedUser({
     fullName: "Parent User",
     email: "parent@test.com",
     phone: "0933333333",
-    password: "123456",
     role: "PARENT",
-  });
-
-  const parentLogin = await request(app).post("/api/auth/login").send({
-    email: "parent@test.com",
-    password: "123456",
-  });
-
-  parentToken = parentLogin.body.token;
+  }));
 });
 
 afterAll(async () => {
