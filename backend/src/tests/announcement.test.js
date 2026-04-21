@@ -2,6 +2,7 @@ import request from "supertest";
 import app from "../app.js";
 import { db } from "../config/db.js";
 import { cleanDatabase } from "./utils/cleanup.js";
+import { registerVerifiedUser } from "./utils/auth.js";
 
 let moeToken;
 let adminToken;
@@ -11,37 +12,19 @@ beforeAll(async () => {
   // Use the central utility to wipe all tables in the correct order
   await cleanDatabase();
 
-  // Register Ministry of Education (MOE) Officer
-  await request(app).post("/api/auth/register").send({
+  ({ token: moeToken } = await registerVerifiedUser({
     fullName: "MOE User",
     email: "moe@test.com",
     phone: "0910000000",
-    password: "123456",
     role: "MOE_OFFICER",
-  });
+  }));
 
-  const moeLogin = await request(app).post("/api/auth/login").send({
-    email: "moe@test.com",
-    password: "123456",
-  });
-
-  moeToken = moeLogin.body.token;
-
-  // Register School Admin
-  await request(app).post("/api/auth/register").send({
+  ({ token: adminToken } = await registerVerifiedUser({
     fullName: "Admin User",
     email: "admin@test.com",
     phone: "0920000000",
-    password: "123456",
     role: "SCHOOL_ADMIN",
-  });
-
-  const adminLogin = await request(app).post("/api/auth/login").send({
-    email: "admin@test.com",
-    password: "123456",
-  });
-
-  adminToken = adminLogin.body.token;
+  }));
 });
 
 afterAll(async () => {

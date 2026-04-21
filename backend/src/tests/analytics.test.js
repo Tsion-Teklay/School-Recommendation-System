@@ -2,6 +2,7 @@ import request from "supertest";
 import app from "../app.js";
 import { db } from "../config/db.js";
 import { cleanDatabase } from "./utils/cleanup.js";
+import { registerVerifiedUser } from "./utils/auth.js";
 
 let token;
 let validSchoolId;
@@ -9,24 +10,18 @@ let validSchoolId;
 beforeAll(async () => {
   await cleanDatabase();
 
-  // 1. Create a School Admin
-  const adminReg = await request(app).post("/api/auth/register").send({
+  // 1. Create a School Admin (verified)
+  const admin = await registerVerifiedUser({
     fullName: "Admin",
     email: "admin@test.com",
     phone: "0911223344",
-    password: "123456",
     role: "SCHOOL_ADMIN",
-  });
-
-  const adminLogin = await request(app).post("/api/auth/login").send({
-    email: "admin@test.com",
-    password: "123456",
   });
 
   // 2. Create a School so analytics has a target
   const schoolRes = await request(app)
     .post("/api/schools")
-    .set("Authorization", `Bearer ${adminLogin.body.token}`)
+    .set("Authorization", `Bearer ${admin.token}`)
     .send({
       schoolName: "Data School",
       address: "Addis",
@@ -40,21 +35,13 @@ beforeAll(async () => {
   
   validSchoolId = schoolRes.body.school.id;
 
-  // 3. Register MOE Officer for the actual test
-  await request(app).post("/api/auth/register").send({
+  // 3. Register MOE Officer for the actual test (verified)
+  ({ token } = await registerVerifiedUser({
     fullName: "MOE",
     email: "moe2@test.com",
     phone: "0910000001",
-    password: "123456",
     role: "MOE_OFFICER",
-  });
-
-  const login = await request(app).post("/api/auth/login").send({
-    email: "moe2@test.com",
-    password: "123456",
-  });
-
-  token = login.body.token;
+  }));
 });
 
 describe("Analytics API", () => {

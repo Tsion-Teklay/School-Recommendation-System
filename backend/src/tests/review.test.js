@@ -2,6 +2,7 @@ import request from "supertest";
 import app from "../app.js";
 import { db } from "../config/db.js";
 import { cleanDatabase } from "./utils/cleanup.js";
+import { registerVerifiedUser } from "./utils/auth.js";
 
 let parentToken;
 let otherParentToken;
@@ -12,55 +13,40 @@ beforeAll(async () => {
   // Use the central utility for a complete, order-safe wipe
   await cleanDatabase();
 
-  // 1. Create Parent 1 + Manual Profile
-  await request(app).post("/api/auth/register").send({
+  // 1. Parent 1 + manual parent profile
+  const p1 = await registerVerifiedUser({
     fullName: "Parent One",
     email: "parent1@test.com",
     phone: "0910000001",
-    password: "123456",
     role: "PARENT",
   });
-  const login1 = await request(app).post("/api/auth/login").send({
-    email: "parent1@test.com",
-    password: "123456",
-  });
-  parentToken = login1.body.token;
+  parentToken = p1.token;
   await db.parent.create({
-    data: { userId: login1.body.user.id, address: "Addis", latitude: 9.0, longitude: 38.0 }
+    data: { userId: p1.user.id, address: "Addis", latitude: 9.0, longitude: 38.0 },
   });
 
-  // 2. Create Parent 2 + Manual Profile
-  await request(app).post("/api/auth/register").send({
+  // 2. Parent 2 + manual parent profile
+  const p2 = await registerVerifiedUser({
     fullName: "Parent Two",
     email: "parent2@test.com",
     phone: "0910000002",
-    password: "123456",
     role: "PARENT",
   });
-  const login2 = await request(app).post("/api/auth/login").send({
-    email: "parent2@test.com",
-    password: "123456",
-  });
-  otherParentToken = login2.body.token;
+  otherParentToken = p2.token;
   await db.parent.create({
-    data: { userId: login2.body.user.id, address: "Addis", latitude: 9.0, longitude: 38.0 }
+    data: { userId: p2.user.id, address: "Addis", latitude: 9.0, longitude: 38.0 },
   });
 
-  // 3. Create SCHOOL_ADMIN + school
-  await request(app).post("/api/auth/register").send({
+  // 3. School admin + school
+  const admin = await registerVerifiedUser({
     fullName: "Admin",
     email: "admin@test.com",
     phone: "0910000003",
-    password: "123456",
     role: "SCHOOL_ADMIN",
-  });
-  const adminLogin = await request(app).post("/api/auth/login").send({
-    email: "admin@test.com",
-    password: "123456",
   });
   const schoolRes = await request(app)
     .post("/api/schools")
-    .set("Authorization", `Bearer ${adminLogin.body.token}`)
+    .set("Authorization", `Bearer ${admin.token}`)
     .send({
       schoolName: "Review School",
       address: "Addis",

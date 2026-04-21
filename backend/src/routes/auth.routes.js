@@ -1,9 +1,23 @@
 import express from "express";
-import { register, login } from "../controllers/auth.controller.js";
+import {
+  register,
+  login,
+  verify,
+  resend,
+  forgotPassword,
+  resetPasswordHandler,
+  changePasswordHandler,
+} from "../controllers/auth.controller.js";
+import { authenticate } from "../middlewares/auth.middleware.js";
 import { validate } from "../middlewares/validate.middleware.js";
 import {
   registerBodySchema,
   loginBodySchema,
+  verifyEmailBodySchema,
+  resendVerificationBodySchema,
+  forgotPasswordBodySchema,
+  resetPasswordBodySchema,
+  changePasswordBodySchema,
 } from "../schemas/auth.schema.js";
 
 const router = express.Router();
@@ -57,5 +71,135 @@ router.post("/register", validate({ body: registerBodySchema }), register);
  *       401: { description: Invalid credentials or account deactivated }
  */
 router.post("/login", validate({ body: loginBodySchema }), login);
+
+/**
+ * @openapi
+ * /api/auth/verify-email:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Verify a user's email using a token
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [token]
+ *             properties:
+ *               token: { type: string }
+ *     responses:
+ *       200: { description: Email verified }
+ *       400: { description: Invalid or expired token }
+ */
+router.post(
+  "/verify-email",
+  validate({ body: verifyEmailBodySchema }),
+  verify
+);
+
+/**
+ * @openapi
+ * /api/auth/resend-verification:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Resend a verification email
+ *     description: Always responds 200 — we do not leak whether the email is registered.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email]
+ *             properties:
+ *               email: { type: string, format: email }
+ *     responses:
+ *       200: { description: If the email exists and is unverified, a new link was sent }
+ */
+router.post(
+  "/resend-verification",
+  validate({ body: resendVerificationBodySchema }),
+  resend
+);
+
+/**
+ * @openapi
+ * /api/auth/forgot-password:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Request a password reset link
+ *     description: Always responds 200 — we do not leak whether the email is registered.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email]
+ *             properties:
+ *               email: { type: string, format: email }
+ *     responses:
+ *       200: { description: If the email belongs to an active account, a reset link was sent }
+ */
+router.post(
+  "/forgot-password",
+  validate({ body: forgotPasswordBodySchema }),
+  forgotPassword
+);
+
+/**
+ * @openapi
+ * /api/auth/reset-password:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Reset a user's password using a reset token
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [token, newPassword]
+ *             properties:
+ *               token: { type: string }
+ *               newPassword: { type: string, minLength: 6 }
+ *     responses:
+ *       200: { description: Password reset successfully }
+ *       400: { description: Invalid or expired token }
+ */
+router.post(
+  "/reset-password",
+  validate({ body: resetPasswordBodySchema }),
+  resetPasswordHandler
+);
+
+/**
+ * @openapi
+ * /api/auth/change-password:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Change the authenticated user's password
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [currentPassword, newPassword]
+ *             properties:
+ *               currentPassword: { type: string }
+ *               newPassword: { type: string, minLength: 6 }
+ *     responses:
+ *       200: { description: Password changed successfully }
+ *       400: { description: New password must differ from current }
+ *       401: { description: Current password is incorrect or missing JWT }
+ */
+router.post(
+  "/change-password",
+  authenticate,
+  validate({ body: changePasswordBodySchema }),
+  changePasswordHandler
+);
 
 export default router;
