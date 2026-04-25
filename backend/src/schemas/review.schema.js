@@ -1,6 +1,13 @@
 import { z } from "zod";
 
-const categoryTagEnum = z.enum(["SAFETY", "TEACHING_QUALITY", "OTHER"]);
+// Phase 2: added FACILITIES + AFFORDABILITY to match the spec scenarios.
+const categoryTagEnum = z.enum([
+  "SAFETY",
+  "TEACHING_QUALITY",
+  "FACILITIES",
+  "AFFORDABILITY",
+  "OTHER",
+]);
 
 export const createReviewBodySchema = z.object({
   rating: z.coerce.number().int().min(1).max(5),

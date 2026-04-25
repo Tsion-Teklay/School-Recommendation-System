@@ -6,7 +6,7 @@ and a forum for community Q&A.
 
 - **Backend**: Node.js + Express 5 (ESM) + Prisma 7 (MariaDB adapter) + JWT auth.
 - **Frontend**: _coming in Phase 7_ (Next.js + Leaflet, PWA-first).
-- **Status**: Phase 1 — auth completeness (email verification, forgot/reset password, profile management).
+- **Status**: Phase 2 — schema hardening (rating aggregate, enum cleanup, Subscription + VerificationRequest models).
 
 Active development happens on `develop`; `main` only receives the final release.
 
@@ -184,6 +184,35 @@ log for the preview URL after every send.
 of whether the email is registered — this prevents account enumeration. Login
 returns `{ code: "EMAIL_NOT_VERIFIED" }` for unverified accounts so the
 frontend can prompt for resend.
+
+---
+
+## Phase 2 schema notes
+
+No new endpoints; this phase tightens the data model.
+
+- `School.rating` (`Decimal(3,2)`) and `School.reviewCount` (`Int`) are now
+  cached on the school row. The review service recomputes both on every
+  create / update / delete — the recommender (Phase 6) and the
+  list/detail endpoints can read them directly instead of running
+  `AVG(rating)` per request.
+- `ReviewCategoryTag` enum gained **FACILITIES** and **AFFORDABILITY** to
+  match the spec's review scenarios.
+- `Notification.sourceType` is now an enum (`NotificationSourceType`:
+  `ANNOUNCEMENT`, `REPORT`, `REVIEW`, `SCHOOL`, `SYSTEM`) instead of a
+  free-form string. Existing rows are lowercased in the migration before
+  the column type changes.
+- New table `subscription` (`@@unique([parentId, schoolId])`) — the
+  follow/subscribe model that Phase 4 will use to drive **targeted**
+  announcement fan-out (replacing the current blast-all-parents pattern).
+- New table `verification_request` (`status`: PENDING/APPROVED/REJECTED,
+  `documents` JSON, audit fields `submittedAt` / `reviewedAt` /
+  `reviewedById`) — backs the school verification workflow that lands in
+  Phase 3 with the file-upload pipeline.
+
+Neither subscription nor verification\_request has REST endpoints yet — only
+the Prisma models so other phases can build on them without another
+migration.
 
 ---
 
