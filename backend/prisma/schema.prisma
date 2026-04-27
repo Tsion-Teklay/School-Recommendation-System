@@ -157,6 +157,7 @@ model School {
 
   admin              User               @relation("SchoolAdmin", fields: [adminId], references: [id])
   analytics          Analytics[]
+  announcements      Announcement[]
   comparisonSchools  ComparisonSchool[]
   facilityImages     FacilityImage[]
   favorites          Favorite[]
@@ -193,6 +194,10 @@ model Announcement {
   id            Int                  @id @default(autoincrement()) @map("announcement_id")
   publisherId   Int                  @map("publisher_id")
   publisherType PublisherType        @map("publisher_type")
+  // Phase 4: school-scoped announcements set this; MoE-level announcements
+  // leave it null. Drives targeted fan-out (subscribers of THIS school) so
+  // we no longer blast every parent on every post.
+  schoolId      Int?                 @map("school_id")
   title         String               @db.VarChar(150)
   content       String               @db.Text
   imgUrl        String?              @map("img_url") @db.VarChar(255)
@@ -203,8 +208,10 @@ model Announcement {
   datePosted    DateTime             @default(now()) @map("date_posted")
   urgencyLevel  UrgencyLevel         @default(NORMAL) @map("urgency_level")
 
-  publisher User @relation(fields: [publisherId], references: [id])
+  publisher User    @relation(fields: [publisherId], references: [id])
+  school    School? @relation(fields: [schoolId], references: [id])
 
+  @@index([schoolId])
   @@map("announcement")
 }
 

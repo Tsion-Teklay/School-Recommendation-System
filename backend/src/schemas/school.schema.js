@@ -26,5 +26,15 @@ export const listSchoolsQuerySchema = z.object({
   curriculum: curriculumEnum.optional(),
   minFee: z.coerce.number().nonnegative().optional(),
   maxFee: z.coerce.number().nonnegative().optional(),
+  // Phase 4: proximity search.
+  // `near` is a "lat,lng" string. Validated here for shape; the service
+  // re-parses and bounds-checks the numeric ranges so the same guard fires
+  // for non-HTTP callers too.
+  near: z
+    .string()
+    .trim()
+    .regex(/^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/, "near must be 'lat,lng'")
+    .optional(),
+  radiusKm: z.coerce.number().positive().max(20000).optional(),
   ...paginationQuery,
 });
