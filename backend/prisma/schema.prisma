@@ -32,6 +32,8 @@ enum VerificationStatus {
 enum ReviewCategoryTag {
   SAFETY           @map("safety")
   TEACHING_QUALITY @map("teaching_quality")
+  FACILITIES      @map("facilities")
+  AFFORDABILITY   @map("affordability")
   OTHER            @map("other")
 }
 
@@ -76,6 +78,20 @@ enum NotificationRecipientType {
   MOE          @map("moe")
 }
 
+enum NotificationSourceType {
+  ANNOUNCEMENT @map("announcement")
+  REPORT       @map("report")
+  REVIEW       @map("review")
+  SCHOOL       @map("school")
+  SYSTEM       @map("system")
+}
+
+enum VerificationRequestStatus {
+  PENDING  @map("pending")
+  APPROVED @map("approved")
+  REJECTED @map("rejected")
+}
+
 model User {
   id            Int           @id @default(autoincrement())
   fullName      String        @map("full_name") @db.VarChar(100)
@@ -111,6 +127,10 @@ model User {
   forumPosts    DiscussionForum[]
   notifications Notification[]
 
+  subscriptions          Subscription[]
+  verificationsSubmitted VerificationRequest[] @relation("VerificationSubmitter")
+  verificationsReviewed  VerificationRequest[] @relation("VerificationReviewer")
+
   @@map("user")
 }
 
@@ -127,6 +147,11 @@ model School {
   verificationStatus VerificationStatus @default(PENDING) @map("verification_status")
   latitude           Decimal            @db.Decimal(10, 8)
   longitude          Decimal            @db.Decimal(11, 8)
+
+  // --- Phase 2 rating aggregate (recomputed on review CRUD) -----------
+  rating      Decimal @default(0)    @db.Decimal(3, 2)
+  reviewCount Int     @default(0)    @map("review_count")
+
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 
@@ -138,6 +163,8 @@ model School {
   recommendedSchools RecommendedSchool[]
   reviews            Review[]
   updates            SchoolUpdate[]
+  subscribers        Subscription[]
+  verificationRequests VerificationRequest[]
 
   @@index([schoolName])
   @@index([curriculum])
@@ -313,9 +340,9 @@ model Notification {
   recipientType NotificationRecipientType @map("recipient_type")
   message       String   @db.Text
 
-  // 🔥 FIXED (generic source)
-  sourceType    String   @map("source_type")
-  sourceId      Int      @map("source_id")
+  // Generic source reference (enum as of Phase 2; was free String before).
+  sourceType    NotificationSourceType @map("source_type")
+  sourceId      Int                    @map("source_id")
 
   isRead        Boolean  @default(false) @map("is_read")
   createdAt     DateTime @default(now()) @map("created_at")
@@ -373,6 +400,46 @@ model RecommendationPreferenceCriteria {
   recommendation RecommendationHistory @relation(fields: [recommendationId], references: [id])
 
   @@map("recommendation_preference_criteria")
+}
+
+// ----------------------------------------------------------------------
+// Phase 2 schema hardening: Subscription + VerificationRequest
+// Endpoints for these come in Phase 3 (verification) + Phase 4 (follow).
+// ----------------------------------------------------------------------
+
+model Subscription {
+  id        Int      @id @default(autoincrement()) @map("subscription_id")
+  parentId  Int      @map("parent_id")
+  schoolId  Int      @map("school_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  parent User   @relation(fields: [parentId], references: [id])
+  school School @relation(fields: [schoolId], references: [id])
+
+  @@unique([parentId, schoolId])
+  @@index([schoolId])
+  @@map("subscription")
+}
+
+model VerificationRequest {
+  id            Int                       @id @default(autoincrement()) @map("verification_request_id")
+  schoolId      Int                       @map("school_id")
+  submittedById Int                       @map("submitted_by_id")
+  reviewedById  Int?                      @map("reviewed_by_id")
+  status        VerificationRequestStatus @default(PENDING)
+  documents     Json?                     // array of uploaded file URLs
+  notes         String?                   @db.Text
+  reviewNotes   String?                   @map("review_notes") @db.Text
+  submittedAt   DateTime                  @default(now()) @map("submitted_at")
+  reviewedAt    DateTime?                 @map("reviewed_at")
+
+  school      School @relation(fields: [schoolId], references: [id])
+  submittedBy User   @relation("VerificationSubmitter", fields: [submittedById], references: [id])
+  reviewedBy  User?  @relation("VerificationReviewer", fields: [reviewedById], references: [id])
+
+  @@index([schoolId])
+  @@index([status])
+  @@map("verification_request")
 }
 
 model ComparisonSchool {
