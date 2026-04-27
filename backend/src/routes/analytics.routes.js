@@ -52,4 +52,28 @@ router.get(
   controller.dashboard
 );
 
+/**
+ * @openapi
+ * /api/analytics/dashboard.csv:
+ *   get:
+ *     tags: [Analytics]
+ *     summary: Phase 6 — same dashboard payload, CSV-flattened (MOE_OFFICER only)
+ *     description: |
+ *       Returns the dashboard summary, group counts, top schools, and most
+ *       followed schools as a multi-section CSV suitable for opening in
+ *       Excel/Sheets. Same RBAC as `/dashboard`.
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: CSV file
+ *         content:
+ *           text/csv: {}
+ */
+router.get(
+  "/dashboard.csv",
+  authenticate,
+  authorizeRoles("MOE_OFFICER"),
+  controller.dashboardCsv
+);
+
 export default router;
