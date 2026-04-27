@@ -6,7 +6,7 @@ and a forum for community Q&A.
 
 - **Backend**: Node.js + Express 5 (ESM) + Prisma 7 (MariaDB adapter) + JWT auth.
 - **Frontend**: _coming in Phase 7_ (Next.js + Leaflet, PWA-first).
-- **Status**: Phase 2 — schema hardening (rating aggregate, enum cleanup, Subscription + VerificationRequest models).
+- **Status**: Phase 3 — school verification workflow + file upload pipeline.
 
 Active development happens on `develop`; `main` only receives the final release.
 
@@ -213,6 +213,35 @@ No new endpoints; this phase tightens the data model.
 Neither subscription nor verification\_request has REST endpoints yet — only
 the Prisma models so other phases can build on them without another
 migration.
+
+---
+
+## Phase 3 verification + uploads
+
+School admins can now submit accreditation/license documents to the Ministry
+of Education for review. MoE officers approve or reject; an approval flips
+the school's `verificationStatus` to `VERIFIED` and notifies the admin.
+
+| Method | Path                                                         | Auth                | Purpose                              |
+| ------ | ------------------------------------------------------------ | ------------------- | ------------------------------------ |
+| POST   | `/api/schools/:schoolId/verification-requests`               | SCHOOL_ADMIN (owner) | Submit docs (multipart, up to 5)     |
+| GET    | `/api/verification-requests`                                 | MOE_OFFICER, SCHOOL_ADMIN | List (MoE: all; admin: own)     |
+| GET    | `/api/verification-requests/:id`                             | MOE_OFFICER, SCHOOL_ADMIN owner | View one                  |
+| POST   | `/api/verification-requests/:id/review`                      | MOE_OFFICER         | Approve/reject + reviewNotes         |
+
+**Upload pipeline** (`src/config/uploads.js`):
+
+- Powered by [multer](https://www.npmjs.com/package/multer); files written to
+  `UPLOAD_DIR/verification/<timestamp-rand>.<ext>` and served read-only at
+  `/uploads/...` via `express.static`.
+- Whitelist: `application/pdf`, `image/png`, `image/jpeg`. Anything else →
+  `400 VALIDATION_ERROR` ("Unsupported file type").
+- Per-file cap: `UPLOAD_MAX_SIZE_BYTES` (default **10 MB**). Multer's
+  `LIMIT_FILE_SIZE` is wrapped into a `ValidationError` so callers see the
+  same error envelope as Zod failures.
+- One pending request per school; resubmit only after a rejection.
+- Phase 9 swaps this single module for an S3 / Backblaze adapter — call sites
+  use `relativeUrl(file)` and never raw paths.
 
 ---
 

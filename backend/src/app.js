@@ -6,6 +6,7 @@ import swaggerUi from "swagger-ui-express";
 
 import { httpLogger } from "./config/logger.js";
 import { openApiSpec } from "./config/openapi.js";
+import { UPLOAD_DIR } from "./config/uploads.js";
 import {
   errorHandler,
   notFoundHandler,
@@ -56,6 +57,11 @@ app.get("/api/healthz", (req, res) => {
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(openApiSpec));
 app.get("/api/docs.json", (req, res) => res.json(openApiSpec));
 
+// --- Static uploads (Phase 3) ------------------------------------------------
+// Files saved by the multer pipeline land under UPLOAD_DIR; expose them
+// read-only at /uploads/* so the frontend can render document previews.
+app.use("/uploads", express.static(UPLOAD_DIR, { fallthrough: true }));
+
 // --- Feature routes ----------------------------------------------------------
 app.use("/api/auth", (await import("./routes/auth.routes.js")).default);
 app.use("/api/users", (await import("./routes/user.routes.js")).default);
@@ -86,6 +92,11 @@ app.use(
   "/api/analytics",
   (await import("./routes/analytics.routes.js")).default
 );
+
+// Phase 3: school-verification workflow. The router registers paths under
+// both /api/schools/:id/verification-requests (submit) and
+// /api/verification-requests/* (list/get/review), so it's mounted at /api.
+app.use("/api", (await import("./routes/verification.routes.js")).default);
 
 // Dev-only utility routes — never mount in production.
 if (process.env.NODE_ENV !== "production") {
