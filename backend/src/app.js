@@ -96,6 +96,8 @@ app.use(
   (await import("./routes/announcement.routes.js")).default
 );
 app.use("/api/reports", (await import("./routes/report.routes.js")).default);
+// Phase 5: discussion forum (threaded posts + replies, content moderated).
+app.use("/api/forum", (await import("./routes/forum.routes.js")).default);
 app.use(
   "/api/notifications",
   (await import("./routes/notification.routes.js")).default
