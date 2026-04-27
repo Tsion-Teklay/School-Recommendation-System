@@ -1,36 +1,87 @@
 import { db } from "../config/db.js";
-import { ForbiddenError, NotFoundError } from "../utils/errors.js";
+import {
+  ForbiddenError,
+  NotFoundError,
+  ValidationError,
+} from "../utils/errors.js";
 import { logger } from "../config/logger.js";
 import { createNotification } from "./notification.service.js";
 
-// ✅ Create
+/**
+ * Phase 4 — targeted announcement fan-out.
+ *
+ * Two publisher paths now diverge:
+ *
+ *   SCHOOL_ADMIN: announcement is school-scoped (announcement.schoolId set,
+ *     ownership of the school enforced) and only parents subscribed to that
+ *     school via the Subscription table receive a notification. This is the
+ *     UC09 / UC18 / UC21 behaviour the spec calls for — replacing the prior
+ *     blast-all that violated those use cases.
+ *
+ *   MOE_OFFICER: announcement is platform-wide (no schoolId) and every
+ *     parent gets a notification, same as before.
+ *
+ * Both paths swallow notification failures — announcement creation is the
+ * primary write and shouldn't 5xx because a downstream insert blew up.
+ */
 export async function createAnnouncement(data, user) {
-  const publisherType =
-    user.role === "MOE_OFFICER" ? "MOE" : "SCHOOL_ADMIN";
+  const publisherType = user.role === "MOE_OFFICER" ? "MOE" : "SCHOOL_ADMIN";
+
+  let { schoolId, ...rest } = data;
+  schoolId = schoolId === undefined || schoolId === null ? null : Number(schoolId);
+
+  if (publisherType === "SCHOOL_ADMIN") {
+    if (!schoolId) {
+      throw new ValidationError(
+        "schoolId is required for SCHOOL_ADMIN announcements"
+      );
+    }
+    const school = await db.school.findUnique({
+      where: { id: schoolId },
+      select: { id: true, adminId: true },
+    });
+    if (!school) throw new NotFoundError("School not found");
+    if (school.adminId !== user.id) {
+      throw new ForbiddenError("You can only post announcements for your own school");
+    }
+  } else {
+    // MoE-level posts are platform-wide; ignore any client-supplied schoolId.
+    schoolId = null;
+  }
 
   const announcement = await db.announcement.create({
     data: {
-      ...data,
+      ...rest,
+      schoolId,
       publisherId: user.id,
       publisherType,
     },
   });
 
-  // 🚀 INTEGRATION: Notify all Parents
+  // 🚀 Targeted fan-out
   try {
-    const parents = await db.user.findMany({
-      where: { role: "PARENT" },
-      select: { id: true } // Only fetch IDs to keep it fast
-    });
+    let recipientIds;
+    if (publisherType === "MOE") {
+      const parents = await db.user.findMany({
+        where: { role: "PARENT" },
+        select: { id: true },
+      });
+      recipientIds = parents.map((p) => p.id);
+    } else {
+      const subs = await db.subscription.findMany({
+        where: { schoolId },
+        select: { parentId: true },
+      });
+      recipientIds = subs.map((s) => s.parentId);
+    }
 
-    // Fire and forget notifications in parallel
     await Promise.all(
-      parents.map((p) =>
+      recipientIds.map((id) =>
         createNotification({
-          recipientId: p.id,
+          recipientId: id,
           recipientType: "PARENT",
           message: `New announcement: ${announcement.title}`,
-          sourceId: announcement.id, // Passes as Number
+          sourceId: announcement.id,
           sourceType: "ANNOUNCEMENT",
         })
       )
@@ -38,7 +89,6 @@ export async function createAnnouncement(data, user) {
   } catch (error) {
     logger.warn({ err: error }, "Announcement notification fan-out failed");
     // Announcement creation succeeded — don't fail the request if notifications did.
-    // NOTE: Phase 4 will replace this blast-all with a Subscription/Follow-driven fan-out.
   }
 
   return announcement;
