@@ -61,9 +61,17 @@ enum InteractionResult {
 }
 
 enum ReportTargetType {
-  REVIEW @map("review")
-  SCHOOL @map("school")
+  REVIEW       @map("review")
+  SCHOOL       @map("school")
   ANNOUNCEMENT @map("announcement")
+  FORUM_POST   @map("forum_post")
+}
+
+enum ModeratorActionType {
+  DISMISS        @map("dismiss")
+  REMOVE_CONTENT @map("remove_content")
+  WARN_USER      @map("warn_user")
+  BAN_USER       @map("ban_user")
 }
 
 enum ReportStatus {
@@ -84,6 +92,8 @@ enum NotificationSourceType {
   REVIEW       @map("review")
   SCHOOL       @map("school")
   SYSTEM       @map("system")
+  FORUM_POST   @map("forum_post")
+  MODERATION   @map("moderation")
 }
 
 enum VerificationRequestStatus {
@@ -328,12 +338,12 @@ model Analytics {
 }
 
 model ModeratorAction {
-  id          Int      @id @default(autoincrement()) @map("action_id")
-  moderatorId Int      @map("moderator_id")
-  reportId    Int      @map("report_id")
-  actionType  String   @map("action_type") @db.VarChar(255)
-  notes       String?  @db.Text
-  actionDate  DateTime @default(now()) @map("action_date")
+  id          Int                 @id @default(autoincrement()) @map("action_id")
+  moderatorId Int                 @map("moderator_id")
+  reportId    Int                 @map("report_id")
+  actionType  ModeratorActionType @map("action_type")
+  notes       String?             @db.Text
+  actionDate  DateTime            @default(now()) @map("action_date")
 
   moderator User   @relation("Moderator", fields: [moderatorId], references: [id])
   report    Report @relation(fields: [reportId], references: [id])

@@ -6,6 +6,7 @@ import {
 } from "../utils/errors.js";
 import { logger } from "../config/logger.js";
 import { createNotification } from "./notification.service.js";
+import { validateContent } from "./moderation.service.js";
 
 /**
  * Phase 4 — targeted announcement fan-out.
@@ -48,6 +49,11 @@ export async function createAnnouncement(data, user) {
     // MoE-level posts are platform-wide; ignore any client-supplied schoolId.
     schoolId = null;
   }
+
+  // Phase 5 — content moderation. Title + body both pass through the
+  // validator. Throws CONTENT_REJECTED before we hit the DB.
+  validateContent(rest.title, { field: "title" });
+  validateContent(rest.content, { field: "content" });
 
   const announcement = await db.announcement.create({
     data: {
@@ -148,6 +154,9 @@ export async function updateAnnouncement(id, data, userId) {
   if (announcement.publisherId !== userId) {
     throw new ForbiddenError("Not authorized to update this announcement");
   }
+
+  if (data.title) validateContent(data.title, { field: "title" });
+  if (data.content) validateContent(data.content, { field: "content" });
 
   return db.announcement.update({
     where: { id: Number(id) },

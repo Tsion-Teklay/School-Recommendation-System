@@ -79,7 +79,7 @@ describe("Report System", () => {
       .post(`/api/reports/${reportId}/action`)
       .set("Authorization", `Bearer ${moderatorToken}`)
       .send({
-        actionType: "REVIEWED",
+        actionType: "DISMISS",
         notes: "Checked and noted",
       });
 
@@ -92,7 +92,7 @@ describe("Report System", () => {
       .post(`/api/reports/${reportId}/action`)
       .set("Authorization", `Bearer ${userToken}`)
       .send({
-        actionType: "HACK",
+        actionType: "DISMISS",
       });
 
     expect(res.statusCode).toBe(403);

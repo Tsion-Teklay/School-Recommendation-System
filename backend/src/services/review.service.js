@@ -1,5 +1,6 @@
 import { db } from "../config/db.js";
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../utils/errors.js";
+import { validateContent } from "./moderation.service.js";
 
 /**
  * Recompute the cached `School.rating` + `reviewCount` aggregate fields from
@@ -52,6 +53,10 @@ export async function createReview(userId, schoolId, data) {
     throw new ValidationError("Rating must be between 1 and 5");
   }
 
+  if (data.comment) {
+    validateContent(data.comment, { field: "comment" });
+  }
+
   const review = await db.review.create({
     data: {
       parentId: userId,
@@ -89,6 +94,10 @@ export async function updateReview(userId, reviewId, data) {
 
   if (review.parentId !== userId) {
     throw new ForbiddenError("Not authorized to update this review");
+  }
+
+  if (data.comment) {
+    validateContent(data.comment, { field: "comment" });
   }
 
   const updated = await db.review.update({
