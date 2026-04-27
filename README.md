@@ -6,7 +6,7 @@ and a forum for community Q&A.
 
 - **Backend**: Node.js + Express 5 (ESM) + Prisma 7 (MariaDB adapter) + JWT auth.
 - **Frontend**: _coming in Phase 7_ (Next.js + Leaflet, PWA-first).
-- **Status**: Phase 3 — school verification workflow + file upload pipeline.
+- **Status**: Phase 4 — comparisons, follow/subscribe, targeted announcement fan-out, proximity search.
 
 Active development happens on `develop`; `main` only receives the final release.
 
@@ -242,6 +242,62 @@ the school's `verificationStatus` to `VERIFIED` and notifies the admin.
 - One pending request per school; resubmit only after a rejection.
 - Phase 9 swaps this single module for an S3 / Backblaze adapter — call sites
   use `relativeUrl(file)` and never raw paths.
+
+---
+
+## Phase 4 endpoints
+
+### Follow / Subscribe
+
+| Method | Path                              | Auth   | Purpose                                |
+| ------ | --------------------------------- | ------ | -------------------------------------- |
+| POST   | `/api/schools/:schoolId/follow`   | PARENT | Subscribe to a school's announcements  |
+| DELETE | `/api/schools/:schoolId/follow`   | PARENT | Unsubscribe                            |
+| GET    | `/api/me/follows`                 | PARENT | Paginated list of followed schools     |
+
+`GET /api/schools/:id` now also returns `followerCount` so the UI doesn't
+need a second roundtrip.
+
+### Comparisons
+
+| Method | Path                       | Auth   | Purpose                                          |
+| ------ | -------------------------- | ------ | ------------------------------------------------ |
+| POST   | `/api/comparisons`         | PARENT | Compare 2–5 schools (`{ schoolIds, metrics? }`)  |
+| GET    | `/api/comparisons`         | PARENT | List the caller's saved comparisons              |
+| GET    | `/api/comparisons/:id`     | PARENT | Side-by-side detail (owner only)                 |
+| DELETE | `/api/comparisons/:id`     | PARENT | Delete a saved comparison                        |
+
+Validation enforces the 2–5-school cap (UC07) and rejects duplicate ids at
+the schema layer; the service double-checks all referenced schools exist.
+
+### Targeted announcement fan-out
+
+The blast-all-parents fan-out from earlier phases is replaced by a
+publisher-aware notification step:
+
+- `POST /api/announcements/school` (SCHOOL_ADMIN) **requires** `schoolId` and
+  the caller must own that school. Subscribers of that school each get one
+  `Notification` row.
+- `POST /api/announcements/moe` (MOE_OFFICER) keeps the broadcast behaviour:
+  every PARENT account receives a notification.
+- The legacy `POST /api/announcements` endpoint is preserved for backward
+  compatibility — its publisher type is inferred from the caller's role.
+
+A new optional `Announcement.schoolId` foreign key links school-scoped
+posts back to the school, indexed for the fan-out query.
+
+### Proximity search
+
+`GET /api/schools` now accepts:
+
+- `near=lat,lng` — origin point (latitude in `[-90, 90]`, longitude in `[-180, 180]`).
+- `radiusKm=N` — radius in kilometres, positive number (default `25`).
+
+Implementation: a bounding-box pre-filter at the DB (`latitude`/`longitude`
+range scans) followed by an exact Haversine distance check in JS for the
+survivors. Results are sorted ascending by `distanceKm`, which is also
+exposed on each row in the response. Composes with the existing `search`,
+`curriculum`, `minFee`, `maxFee`, `page`, `limit` filters.
 
 ---
 
