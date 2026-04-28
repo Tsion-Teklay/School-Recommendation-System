@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/api_client.dart';
 import '../../../core/auth_storage.dart';
 import '../data/auth_dtos.dart';
 import '../data/auth_repository.dart';
@@ -17,8 +18,18 @@ class AuthController extends ChangeNotifier {
   final AuthRepository _repo;
   final AuthStorage _storage;
 
-  AuthController(this._repo, this._storage) {
+  AuthController(this._repo, this._storage, ApiClient apiClient) {
+    // Wire the 401 signal: the interceptor has already cleared the token from
+    // storage, we just need to drop the in-memory user and notify listeners
+    // so the router redirects to /login.
+    apiClient.onUnauthorized = _handleUnauthorized;
     _bootstrap();
+  }
+
+  void _handleUnauthorized() {
+    if (_user == null) return;
+    _user = null;
+    notifyListeners();
   }
 
   bool _initializing = true;
@@ -94,5 +105,6 @@ final authControllerProvider = ChangeNotifierProvider<AuthController>((ref) {
   return AuthController(
     ref.watch(authRepositoryProvider),
     ref.watch(authStorageProvider),
+    ref.watch(apiClientProvider),
   );
 });

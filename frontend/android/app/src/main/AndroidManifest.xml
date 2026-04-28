@@ -1,4 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Release builds use only this manifest. The debug/profile variant
+         manifests also declare INTERNET, but without this entry release APKs
+         lack network permission and every Dio request would SocketException. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="school_rec"
         android:name="${applicationName}"
