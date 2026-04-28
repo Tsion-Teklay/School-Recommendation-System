@@ -32,10 +32,21 @@ export const recommend = asyncHandler(async (req, res) => {
     req.user?.id
   );
 
+  // Don't forward `result.meta` directly: it carries the pagination shape of
+  // the *internal* candidate-pool query (e.g. `{ total: 200, totalPages: 4 }`
+  // when the filters match more schools than the pool size). The caller would
+  // see `totalPages > 1` and assume `?page=2` returns the next slice — but the
+  // controller pins page=1, so paginating the recommendations endpoint is a
+  // no-op. Surface a meta object that describes what we actually returned.
   res.json({
     message: "Recommendations generated",
     data: ranked,
     criteria,
-    meta: result.meta,
+    meta: {
+      total: ranked.length,
+      page: 1,
+      limit: ranked.length,
+      totalPages: 1,
+    },
   });
 });
