@@ -104,8 +104,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ),
     );
     if (confirmed != true) return;
-    await ref.read(authControllerProvider).deactivate();
-    // Auth-state change → router redirects to /login.
+    try {
+      await ref.read(authControllerProvider).deactivate();
+      // On success the auth-state change → router redirects to /login.
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    }
   }
 
   Future<void> _logout() async {

@@ -48,7 +48,13 @@ class ApiClient {
           handler.next(options);
         },
         onResponse: (response, handler) async {
-          if (response.statusCode == 401) {
+          if (response.statusCode == 401 &&
+              !_isAuthEndpoint(response.requestOptions.path)) {
+            // Treat 401 as session-expired ONLY for non-auth endpoints. Auth
+            // endpoints use 401 for business-logic checks (e.g.
+            // change-password's "current password is incorrect", login's
+            // "invalid credentials") and a logged-in user mistyping their
+            // current password should NOT get bounced back to /login.
             await _storage.clear();
             onUnauthorized?.call();
           }
@@ -57,6 +63,13 @@ class ApiClient {
       ),
     );
   }
+}
+
+/// Auth endpoints whose 401s mean "wrong credentials / wrong current password"
+/// rather than "your session expired". The interceptor skips its clear-token
+/// logic for these paths.
+bool _isAuthEndpoint(String path) {
+  return path.startsWith('/api/auth/');
 }
 
 final apiClientProvider = Provider<ApiClient>((ref) {
