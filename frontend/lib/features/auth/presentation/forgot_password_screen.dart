@@ -38,10 +38,12 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       await ref
           .read(authRepositoryProvider)
           .forgotPassword(_email.text.trim());
-      setState(() => _message =
-          'If that email belongs to an active account, a reset link was sent.');
+      if (mounted) {
+        setState(() => _message =
+            'If that email belongs to an active account, a reset link was sent.');
+      }
     } catch (e) {
-      setState(() => _message = e.toString());
+      if (mounted) setState(() => _message = e.toString());
     } finally {
       if (mounted) setState(() => _loading = false);
     }
