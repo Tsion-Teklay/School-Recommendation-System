@@ -4,8 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api_client.dart';
 import 'auth_dtos.dart';
 
-/// Translates the backend's error envelope (`{ message, code, details? }`)
-/// into a thrown ApiException so screens can show a single line.
+/// Translates the backend's error envelope into a thrown ApiException so
+/// screens can show a single line.
+///
+/// Backend envelope (see `backend/src/middlewares/error.middleware.js`):
+///   { "error": "Invalid credentials", "code": "UNAUTHORIZED", "details"?: ... }
+///
+/// We accept `message` as a fallback for forward compatibility, but the
+/// authoritative key today is `error`.
 class ApiException implements Exception {
   final int? statusCode;
   final String message;
@@ -19,7 +25,7 @@ class ApiException implements Exception {
 ApiException _toApiException(Response<dynamic> r) {
   final data = r.data;
   if (data is Map) {
-    final msg = data['message']?.toString() ?? 'Request failed';
+    final msg = (data['error'] ?? data['message'])?.toString() ?? 'Request failed';
     final code = data['code']?.toString();
     return ApiException(msg, statusCode: r.statusCode, code: code);
   }

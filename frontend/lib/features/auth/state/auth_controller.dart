@@ -48,9 +48,17 @@ class AuthController extends ChangeNotifier {
     }
     try {
       _user = await _repo.getMe();
-    } catch (_) {
-      // Token expired/rejected — treat as logged out.
+    } on ApiException catch (_) {
+      // Server explicitly rejected the token (401, etc) — clear it. The 401
+      // interceptor would also fire onUnauthorized here, but we set _user
+      // ourselves anyway so isAuthenticated stays consistent.
       await _storage.clear();
+      _user = null;
+    } catch (_) {
+      // Network-level failure (DNS, timeout, airplane mode). Don't destroy a
+      // potentially valid session — keep the token on disk and just treat the
+      // user as unauthenticated for this boot. They'll have a session waiting
+      // when connectivity returns.
       _user = null;
     }
     _initializing = false;
