@@ -43,9 +43,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       _saveMessage = null;
     });
     try {
+      // Backend Zod treats phone as optional `min(5).max(15)` — an empty
+      // string fails validation. Convert empty to null so the field is dropped
+      // from the request body, matching the register-screen behavior.
+      final trimmedPhone = _phone.text.trim();
       await ref.read(authControllerProvider).updateProfile(
             fullName: _name.text.trim(),
-            phone: _phone.text.trim(),
+            phone: trimmedPhone.isEmpty ? null : trimmedPhone,
           );
       if (mounted) setState(() => _saveMessage = 'Profile updated.');
     } catch (e) {

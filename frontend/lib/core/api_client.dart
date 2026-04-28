@@ -8,13 +8,22 @@ import 'config.dart';
 /// place that touches the JWT for outbound requests, so we never have to
 /// remember to attach the bearer header at call sites.
 ///
-/// Inbound 401s wipe the stored token; the router's auth-state listener then
-/// kicks the user to /login on the next navigation. We deliberately do NOT
-/// pop a snackbar here — UI feedback belongs to the screen that initiated the
-/// request.
+/// On a 401 response we wipe the stored token AND fire `onUnauthorized` so the
+/// AuthController can null out its in-memory user and `notifyListeners()`,
+/// which in turn lets the router's `refreshListenable` redirect to /login on
+/// the next navigation. Without that signal the UI would still think the user
+/// is logged in (because `_user` stays populated) even though every subsequent
+/// request would fail with another 401.
+///
+/// We deliberately do NOT pop a snackbar here — UI feedback belongs to the
+/// screen that initiated the request.
 class ApiClient {
   final Dio dio;
   final AuthStorage _storage;
+
+  /// Set by AuthController on construction. Invoked when a 401 is observed so
+  /// the controller can drop its in-memory user and notify listeners.
+  void Function()? onUnauthorized;
 
   ApiClient(this._storage)
       : dio = Dio(
@@ -41,6 +50,7 @@ class ApiClient {
         onResponse: (response, handler) async {
           if (response.statusCode == 401) {
             await _storage.clear();
+            onUnauthorized?.call();
           }
           handler.next(response);
         },
