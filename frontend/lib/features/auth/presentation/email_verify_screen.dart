@@ -52,7 +52,7 @@ class _EmailVerifyScreenState extends ConsumerState<EmailVerifyScreen> {
       await ref.read(authRepositoryProvider).verifyEmail(widget.token!);
       if (mounted) setState(() => _verified = true);
     } catch (e) {
-      setState(() => _error = e.toString());
+      if (mounted) setState(() => _error = e.toString());
     } finally {
       if (mounted) setState(() => _verifying = false);
     }
@@ -68,10 +68,12 @@ class _EmailVerifyScreenState extends ConsumerState<EmailVerifyScreen> {
       await ref
           .read(authRepositoryProvider)
           .resendVerification(_resendEmail.text.trim());
-      setState(() => _resendMessage =
-          'If that email is unverified, a new link was sent.');
+      if (mounted) {
+        setState(() => _resendMessage =
+            'If that email is unverified, a new link was sent.');
+      }
     } catch (e) {
-      setState(() => _resendMessage = e.toString());
+      if (mounted) setState(() => _resendMessage = e.toString());
     } finally {
       if (mounted) setState(() => _resending = false);
     }

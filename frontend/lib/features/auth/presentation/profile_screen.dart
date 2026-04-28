@@ -47,9 +47,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             fullName: _name.text.trim(),
             phone: _phone.text.trim(),
           );
-      setState(() => _saveMessage = 'Profile updated.');
+      if (mounted) setState(() => _saveMessage = 'Profile updated.');
     } catch (e) {
-      setState(() => _saveMessage = e.toString());
+      if (mounted) setState(() => _saveMessage = e.toString());
     } finally {
       if (mounted) setState(() => _saving = false);
     }

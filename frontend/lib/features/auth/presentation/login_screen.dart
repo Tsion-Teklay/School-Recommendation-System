@@ -39,7 +39,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           .login(_email.text.trim(), _password.text);
       // Router redirect bounces us to / on auth-state change.
     } catch (e) {
-      setState(() => _error = e.toString());
+      if (mounted) setState(() => _error = e.toString());
     } finally {
       if (mounted) setState(() => _loading = false);
     }

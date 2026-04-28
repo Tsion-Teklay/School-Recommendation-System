@@ -23,7 +23,17 @@ const _publicRoutes = <String>{
 };
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final auth = ref.watch(authControllerProvider);
+  // We deliberately `read` rather than `watch` here. The router itself only
+  // needs the AuthController instance once (to wire `refreshListenable`); the
+  // `redirect` callback below closes over `auth` and re-runs on every nav
+  // event, so it always sees the latest auth state.
+  //
+  // Using `watch` would cause Riverpod to invalidate `routerProvider` on every
+  // `notifyListeners()` call (login, profile update, etc.), rebuilding the
+  // GoRouter from scratch with `initialLocation: '/'` and resetting the user's
+  // navigation stack — which on mobile manifests as getting bounced back to
+  // the home page after every save action.
+  final auth = ref.read(authControllerProvider);
 
   return GoRouter(
     initialLocation: '/',
