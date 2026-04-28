@@ -48,11 +48,15 @@ class AuthController extends ChangeNotifier {
     }
     try {
       _user = await _repo.getMe();
-    } on ApiException catch (_) {
-      // Server explicitly rejected the token (401, etc) — clear it. The 401
-      // interceptor would also fire onUnauthorized here, but we set _user
-      // ourselves anyway so isAuthenticated stays consistent.
-      await _storage.clear();
+    } on ApiException catch (e) {
+      // Only clear on 401 — that's the server explicitly rejecting the token.
+      // 5xx is a transient backend problem; clearing the token would log the
+      // user out for the duration of the outage. The 401 interceptor would
+      // also fire onUnauthorized, but we set _user ourselves anyway so
+      // isAuthenticated stays consistent.
+      if (e.statusCode == 401) {
+        await _storage.clear();
+      }
       _user = null;
     } catch (_) {
       // Network-level failure (DNS, timeout, airplane mode). Don't destroy a
