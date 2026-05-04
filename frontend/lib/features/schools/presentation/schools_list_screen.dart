@@ -24,34 +24,29 @@ class _SchoolsListScreenState extends ConsumerState<SchoolsListScreen> {
   final _searchCtl = TextEditingController();
   final _minFeeCtl = TextEditingController();
   final _maxFeeCtl = TextEditingController();
-  final _scrollCtl = ScrollController();
   Curriculum? _curriculum;
 
   @override
-  void initState() {
-    super.initState();
-    _scrollCtl.addListener(_onScroll);
-  }
-
-  @override
   void dispose() {
-    _scrollCtl
-      ..removeListener(_onScroll)
-      ..dispose();
     _searchCtl.dispose();
     _minFeeCtl.dispose();
     _maxFeeCtl.dispose();
     super.dispose();
   }
 
-  void _onScroll() {
-    // Trigger pagination ~200px before the bottom so the next page slides in
-    // without the user seeing an empty stretch first.
-    if (!_scrollCtl.hasClients) return;
-    final pos = _scrollCtl.position;
-    if (pos.pixels >= pos.maxScrollExtent - 200) {
+  /// Auto-pagination hook. The outer scroll is owned by `ResponsiveShell`'s
+  /// `SingleChildScrollView`, so a child-attached `ScrollController` would
+  /// never fire — we listen for scroll notifications bubbling up instead.
+  /// Returning `false` lets other listeners (and the underlying scrollable)
+  /// see the same notification.
+  bool _onScrollNotification(ScrollNotification n) {
+    final m = n.metrics;
+    if (m.maxScrollExtent > 0 && m.pixels >= m.maxScrollExtent - 200) {
+      // `loadMore` no-ops when there's no next page or a fetch is in flight,
+      // so we can spam this safely.
       ref.read(schoolsListControllerProvider).loadMore();
     }
+    return false;
   }
 
   void _applyFilters() {
@@ -86,6 +81,7 @@ class _SchoolsListScreenState extends ConsumerState<SchoolsListScreen> {
 
     return ResponsiveShell(
       title: 'Browse schools',
+      onScrollNotification: _onScrollNotification,
       floatingActionButton: isParent && cart.length >= CompareCart.minItems
           ? FloatingActionButton.extended(
               onPressed: () => context.go('/compare/new'),
@@ -125,7 +121,6 @@ class _SchoolsListScreenState extends ConsumerState<SchoolsListScreen> {
           else
             _SchoolList(
               items: state.items,
-              scrollCtl: _scrollCtl,
               loadingMore: state.loadingMore,
               hasMore: state.hasMore,
               isParent: isParent,
@@ -248,7 +243,6 @@ class _Filters extends StatelessWidget {
 
 class _SchoolList extends ConsumerWidget {
   final List<School> items;
-  final ScrollController scrollCtl;
   final bool loadingMore;
   final bool hasMore;
   final bool isParent;
@@ -256,7 +250,6 @@ class _SchoolList extends ConsumerWidget {
 
   const _SchoolList({
     required this.items,
-    required this.scrollCtl,
     required this.loadingMore,
     required this.hasMore,
     required this.isParent,
