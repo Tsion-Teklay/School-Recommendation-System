@@ -53,6 +53,12 @@ class ResponsiveShell extends ConsumerWidget {
   final Widget? floatingActionButton;
   final bool showNav;
 
+  /// Optional callback for scroll notifications bubbling up from the body.
+  /// The body is wrapped in a `SingleChildScrollView`, so descendants can't
+  /// own the scroll directly — exposing this lets paginated screens trigger
+  /// "load more" when the outer scroll approaches its max extent.
+  final bool Function(ScrollNotification)? onScrollNotification;
+
   const ResponsiveShell({
     super.key,
     required this.title,
@@ -61,6 +67,7 @@ class ResponsiveShell extends ConsumerWidget {
     this.leading,
     this.floatingActionButton,
     this.showNav = true,
+    this.onScrollNotification,
   });
 
   List<NavDestination> _visibleDestinations(UserRole? role) {
@@ -114,7 +121,7 @@ class ResponsiveShell extends ConsumerWidget {
         final isExpanded = constraints.maxWidth >= Breakpoints.medium;
         final isCompact = constraints.maxWidth < Breakpoints.compact;
 
-        final body = SingleChildScrollView(
+        final scrollable = SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
           child: Center(
             child: ConstrainedBox(
@@ -127,6 +134,12 @@ class ResponsiveShell extends ConsumerWidget {
             ),
           ),
         );
+        final body = onScrollNotification != null
+            ? NotificationListener<ScrollNotification>(
+                onNotification: onScrollNotification,
+                child: scrollable,
+              )
+            : scrollable;
 
         return Scaffold(
           appBar: AppBar(
