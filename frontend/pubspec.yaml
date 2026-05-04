@@ -55,6 +55,13 @@ dependencies:
   # Form helpers
   email_validator: ^3.0.0
 
+  # Phase 8 — embedded maps for school locations and proximity search.
+  # `flutter_map` is the de-facto OSM-tile-rendering plugin (free, no API key
+  # required for development; we'll swap to MapTiler/Stadia for production).
+  # `latlong2` is its required coordinate primitive.
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
