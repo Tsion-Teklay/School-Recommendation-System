@@ -93,28 +93,43 @@ class School {
   });
 
   factory School.fromJson(Map<String, dynamic> json) {
+    // Prisma's MariaDB adapter serializes `Decimal` columns as JSON strings
+    // (e.g. `"75000.00"`, `"4.50"`). We accept both `num` and `String` here so
+    // a backend rev that switches representation doesn't crash the UI.
     double? coerceDouble(dynamic v) {
       if (v == null) return null;
       if (v is num) return v.toDouble();
       return double.tryParse(v.toString());
     }
 
+    num coerceNum(dynamic v, num fallback) {
+      if (v == null) return fallback;
+      if (v is num) return v;
+      return num.tryParse(v.toString()) ?? fallback;
+    }
+
+    int? coerceInt(dynamic v) {
+      if (v == null) return null;
+      if (v is num) return v.toInt();
+      return int.tryParse(v.toString());
+    }
+
     return School(
-      id: (json['id'] as num).toInt(),
+      id: coerceInt(json['id'])!,
       schoolName: json['schoolName'] as String,
       address: (json['address'] ?? '') as String,
       contactEmail: (json['contactEmail'] ?? '') as String,
       contactPhone: json['contactPhone'] as String?,
       curriculum: CurriculumX.fromWire(json['curriculum'] as String),
-      tuitionFee: (json['tuitionFee'] as num?) ?? 0,
+      tuitionFee: coerceNum(json['tuitionFee'], 0),
       facilities: json['facilities'] as String?,
       latitude: coerceDouble(json['latitude']),
       longitude: coerceDouble(json['longitude']),
-      rating: json['rating'] as num?,
-      reviewCount: (json['reviewCount'] as num?)?.toInt(),
+      rating: coerceDouble(json['rating']),
+      reviewCount: coerceInt(json['reviewCount']),
       verificationStatus:
           VerificationStatusX.fromWire(json['verificationStatus'] as String?),
-      followerCount: (json['followerCount'] as num?)?.toInt(),
+      followerCount: coerceInt(json['followerCount']),
       distanceKm: coerceDouble(json['distanceKm']),
     );
   }
@@ -133,12 +148,19 @@ class Pagination {
     required this.totalPages,
   });
 
-  factory Pagination.fromJson(Map<String, dynamic> json) => Pagination(
-        total: (json['total'] as num).toInt(),
-        page: (json['page'] as num).toInt(),
-        limit: (json['limit'] as num).toInt(),
-        totalPages: (json['totalPages'] as num).toInt(),
-      );
+  factory Pagination.fromJson(Map<String, dynamic> json) {
+    int parseInt(dynamic v, int fallback) {
+      if (v is num) return v.toInt();
+      if (v is String) return int.tryParse(v) ?? fallback;
+      return fallback;
+    }
+    return Pagination(
+      total: parseInt(json['total'], 0),
+      page: parseInt(json['page'], 1),
+      limit: parseInt(json['limit'], 10),
+      totalPages: parseInt(json['totalPages'], 1),
+    );
+  }
 }
 
 class SchoolsPage {
@@ -226,14 +248,19 @@ class Recommendation {
   });
 
   factory Recommendation.fromJson(Map<String, dynamic> json) {
+    num parseNum(dynamic v, num fallback) {
+      if (v is num) return v;
+      if (v is String) return num.tryParse(v) ?? fallback;
+      return fallback;
+    }
     final raw = (json['breakdown'] as Map?) ?? const {};
     final bd = <String, num>{};
     raw.forEach((k, v) {
-      if (v is num) bd[k.toString()] = v;
+      bd[k.toString()] = parseNum(v, 0);
     });
     return Recommendation(
       school: School.fromJson(json),
-      score: (json['score'] as num?) ?? 0,
+      score: parseNum(json['score'], 0),
       breakdown: bd,
     );
   }
