@@ -9,7 +9,12 @@ import '../features/auth/presentation/profile_screen.dart';
 import '../features/auth/presentation/register_screen.dart';
 import '../features/auth/presentation/reset_password_screen.dart';
 import '../features/auth/state/auth_controller.dart';
+import '../features/comparisons/presentation/comparison_detail_screen.dart';
+import '../features/comparisons/presentation/comparisons_list_screen.dart';
+import '../features/comparisons/presentation/new_comparison_screen.dart';
 import '../features/home/presentation/home_screen.dart';
+import '../features/schools/presentation/school_detail_screen.dart';
+import '../features/schools/presentation/schools_list_screen.dart';
 
 /// Lists routes that anyone (logged in or not) is allowed to hit. Email-verify
 /// + reset-password are public because they're entered from email deep links;
@@ -83,6 +88,44 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
+      GoRoute(
+        path: '/schools',
+        builder: (_, __) => const SchoolsListScreen(),
+      ),
+      GoRoute(
+        path: '/schools/:id',
+        builder: (_, state) {
+          final raw = state.pathParameters['id'];
+          final id = int.tryParse(raw ?? '');
+          if (id == null) {
+            return Scaffold(
+              body: Center(child: Text('Invalid school id: $raw')),
+            );
+          }
+          return SchoolDetailScreen(schoolId: id);
+        },
+      ),
+      GoRoute(
+        path: '/compare',
+        builder: (_, __) => const ComparisonsListScreen(),
+      ),
+      GoRoute(
+        path: '/compare/new',
+        builder: (_, __) => const NewComparisonScreen(),
+      ),
+      GoRoute(
+        path: '/compare/:id',
+        builder: (_, state) {
+          final raw = state.pathParameters['id'];
+          final id = int.tryParse(raw ?? '');
+          if (id == null) {
+            return Scaffold(
+              body: Center(child: Text('Invalid comparison id: $raw')),
+            );
+          }
+          return ComparisonDetailScreen(comparisonId: id);
+        },
+      ),
     ],
     errorBuilder: (_, state) => Scaffold(
       body: Center(child: Text('Route not found: ${state.uri}')),
