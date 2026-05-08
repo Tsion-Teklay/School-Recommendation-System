@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/admin/presentation/admin_announcements_screen.dart';
+import '../features/admin/presentation/admin_home_screen.dart';
+import '../features/admin/presentation/admin_school_manage_screen.dart';
 import '../features/auth/presentation/email_verify_screen.dart';
 import '../features/auth/presentation/forgot_password_screen.dart';
 import '../features/auth/presentation/login_screen.dart';
@@ -12,7 +15,15 @@ import '../features/auth/state/auth_controller.dart';
 import '../features/comparisons/presentation/comparison_detail_screen.dart';
 import '../features/comparisons/presentation/comparisons_list_screen.dart';
 import '../features/comparisons/presentation/new_comparison_screen.dart';
+import '../features/forum/presentation/forum_detail_screen.dart';
+import '../features/forum/presentation/forum_list_screen.dart';
 import '../features/home/presentation/home_screen.dart';
+import '../features/moderation/presentation/moderation_reports_screen.dart';
+import '../features/moe/presentation/moe_announcements_screen.dart';
+import '../features/moe/presentation/moe_dashboard_screen.dart';
+import '../features/moe/presentation/moe_home_screen.dart';
+import '../features/moe/presentation/moe_verification_queue_screen.dart';
+import '../features/notifications/presentation/notifications_screen.dart';
 import '../features/schools/presentation/school_detail_screen.dart';
 import '../features/schools/presentation/schools_list_screen.dart';
 
@@ -32,20 +43,12 @@ final routerProvider = Provider<GoRouter>((ref) {
   // needs the AuthController instance once (to wire `refreshListenable`); the
   // `redirect` callback below closes over `auth` and re-runs on every nav
   // event, so it always sees the latest auth state.
-  //
-  // Using `watch` would cause Riverpod to invalidate `routerProvider` on every
-  // `notifyListeners()` call (login, profile update, etc.), rebuilding the
-  // GoRouter from scratch with `initialLocation: '/'` and resetting the user's
-  // navigation stack — which on mobile manifests as getting bounced back to
-  // the home page after every save action.
   final auth = ref.read(authControllerProvider);
 
   return GoRouter(
     initialLocation: '/',
     refreshListenable: auth,
     redirect: (context, state) {
-      // While we're checking the stored JWT we keep the current location so
-      // the user doesn't see a flash of /login before bouncing back to /.
       if (auth.initializing) return null;
 
       final goingPublic = _publicRoutes.any(
@@ -56,9 +59,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/login';
       }
       if (auth.isAuthenticated && goingPublic) {
-        // Don't bounce people *out* of /verify-email or /reset-password if
-        // they happen to be logged in already — those flows still need to
-        // run to completion.
         if (state.matchedLocation.startsWith('/verify-email') ||
             state.matchedLocation.startsWith('/reset-password')) {
           return null;
@@ -125,6 +125,70 @@ final routerProvider = Provider<GoRouter>((ref) {
           }
           return ComparisonDetailScreen(comparisonId: id);
         },
+      ),
+      // Phase 9: notifications inbox.
+      GoRoute(
+        path: '/notifications',
+        builder: (_, __) => const NotificationsScreen(),
+      ),
+      // Phase 9: forum.
+      GoRoute(
+        path: '/forum',
+        builder: (_, __) => const ForumListScreen(),
+      ),
+      GoRoute(
+        path: '/forum/:id',
+        builder: (_, state) {
+          final raw = state.pathParameters['id'];
+          final id = int.tryParse(raw ?? '');
+          if (id == null) {
+            return Scaffold(
+              body: Center(child: Text('Invalid post id: $raw')),
+            );
+          }
+          return ForumDetailScreen(postId: id);
+        },
+      ),
+      // Phase 9: school-admin portal.
+      GoRoute(
+        path: '/admin',
+        builder: (_, __) => const AdminHomeScreen(),
+      ),
+      GoRoute(
+        path: '/admin/announcements',
+        builder: (_, __) => const AdminAnnouncementsScreen(),
+      ),
+      GoRoute(
+        path: '/admin/schools/:id',
+        builder: (_, state) {
+          final raw = state.pathParameters['id'];
+          final id = int.tryParse(raw ?? '');
+          if (id == null) {
+            return Scaffold(
+              body: Center(child: Text('Invalid school id: $raw')),
+            );
+          }
+          return AdminSchoolManageScreen(schoolId: id);
+        },
+      ),
+      // Phase 9: MoE portal.
+      GoRoute(path: '/moe', builder: (_, __) => const MoeHomeScreen()),
+      GoRoute(
+        path: '/moe/dashboard',
+        builder: (_, __) => const MoeDashboardScreen(),
+      ),
+      GoRoute(
+        path: '/moe/verifications',
+        builder: (_, __) => const MoeVerificationQueueScreen(),
+      ),
+      GoRoute(
+        path: '/moe/announcements',
+        builder: (_, __) => const MoeAnnouncementsScreen(),
+      ),
+      // Phase 9: moderation portal.
+      GoRoute(
+        path: '/moderation',
+        builder: (_, __) => const ModerationReportsScreen(),
       ),
     ],
     errorBuilder: (_, state) => Scaffold(
