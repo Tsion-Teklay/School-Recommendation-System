@@ -69,8 +69,8 @@ class AuthController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> login(String email, String password) async {
-    final result = await _repo.login(email, password);
+  Future<void> login(String identifier, String password) async {
+    final result = await _repo.login(identifier, password);
     await _storage.writeToken(result.token);
     _user = result.user;
     notifyListeners();
@@ -78,7 +78,7 @@ class AuthController extends ChangeNotifier {
 
   Future<void> register({
     required String fullName,
-    required String email,
+    String? email,
     String? phone,
     required String password,
     required UserRole role,
@@ -90,7 +90,9 @@ class AuthController extends ChangeNotifier {
       password: password,
       role: role,
     );
-    // Registration does NOT log the user in — they must verify email first.
+    // Registration does NOT log the user in. Email-path users must verify
+    // first; phone-path users could in theory be logged in here, but we keep
+    // the flow uniform: both land on the login screen post-register.
   }
 
   Future<void> logout() async {

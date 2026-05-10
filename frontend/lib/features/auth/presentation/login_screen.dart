@@ -15,16 +15,29 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _form = GlobalKey<FormState>();
-  final _email = TextEditingController();
+  final _identifier = TextEditingController();
   final _password = TextEditingController();
   bool _loading = false;
   String? _error;
 
   @override
   void dispose() {
-    _email.dispose();
+    _identifier.dispose();
     _password.dispose();
     super.dispose();
+  }
+
+  // Mirrors the backend rule: anything containing "@" is treated as an email
+  // and gets a real email-format check; everything else is treated as a phone
+  // number (5–15 chars, matching the backend Zod schema).
+  String? _validateIdentifier(String? raw) {
+    final v = (raw ?? '').trim();
+    if (v.isEmpty) return 'Email or phone required';
+    if (v.contains('@')) {
+      return EmailValidator.validate(v) ? null : 'Invalid email';
+    }
+    if (v.length < 5 || v.length > 15) return 'Phone must be 5–15 characters';
+    return null;
   }
 
   Future<void> _submit() async {
@@ -36,7 +49,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     try {
       await ref
           .read(authControllerProvider)
-          .login(_email.text.trim(), _password.text);
+          .login(_identifier.text.trim(), _password.text);
       // Router redirect bounces us to / on auth-state change.
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
@@ -58,12 +71,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 style: Theme.of(context).textTheme.headlineMedium),
             const SizedBox(height: 24),
             TextFormField(
-              controller: _email,
+              controller: _identifier,
               keyboardType: TextInputType.emailAddress,
-              autofillHints: const [AutofillHints.email],
-              decoration: const InputDecoration(labelText: 'Email'),
-              validator: (v) =>
-                  EmailValidator.validate((v ?? '').trim()) ? null : 'Invalid email',
+              autofillHints: const [
+                AutofillHints.email,
+                AutofillHints.telephoneNumber,
+              ],
+              decoration: const InputDecoration(
+                labelText: 'Email or phone',
+                helperText: 'Use the email or phone you registered with',
+              ),
+              validator: _validateIdentifier,
             ),
             const SizedBox(height: 12),
             TextFormField(

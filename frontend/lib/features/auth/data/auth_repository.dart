@@ -39,16 +39,25 @@ class AuthRepository {
   final Dio _dio;
   AuthRepository(this._dio);
 
+  /// Register a new user. The backend requires at least one of `email` or
+  /// `phone`; the caller decides which path they're on. Phone-only signups
+  /// skip the verification email entirely and the account is usable
+  /// immediately.
   Future<void> register({
     required String fullName,
-    required String email,
+    String? email,
     String? phone,
     required String password,
     required UserRole role,
   }) async {
+    assert(
+      (email != null && email.isNotEmpty) ||
+          (phone != null && phone.isNotEmpty),
+      'register: must provide email or phone',
+    );
     final res = await _dio.post('/api/auth/register', data: {
       'fullName': fullName,
-      'email': email,
+      if (email != null && email.isNotEmpty) 'email': email,
       if (phone != null && phone.isNotEmpty) 'phone': phone,
       'password': password,
       'role': role.toWire(),
@@ -56,9 +65,12 @@ class AuthRepository {
     if (res.statusCode != 201) throw _toApiException(res);
   }
 
-  Future<LoginResult> login(String email, String password) async {
+  /// Log in by email or phone. The backend accepts a single `identifier`
+  /// field — anything containing `@` is matched against the email column,
+  /// everything else against the phone column.
+  Future<LoginResult> login(String identifier, String password) async {
     final res = await _dio.post('/api/auth/login', data: {
-      'email': email,
+      'identifier': identifier,
       'password': password,
     });
     if (res.statusCode != 200) throw _toApiException(res);

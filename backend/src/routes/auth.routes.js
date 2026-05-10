@@ -34,7 +34,12 @@ const router = express.Router();
  *         application/json:
  *           schema:
  *             type: object
- *             required: [fullName, email, password, role]
+ *             required: [fullName, password, role]
+ *             description: |
+ *               At least one of `email` or `phone` must be supplied. Phone-only
+ *               signups skip the email-verification gate (the account is
+ *               created already-verified). Email signups still receive a
+ *               verification link.
  *             properties:
  *               fullName: { type: string }
  *               email: { type: string, format: email }
@@ -46,7 +51,7 @@ const router = express.Router();
  *     responses:
  *       201: { description: User created }
  *       400: { description: Validation error }
- *       409: { description: Email already registered }
+ *       409: { description: Email or phone already registered }
  */
 router.post("/register", validate({ body: registerBodySchema }), register);
 
@@ -55,16 +60,21 @@ router.post("/register", validate({ body: registerBodySchema }), register);
  * /api/auth/login:
  *   post:
  *     tags: [Auth]
- *     summary: Log in and receive a JWT
+ *     summary: Log in and receive a JWT (accepts email OR phone)
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             required: [email, password]
+ *             required: [password]
+ *             description: |
+ *               Send either `identifier` (an email address or a phone number)
+ *               or the legacy `email` field. Phone is matched verbatim against
+ *               the stored value (no normalization).
  *             properties:
- *               email: { type: string, format: email }
+ *               identifier: { type: string, description: "Email or phone" }
+ *               email: { type: string, format: email, deprecated: true }
  *               password: { type: string }
  *     responses:
  *       200: { description: JWT issued }
