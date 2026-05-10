@@ -14,6 +14,11 @@ class RegisterScreen extends ConsumerStatefulWidget {
   ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
 }
 
+/// Whether the user is signing up with an email-as-credential (legacy path,
+/// gated by a verification email) or a phone-as-credential (no verification,
+/// usable immediately). Backend supports both — see Phase 10 backend changes.
+enum _IdentifierKind { email, phone }
+
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _form = GlobalKey<FormState>();
   final _name = TextEditingController();
@@ -23,6 +28,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   // MoE / Moderator accounts are admin-created per the spec, so the public
   // self-registration form only exposes the two consumer roles.
   UserRole _role = UserRole.parent;
+  _IdentifierKind _identifierKind = _IdentifierKind.email;
   bool _loading = false;
   String? _error;
   bool _success = false;
@@ -43,10 +49,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       _error = null;
     });
     try {
+      // Only send the credential that matches the current toggle. The "other"
+      // field is hidden from the form, so sending it would be lying to the
+      // backend's uniqueness checks.
+      final isEmail = _identifierKind == _IdentifierKind.email;
       await ref.read(authControllerProvider).register(
             fullName: _name.text.trim(),
-            email: _email.text.trim(),
-            phone: _phone.text.trim().isEmpty ? null : _phone.text.trim(),
+            email: isEmail ? _email.text.trim() : null,
+            phone: !isEmail ? _phone.text.trim() : null,
             password: _password.text,
             role: _role,
           );
@@ -61,19 +71,31 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     if (_success) {
+      final isEmail = _identifierKind == _IdentifierKind.email;
+      // Two different success states: email-path users have something to do
+      // (open the verification link), phone-path users can sign in directly.
       return ResponsiveShell(
-        title: 'Check your email',
+        title: isEmail ? 'Check your email' : 'Account created',
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Icon(Icons.mark_email_read, size: 64),
+            Icon(
+              isEmail ? Icons.mark_email_read : Icons.check_circle_outline,
+              size: 64,
+            ),
             const SizedBox(height: 16),
-            Text("We sent a verification link to ${_email.text.trim()}.",
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              isEmail
+                  ? "We sent a verification link to ${_email.text.trim()}."
+                  : "You can now sign in with phone ${_phone.text.trim()}.",
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 8),
-            const Text(
-              "Click the link to activate your account, then come back here to sign in.",
+            Text(
+              isEmail
+                  ? "Click the link to activate your account, then come back here to sign in."
+                  : "Use your phone number and password to sign in.",
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -100,29 +122,54 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   (v ?? '').trim().isNotEmpty ? null : 'Required',
             ),
             const SizedBox(height: 12),
-            TextFormField(
-              controller: _email,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(labelText: 'Email'),
-              validator: (v) => EmailValidator.validate((v ?? '').trim())
-                  ? null
-                  : 'Invalid email',
+            SegmentedButton<_IdentifierKind>(
+              segments: const [
+                ButtonSegment(
+                  value: _IdentifierKind.email,
+                  label: Text('Email'),
+                  icon: Icon(Icons.mail_outline),
+                ),
+                ButtonSegment(
+                  value: _IdentifierKind.phone,
+                  label: Text('Phone'),
+                  icon: Icon(Icons.phone_outlined),
+                ),
+              ],
+              selected: {_identifierKind},
+              onSelectionChanged: (s) =>
+                  setState(() => _identifierKind = s.first),
             ),
             const SizedBox(height: 12),
-            TextFormField(
-              controller: _phone,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(
-                labelText: 'Phone (optional)',
-                helperText: '5–15 characters if provided',
+            if (_identifierKind == _IdentifierKind.email)
+              TextFormField(
+                controller: _email,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  helperText:
+                      "We'll send a verification link to this address.",
+                ),
+                validator: (v) => EmailValidator.validate((v ?? '').trim())
+                    ? null
+                    : 'Invalid email',
+              )
+            else
+              TextFormField(
+                controller: _phone,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(
+                  labelText: 'Phone',
+                  helperText:
+                      '5–15 characters. No verification step — usable right away.',
+                ),
+                validator: (v) {
+                  final t = (v ?? '').trim();
+                  if (t.length < 5 || t.length > 15) {
+                    return '5–15 characters';
+                  }
+                  return null;
+                },
               ),
-              validator: (v) {
-                final t = (v ?? '').trim();
-                if (t.isEmpty) return null;
-                if (t.length < 5 || t.length > 15) return '5–15 characters';
-                return null;
-              },
-            ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _password,
