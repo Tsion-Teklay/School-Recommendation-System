@@ -222,7 +222,16 @@ class _AdminSchoolManageScreenState
                                       color: theme.colorScheme.error)),
                             ],
                             const SizedBox(height: 12),
-                            Row(
+                            // We use `Wrap` rather than `Row + Spacer +
+                            // FilledButton.icon` because the latter combo
+                            // silently drops the trailing button on the
+                            // Flutter web release build (see Phase 9 PR
+                            // #22 review thread).
+                            Wrap(
+                              alignment: WrapAlignment.spaceBetween,
+                              spacing: 12,
+                              runSpacing: 8,
+                              crossAxisAlignment: WrapCrossAlignment.center,
                               children: [
                                 OutlinedButton.icon(
                                   onPressed:
@@ -230,7 +239,6 @@ class _AdminSchoolManageScreenState
                                   icon: const Icon(Icons.attach_file),
                                   label: const Text('Attach document'),
                                 ),
-                                const Spacer(),
                                 FilledButton.icon(
                                   onPressed: _submitting
                                       ? null
