@@ -15,9 +15,18 @@ ThemeData appTheme(Brightness brightness) {
       border: OutlineInputBorder(),
       filled: false,
     ),
+    // Use a finite minimum-width here. `Size.fromHeight(48)` resolves to
+    // `Size(double.infinity, 48)`, which forces every FilledButton in the
+    // app to a min-width of infinity. That works in `Column(crossAxisAlignment:
+    // stretch)` (where the parent imposes a tight bounded width regardless),
+    // but blows up in unbounded-width contexts — `Row + Spacer`, `Wrap`,
+    // narrow viewports — with "Cannot hit test a render box that has never
+    // been laid out" / "BoxConstraints forces an infinite width" assertions.
+    // `Size(0, 48)` keeps the 48dp tap-target height and lets the button
+    // size to its content elsewhere.
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        minimumSize: const Size.fromHeight(48),
+        minimumSize: const Size(0, 48),
       ),
     ),
   );
