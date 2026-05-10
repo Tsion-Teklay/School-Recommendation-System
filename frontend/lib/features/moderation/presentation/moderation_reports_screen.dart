@@ -154,17 +154,18 @@ class _ModerationReportsScreenState
                       Text('Reason:', style: theme.textTheme.titleSmall),
                       Text(r.reason),
                       const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          const Spacer(),
-                          if (r.status == ReportStatus.pending)
-                            FilledButton.icon(
-                              onPressed: () => _act(r),
-                              icon: const Icon(Icons.gavel),
-                              label: const Text('Take action'),
-                            ),
-                        ],
-                      ),
+                      // Use Align (not Row+Spacer) so the trailing
+                      // FilledButton.icon actually renders on Flutter web
+                      // release builds.
+                      if (r.status == ReportStatus.pending)
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: FilledButton.icon(
+                            onPressed: () => _act(r),
+                            icon: const Icon(Icons.gavel),
+                            label: const Text('Take action'),
+                          ),
+                        ),
                     ],
                   ),
                 ),
