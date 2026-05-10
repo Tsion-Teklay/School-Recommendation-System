@@ -91,20 +91,32 @@ class _MoeDashboardScreenState extends ConsumerState<MoeDashboardScreen> {
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Row(
+                        // Header uses Wrap instead of Row+Spacer so the
+                        // trailing FilledButton.icon (Copy CSV) actually
+                        // renders on Flutter web release builds.
+                        Wrap(
+                          alignment: WrapAlignment.spaceBetween,
+                          spacing: 8,
+                          runSpacing: 8,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
                             Text('Overview',
                                 style: theme.textTheme.headlineSmall),
-                            const Spacer(),
-                            IconButton(
-                              tooltip: 'Refresh',
-                              onPressed: _load,
-                              icon: const Icon(Icons.refresh),
-                            ),
-                            FilledButton.icon(
-                              onPressed: _copyCsv,
-                              icon: const Icon(Icons.download),
-                              label: const Text('Copy CSV'),
+                            Wrap(
+                              spacing: 8,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                IconButton(
+                                  tooltip: 'Refresh',
+                                  onPressed: _load,
+                                  icon: const Icon(Icons.refresh),
+                                ),
+                                FilledButton.icon(
+                                  onPressed: _copyCsv,
+                                  icon: const Icon(Icons.download),
+                                  label: const Text('Copy CSV'),
+                                ),
+                              ],
                             ),
                           ],
                         ),

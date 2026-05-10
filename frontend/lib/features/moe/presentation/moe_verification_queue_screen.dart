@@ -196,7 +196,13 @@ class _RequestCard extends StatelessWidget {
               Text(req.reviewNotes!),
             ],
             const SizedBox(height: 12),
-            Row(
+            // Wrap (not Row+Spacer) so the trailing FilledButton.icon
+            // actually renders on Flutter web release builds.
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              spacing: 12,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 OutlinedButton.icon(
                   icon: const Icon(Icons.school),
@@ -204,7 +210,6 @@ class _RequestCard extends StatelessWidget {
                   onPressed: () =>
                       context.go('/schools/${req.schoolId}'),
                 ),
-                const Spacer(),
                 if (req.status == VerificationRequestStatus.pending)
                   FilledButton.icon(
                     onPressed: onReview,
