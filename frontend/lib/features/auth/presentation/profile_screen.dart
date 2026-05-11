@@ -190,6 +190,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               child: const Text('Save changes'),
             ),
             const SizedBox(height: 32),
+            if (user.role == UserRole.parent)
+              OutlinedButton.icon(
+                onPressed: () => context.go('/preferences'),
+                icon: const Icon(Icons.tune),
+                label: const Text('Recommendation preferences'),
+              ),
+            if (user.role == UserRole.parent) const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: _changePassword,
               icon: const Icon(Icons.lock_reset),

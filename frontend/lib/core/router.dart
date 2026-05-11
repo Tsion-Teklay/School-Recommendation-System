@@ -24,6 +24,7 @@ import '../features/moe/presentation/moe_dashboard_screen.dart';
 import '../features/moe/presentation/moe_home_screen.dart';
 import '../features/moe/presentation/moe_verification_queue_screen.dart';
 import '../features/notifications/presentation/notifications_screen.dart';
+import '../features/preferences/presentation/preferences_screen.dart';
 import '../features/schools/presentation/school_detail_screen.dart';
 import '../features/schools/presentation/schools_list_screen.dart';
 
@@ -88,6 +89,15 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
+      // Phase 10: parent-only recommendation preferences screen (budget,
+      // curriculum, distance, home pin). Access control is enforced by the
+      // backend's `authorizeRoles("PARENT")` middleware; we keep the route
+      // public-to-authenticated and rely on a 403 response if a non-parent
+      // somehow gets here.
+      GoRoute(
+        path: '/preferences',
+        builder: (_, __) => const PreferencesScreen(),
+      ),
       GoRoute(
         path: '/schools',
         builder: (_, __) => const SchoolsListScreen(),
