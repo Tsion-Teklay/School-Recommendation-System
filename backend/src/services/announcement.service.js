@@ -102,13 +102,40 @@ export async function createAnnouncement(data, user) {
 
 
 // ✅ Get All (with filters + pagination)
-export async function getAllAnnouncements(query) {
-  const { category, urgencyLevel, page = 1, limit = 10 } = query;
+export async function getAllAnnouncements(query, user) {
+  const {
+    category,
+    urgencyLevel,
+    schoolId,
+    followedOnly,
+    page = 1,
+    limit = 10,
+  } = query;
 
   const where = {
     ...(category && { category }),
     ...(urgencyLevel && { urgencyLevel }),
+    ...(schoolId && { schoolId: Number(schoolId) }),
   };
+
+  // Phase 11 — "only schools I follow". Requires an authenticated parent; we
+  // silently drop the filter for everyone else so the route stays public.
+  if (followedOnly && user && user.role === "PARENT") {
+    const subs = await db.subscription.findMany({
+      where: { parentId: user.id },
+      select: { schoolId: true },
+    });
+    const ids = subs.map((s) => s.schoolId);
+    // If the parent follows nothing, return an empty page rather than the
+    // full feed — that matches user intent.
+    if (ids.length === 0) {
+      return {
+        data: [],
+        meta: { total: 0, page: Number(page), totalPages: 0 },
+      };
+    }
+    where.schoolId = { in: ids };
+  }
 
   const skip = (Number(page) - 1) * Number(limit);
 
@@ -118,6 +145,17 @@ export async function getAllAnnouncements(query) {
       skip,
       take: Number(limit),
       orderBy: { createdAt: "desc" },
+      include: {
+        // Phase 11 — feed cards need the school name + verification badge
+        // without a roundtrip per announcement.
+        school: {
+          select: {
+            id: true,
+            schoolName: true,
+            verificationStatus: true,
+          },
+        },
+      },
     }),
     db.announcement.count({ where }),
   ]);
@@ -136,11 +174,55 @@ export async function getAllAnnouncements(query) {
 export async function getAnnouncementById(id) {
   const announcement = await db.announcement.findUnique({
     where: { id: Number(id) },
+    include: {
+      school: {
+        select: { id: true, schoolName: true, verificationStatus: true },
+      },
+    },
   });
 
   if (!announcement) throw new NotFoundError("Announcement not found");
 
   return announcement;
+}
+
+// Phase 11 — image upload pipeline for school announcements. The multer
+// middleware writes the file to disk; this function only flips the row's
+// `imgUrl` column. SCHOOL_ADMIN owns the announcement they created (and
+// implicitly the school the announcement belongs to). MoE-level posts can
+// also have an image attached by the MoE officer who created them.
+export async function setAnnouncementImage({ id, imageUrl, userId }) {
+  const announcement = await db.announcement.findUnique({
+    where: { id: Number(id) },
+    select: { id: true, publisherId: true },
+  });
+  if (!announcement) throw new NotFoundError("Announcement not found");
+  if (announcement.publisherId !== userId) {
+    throw new ForbiddenError(
+      "You can only attach images to your own announcements"
+    );
+  }
+  return db.announcement.update({
+    where: { id: announcement.id },
+    data: { imgUrl: imageUrl },
+  });
+}
+
+export async function clearAnnouncementImage({ id, userId }) {
+  const announcement = await db.announcement.findUnique({
+    where: { id: Number(id) },
+    select: { id: true, publisherId: true },
+  });
+  if (!announcement) throw new NotFoundError("Announcement not found");
+  if (announcement.publisherId !== userId) {
+    throw new ForbiddenError(
+      "You can only clear images on your own announcements"
+    );
+  }
+  return db.announcement.update({
+    where: { id: announcement.id },
+    data: { imgUrl: null },
+  });
 }
 
 // ✅ Update

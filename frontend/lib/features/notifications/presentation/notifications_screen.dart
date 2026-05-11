@@ -198,9 +198,11 @@ String? _routeFor(AppNotification n) {
       return '/schools/$id';
     case NotificationSourceType.forumPost:
       return '/forum/$id';
+    case NotificationSourceType.announcement:
+      // Phase 11 — deep-link parents into the announcement detail screen.
+      return '/announcements/$id';
     case NotificationSourceType.review:
     case NotificationSourceType.report:
-    case NotificationSourceType.announcement:
     case NotificationSourceType.moderation:
     case NotificationSourceType.system:
       return null;

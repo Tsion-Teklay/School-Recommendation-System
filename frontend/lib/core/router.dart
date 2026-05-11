@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../features/admin/presentation/admin_announcements_screen.dart';
 import '../features/admin/presentation/admin_home_screen.dart';
 import '../features/admin/presentation/admin_school_manage_screen.dart';
+import '../features/announcements/presentation/announcement_detail_screen.dart';
+import '../features/announcements/presentation/announcements_feed_screen.dart';
 import '../features/auth/presentation/email_verify_screen.dart';
 import '../features/auth/presentation/forgot_password_screen.dart';
 import '../features/auth/presentation/login_screen.dart';
@@ -130,6 +132,24 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/notifications',
         builder: (_, __) => const NotificationsScreen(),
+      ),
+      // Phase 11: parent-facing announcements feed + deep-linked detail.
+      GoRoute(
+        path: '/announcements',
+        builder: (_, __) => const AnnouncementsFeedScreen(),
+      ),
+      GoRoute(
+        path: '/announcements/:id',
+        builder: (_, state) {
+          final raw = state.pathParameters['id'];
+          final id = int.tryParse(raw ?? '');
+          if (id == null) {
+            return Scaffold(
+              body: Center(child: Text('Invalid announcement id: $raw')),
+            );
+          }
+          return AnnouncementDetailScreen(announcementId: id);
+        },
       ),
       // Phase 9: forum.
       GoRoute(

@@ -4,15 +4,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../../core/config.dart';
 import '../../../shared/widgets/responsive_shell.dart';
+import '../../announcements/data/announcement_dtos.dart';
+import '../../announcements/data/announcement_repository.dart';
+import '../../announcements/presentation/announcements_feed_screen.dart';
 import '../../auth/data/auth_dtos.dart';
 import '../../auth/state/auth_controller.dart';
+import '../../reviews/presentation/reviews_section.dart';
 import '../data/school_dtos.dart';
 import '../state/compare_cart.dart';
 import '../state/school_detail_controller.dart';
 
 /// `/schools/:id` — full info card, map (when lat/lng present), follower
-/// count + follow toggle, "Add to compare" hook.
+/// count + follow toggle, facility image carousel, recent announcements,
+/// and the embedded reviews section (Phase 11).
 class SchoolDetailScreen extends ConsumerWidget {
   final int schoolId;
   const SchoolDetailScreen({super.key, required this.schoolId});
@@ -133,6 +139,11 @@ class _DetailBody extends StatelessWidget {
                       icon: Icons.school_outlined,
                       label: school.curriculum.label(),
                     ),
+                    if (school.schoolLevel != null)
+                      _Badge(
+                        icon: Icons.grade_outlined,
+                        label: school.schoolLevel!.label(),
+                      ),
                     _Badge(
                       icon: Icons.payments_outlined,
                       label: 'Fee: ${school.tuitionFee}',
@@ -224,13 +235,210 @@ class _DetailBody extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        if (school.latitude != null && school.longitude != null)
+        // Phase 11 — facility image carousel. Only renders when the school
+        // has uploaded at least one image.
+        if (school.facilityImages.isNotEmpty) ...[
+          _FacilityImagesCarousel(images: school.facilityImages),
+          const SizedBox(height: 16),
+        ],
+        if (school.latitude != null && school.longitude != null) ...[
           _MapCard(
             lat: school.latitude!,
             lng: school.longitude!,
             schoolName: school.schoolName,
           ),
+          const SizedBox(height: 16),
+        ],
+        // Phase 11 — recent announcements published by this school.
+        _SchoolAnnouncementsSection(schoolId: school.id),
+        const SizedBox(height: 16),
+        // Phase 11 — wire reviews. The component was authored in Phase 9 but
+        // never rendered on the school detail page.
+        ReviewsSection(schoolId: school.id),
       ],
+    );
+  }
+}
+
+class _FacilityImagesCarousel extends StatelessWidget {
+  final List<FacilityImage> images;
+  const _FacilityImagesCarousel({required this.images});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text('Facility photos', style: theme.textTheme.titleLarge),
+                const Spacer(),
+                Text('${images.length}',
+                    style: theme.textTheme.titleMedium),
+              ],
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 200,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: images.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 12),
+                itemBuilder: (_, i) {
+                  final img = images[i];
+                  return GestureDetector(
+                    onTap: () => _openLightbox(context, img),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        _absoluteImage(img.imageUrl),
+                        width: 280,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          width: 280,
+                          color: theme.colorScheme.surfaceContainerHighest,
+                          alignment: Alignment.center,
+                          child:
+                              const Icon(Icons.image_not_supported_outlined),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _openLightbox(BuildContext context, FacilityImage img) {
+    showDialog<void>(
+      context: context,
+      builder: (_) => Dialog(
+        insetPadding: const EdgeInsets.all(16),
+        child: InteractiveViewer(
+          child: Image.network(
+            _absoluteImage(img.imageUrl),
+            fit: BoxFit.contain,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SchoolAnnouncementsSection extends ConsumerStatefulWidget {
+  final int schoolId;
+  const _SchoolAnnouncementsSection({required this.schoolId});
+
+  @override
+  ConsumerState<_SchoolAnnouncementsSection> createState() =>
+      _SchoolAnnouncementsSectionState();
+}
+
+class _SchoolAnnouncementsSectionState
+    extends ConsumerState<_SchoolAnnouncementsSection> {
+  bool _loading = true;
+  String? _error;
+  List<Announcement> _items = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final result =
+          await ref.read(announcementRepositoryProvider).list(
+                schoolId: widget.schoolId,
+                limit: 5,
+              );
+      if (!mounted) return;
+      setState(() => _items = result.items);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text('Recent announcements',
+                    style: theme.textTheme.titleLarge),
+                const Spacer(),
+                TextButton(
+                  onPressed: () => context.go(
+                      '/announcements?schoolId=${widget.schoolId}'),
+                  child: const Text('See all'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (_loading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (_error != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Row(
+                  children: [
+                    Icon(Icons.error_outline,
+                        color: theme.colorScheme.error),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(_error!)),
+                    TextButton(
+                      onPressed: _load,
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              )
+            else if (_items.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Text('No announcements yet.'),
+              )
+            else
+              Column(
+                children: [
+                  for (final a in _items)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: AnnouncementCard(
+                        announcement: a,
+                        onTap: () => context.go('/announcements/${a.id}'),
+                      ),
+                    ),
+                ],
+              ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -367,4 +575,10 @@ class _ErrorState extends StatelessWidget {
       ),
     );
   }
+}
+
+String _absoluteImage(String url) {
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  if (url.startsWith('/')) return '${AppConfig.apiBaseUrl}$url';
+  return '${AppConfig.apiBaseUrl}/$url';
 }

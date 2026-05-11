@@ -20,6 +20,8 @@ export const cleanDatabase = async () => {
   // the self-referential FK on threadId doesn't block the parent rows.
   await db.discussionForum.deleteMany({ where: { threadId: { not: null } } });
   await db.discussionForum.deleteMany();
+  // Phase 11: facility images FK to School — wipe before schools.
+  await db.facilityImage.deleteMany();
   await db.school.deleteMany();
   await db.parent.deleteMany();
   await db.user.deleteMany();
