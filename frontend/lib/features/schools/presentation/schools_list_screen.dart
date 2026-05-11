@@ -25,6 +25,9 @@ class _SchoolsListScreenState extends ConsumerState<SchoolsListScreen> {
   final _minFeeCtl = TextEditingController();
   final _maxFeeCtl = TextEditingController();
   Curriculum? _curriculum;
+  SchoolLevel? _schoolLevel;
+  // Min rating, 1-5 scale. 0 means "no minimum".
+  double _minRating = 0;
 
   @override
   void dispose() {
@@ -56,6 +59,8 @@ class _SchoolsListScreenState extends ConsumerState<SchoolsListScreen> {
       curriculum: _curriculum,
       minFee: num.tryParse(_minFeeCtl.text.trim()),
       maxFee: num.tryParse(_maxFeeCtl.text.trim()),
+      minRating: _minRating > 0 ? _minRating : null,
+      schoolLevel: _schoolLevel,
       // We deliberately don't carry `near` here — proximity search needs a
       // browser geolocation prompt which we'll wire as a separate IconButton
       // in a future iteration.
@@ -66,7 +71,11 @@ class _SchoolsListScreenState extends ConsumerState<SchoolsListScreen> {
     _searchCtl.clear();
     _minFeeCtl.clear();
     _maxFeeCtl.clear();
-    setState(() => _curriculum = null);
+    setState(() {
+      _curriculum = null;
+      _schoolLevel = null;
+      _minRating = 0;
+    });
     ref
         .read(schoolsListControllerProvider)
         .applyFilters(const SchoolListFilters());
@@ -97,7 +106,11 @@ class _SchoolsListScreenState extends ConsumerState<SchoolsListScreen> {
             minFeeCtl: _minFeeCtl,
             maxFeeCtl: _maxFeeCtl,
             curriculum: _curriculum,
+            schoolLevel: _schoolLevel,
+            minRating: _minRating,
             onCurriculumChanged: (c) => setState(() => _curriculum = c),
+            onSchoolLevelChanged: (l) => setState(() => _schoolLevel = l),
+            onMinRatingChanged: (r) => setState(() => _minRating = r),
             onApply: _applyFilters,
             onClear: _clearFilters,
           ),
@@ -137,7 +150,11 @@ class _Filters extends StatelessWidget {
   final TextEditingController minFeeCtl;
   final TextEditingController maxFeeCtl;
   final Curriculum? curriculum;
+  final SchoolLevel? schoolLevel;
+  final double minRating;
   final ValueChanged<Curriculum?> onCurriculumChanged;
+  final ValueChanged<SchoolLevel?> onSchoolLevelChanged;
+  final ValueChanged<double> onMinRatingChanged;
   final VoidCallback onApply;
   final VoidCallback onClear;
 
@@ -146,7 +163,11 @@ class _Filters extends StatelessWidget {
     required this.minFeeCtl,
     required this.maxFeeCtl,
     required this.curriculum,
+    required this.schoolLevel,
+    required this.minRating,
     required this.onCurriculumChanged,
+    required this.onSchoolLevelChanged,
+    required this.onMinRatingChanged,
     required this.onApply,
     required this.onClear,
   });
@@ -216,9 +237,58 @@ class _Filters extends StatelessWidget {
                     ),
                   ),
                 ),
+                // Phase 11 — school level filter (Pre-primary / Primary /
+                // Secondary).
+                SizedBox(
+                  width: 180,
+                  child: DropdownButtonFormField<SchoolLevel?>(
+                    value: schoolLevel,
+                    isDense: true,
+                    decoration: const InputDecoration(
+                      labelText: 'School level',
+                      border: OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    items: [
+                      const DropdownMenuItem(
+                          value: null, child: Text('Any level')),
+                      for (final l in SchoolLevel.values)
+                        DropdownMenuItem(value: l, child: Text(l.label())),
+                    ],
+                    onChanged: onSchoolLevelChanged,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 12),
+            // Phase 11 — minimum rating slider. 0 disables the filter; 1–5
+            // map to the same scale as Review.rating.
+            Row(
+              children: [
+                const Text('Min rating'),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Slider(
+                    value: minRating,
+                    min: 0,
+                    max: 5,
+                    divisions: 10,
+                    label: minRating == 0
+                        ? 'Any'
+                        : minRating.toStringAsFixed(1),
+                    onChanged: onMinRatingChanged,
+                  ),
+                ),
+                SizedBox(
+                  width: 56,
+                  child: Text(
+                    minRating == 0 ? 'Any' : minRating.toStringAsFixed(1),
+                    textAlign: TextAlign.end,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [

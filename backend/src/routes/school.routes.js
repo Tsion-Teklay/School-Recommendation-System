@@ -6,10 +6,17 @@ import {
   update,
   remove,
 } from "../controllers/school.controller.js";
+import {
+  list as listImages,
+  upload as uploadImage,
+  remove as removeImage,
+} from "../controllers/facility-image.controller.js";
 import { authenticate } from "../middlewares/auth.middleware.js";
 import { authorizeRoles } from "../middlewares/role.middleware.js";
 import { validate } from "../middlewares/validate.middleware.js";
+import { facilityImageUpload } from "../config/uploads.js";
 import { idParamsSchema } from "../schemas/common.schema.js";
+import { z } from "zod";
 import {
   createSchoolBodySchema,
   updateSchoolBodySchema,
@@ -17,6 +24,12 @@ import {
 } from "../schemas/school.schema.js";
 
 const router = express.Router();
+
+// Phase 11 — both `:id` (school) and `:imgId` (image) are positive ints.
+const imageParamsSchema = z.object({
+  id: z.coerce.number().int().positive(),
+  imgId: z.coerce.number().int().positive(),
+});
 
 /**
  * @openapi
@@ -115,6 +128,55 @@ router.delete(
   authorizeRoles("SCHOOL_ADMIN"),
   validate({ params: idParamsSchema }),
   remove
+);
+
+/**
+ * @openapi
+ * /api/schools/{id}/images:
+ *   get:
+ *     tags: [Schools]
+ *     summary: List facility images for a school (public)
+ *   post:
+ *     tags: [Schools]
+ *     summary: Upload a facility image (SCHOOL_ADMIN, owns school)
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               image: { type: string, format: binary }
+ *     responses:
+ *       201: { description: Image uploaded }
+ *       400: { description: Validation error (missing file / wrong MIME) }
+ *       403: { description: Not the school admin }
+ */
+router.get("/:id/images", validate({ params: idParamsSchema }), listImages);
+router.post(
+  "/:id/images",
+  authenticate,
+  authorizeRoles("SCHOOL_ADMIN"),
+  validate({ params: idParamsSchema }),
+  facilityImageUpload,
+  uploadImage
+);
+
+/**
+ * @openapi
+ * /api/schools/{id}/images/{imgId}:
+ *   delete:
+ *     tags: [Schools]
+ *     summary: Delete a facility image (SCHOOL_ADMIN, owns school)
+ *     security: [{ bearerAuth: [] }]
+ */
+router.delete(
+  "/:id/images/:imgId",
+  authenticate,
+  authorizeRoles("SCHOOL_ADMIN"),
+  validate({ params: imageParamsSchema }),
+  removeImage
 );
 
 export default router;

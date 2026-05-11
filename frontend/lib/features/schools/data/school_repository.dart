@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -67,6 +69,49 @@ class SchoolRepository {
 
   Future<void> unfollow(int schoolId) async {
     final res = await _dio.delete('/api/schools/$schoolId/follow');
+    if (res.statusCode != 200 && res.statusCode != 204) {
+      throw _toApiException(res);
+    }
+  }
+
+  /// Phase 11 — upload one facility image (PNG/JPEG/WebP, ≤ 10MB).
+  /// School admin only. Returns the newly created FacilityImage row.
+  Future<FacilityImage> uploadFacilityImage({
+    required int schoolId,
+    required String filename,
+    required Uint8List bytes,
+    String? contentType,
+  }) async {
+    final form = FormData();
+    form.files.add(MapEntry(
+      'image',
+      MultipartFile.fromBytes(bytes, filename: filename),
+    ));
+    final res = await _dio.post(
+      '/api/schools/$schoolId/images',
+      data: form,
+      options: Options(headers: {'Content-Type': 'multipart/form-data'}),
+    );
+    if (res.statusCode != 201 && res.statusCode != 200) {
+      throw _toApiException(res);
+    }
+    final body = res.data as Map<String, dynamic>;
+    // Backend controller wraps the new row as `{ message, image }`. The
+    // older key `facilityImage` is tolerated for forward compatibility.
+    final raw = (body['image'] ?? body['facilityImage']) as Map<String, dynamic>?;
+    if (raw == null) {
+      throw ApiException('Upload succeeded but response was empty',
+          statusCode: res.statusCode);
+    }
+    return FacilityImage.fromJson(raw);
+  }
+
+  /// Phase 11 — delete a facility image by id. School admin only.
+  Future<void> deleteFacilityImage({
+    required int schoolId,
+    required int imageId,
+  }) async {
+    final res = await _dio.delete('/api/schools/$schoolId/images/$imageId');
     if (res.statusCode != 200 && res.statusCode != 204) {
       throw _toApiException(res);
     }

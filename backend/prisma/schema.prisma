@@ -23,6 +23,16 @@ enum Curriculum {
   INTERNATIONAL @map("international")
 }
 
+// Phase 11 — coarse education-level classifier used both for filtering on
+// the schools list and for parents who want a specific stage (e.g. "show me
+// only pre-primary"). Nullable on School so we don't need to backfill every
+// existing row; the filter just skips schools whose level isn't set.
+enum SchoolLevel {
+  PRE_PRIMARY @map("pre_primary")
+  PRIMARY     @map("primary")
+  SECONDARY   @map("secondary")
+}
+
 enum VerificationStatus {
   VERIFIED @map("verified")
   PENDING  @map("pending")
@@ -152,6 +162,7 @@ model School {
   contactEmail       String             @map("contact_email") @db.VarChar(100)
   contactPhone       String             @map("contact_phone") @db.VarChar(15)
   curriculum         Curriculum
+  schoolLevel        SchoolLevel?       @map("school_level")
   tuitionFee         Decimal            @db.Decimal(10,2) @map("tuition_fee")
   facilities         String?            @db.Text
   verificationStatus VerificationStatus @default(PENDING) @map("verification_status")

@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -16,6 +18,7 @@ class AnnouncementRepository {
     AnnouncementCategory? category,
     UrgencyLevel? urgencyLevel,
     int? schoolId,
+    bool? followedOnly,
   }) async {
     final res = await _dio.get(
       '/api/announcements',
@@ -25,6 +28,7 @@ class AnnouncementRepository {
         if (category != null) 'category': category.toWire(),
         if (urgencyLevel != null) 'urgencyLevel': urgencyLevel.toWire(),
         if (schoolId != null) 'schoolId': schoolId.toString(),
+        if (followedOnly == true) 'followedOnly': 'true',
       },
     );
     if (res.statusCode != 200) throw _toApiException(res);
@@ -75,6 +79,53 @@ class AnnouncementRepository {
 
   Future<void> delete(int id) async {
     final res = await _dio.delete('/api/announcements/$id');
+    if (res.statusCode != 200 && res.statusCode != 204) {
+      throw _toApiException(res);
+    }
+  }
+
+  /// Phase 11 — fetch a single announcement (used by the deep-linkable
+  /// detail screen). Returns the announcement with `school` summary
+  /// joined and `imgUrl` populated when present.
+  Future<Announcement> getById(int id) async {
+    final res = await _dio.get('/api/announcements/$id');
+    if (res.statusCode != 200) throw _toApiException(res);
+    final body = res.data as Map<String, dynamic>;
+    return Announcement.fromJson(
+      body['announcement'] as Map<String, dynamic>,
+    );
+  }
+
+  /// Phase 11 — attach (or replace) the banner image on an existing
+  /// announcement. Only the original publisher (school admin / MoE
+  /// officer) may call this.
+  Future<Announcement> uploadImage({
+    required int id,
+    required String filename,
+    required Uint8List bytes,
+  }) async {
+    final form = FormData();
+    form.files.add(MapEntry(
+      'image',
+      MultipartFile.fromBytes(bytes, filename: filename),
+    ));
+    final res = await _dio.post(
+      '/api/announcements/$id/image',
+      data: form,
+      options: Options(headers: {'Content-Type': 'multipart/form-data'}),
+    );
+    if (res.statusCode != 200 && res.statusCode != 201) {
+      throw _toApiException(res);
+    }
+    return Announcement.fromJson(
+      (res.data as Map<String, dynamic>)['announcement']
+          as Map<String, dynamic>,
+    );
+  }
+
+  /// Phase 11 — clear the banner image from an announcement.
+  Future<void> deleteImage(int id) async {
+    final res = await _dio.delete('/api/announcements/$id/image');
     if (res.statusCode != 200 && res.statusCode != 204) {
       throw _toApiException(res);
     }
