@@ -9,6 +9,7 @@ export async function createSchool(data, userId) {
     contactEmail,
     contactPhone,
     curriculum,
+    schoolLevel,
     tuitionFee,
     facilities,
     latitude,
@@ -27,6 +28,8 @@ export async function createSchool(data, userId) {
       contactEmail,
       contactPhone,
       curriculum,
+      // Phase 11 — optional education level; omitted keeps the column null.
+      ...(schoolLevel ? { schoolLevel } : {}),
       tuitionFee,
       facilities,
       latitude,
@@ -72,8 +75,10 @@ export async function getAllSchools(query) {
   const {
     search,
     curriculum,
+    schoolLevel,
     minFee,
     maxFee,
+    minRating,
     near,
     radiusKm,
     page = 1,
@@ -94,11 +99,25 @@ export async function getAllSchools(query) {
     filters.curriculum = curriculum;
   }
 
+  // 📚 Phase 11 — filter by education level (PRE_PRIMARY / PRIMARY / SECONDARY).
+  // Schools that never had a level set are intentionally excluded when the
+  // filter is on; the matching enum equality also rejects nulls.
+  if (schoolLevel) {
+    filters.schoolLevel = schoolLevel;
+  }
+
   // 💰 Filter by fee range
   if (minFee || maxFee) {
     filters.tuitionFee = {};
     if (minFee) filters.tuitionFee.gte = Number(minFee);
     if (maxFee) filters.tuitionFee.lte = Number(maxFee);
+  }
+
+  // ⭐ Phase 11 — "stars and up" filter. `rating` is an aggregate maintained
+  // on review CRUD; schools with no reviews have rating=0 so they correctly
+  // drop out when minRating > 0.
+  if (minRating !== undefined && minRating !== null && Number(minRating) > 0) {
+    filters.rating = { gte: Number(minRating) };
   }
 
   // 📍 Proximity pre-filter (bounding box). When `near` is set we ignore the
@@ -205,6 +224,12 @@ export async function getSchoolById(id) {
           email: true,
         },
       },
+      // Phase 11 — facility images surface on the detail payload so the
+      // frontend can render a carousel without a second roundtrip.
+      facilityImages: {
+        select: { id: true, imageUrl: true },
+        orderBy: { id: "asc" },
+      },
       _count: {
         // Phase 4: surface the live follower count on every detail fetch so
         // the UI doesn't need a second roundtrip to /follows to render it.
@@ -235,6 +260,9 @@ export async function updateSchool(id, data, userId) {
     throw new ForbiddenError("Not authorized to update this school");
   }
 
+  // `schoolLevel: null` from the client means "clear the field"; Prisma
+  // accepts it directly because the column is nullable. We just forward the
+  // partial body as-is.
   const updated = await db.school.update({
     where: { id: Number(id) },
     data,
