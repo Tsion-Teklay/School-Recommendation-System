@@ -58,43 +58,68 @@ function appBaseUrl() {
 // -----------------------------------------------------------------------------
 
 export async function registerUser({ fullName, email, phone, password, role }) {
-  if (!fullName || !email || !password || !role) {
+  if (!fullName || !password || !role) {
     throw new ValidationError("Missing required fields");
   }
+  if (!email && !phone) {
+    throw new ValidationError("Either email or phone is required");
+  }
 
-  const normalizedEmail = email.toLowerCase();
-  const existing = await db.user.findUnique({ where: { email: normalizedEmail } });
-  if (existing) throw new ConflictError("Email already registered");
+  // Email is unique + serves as the verifiable-handle. Phone is unique +
+  // bypasses the email-verification gate (there is no out-of-band channel for
+  // it yet). Both can coexist on the same account.
+  const normalizedEmail = email ? email.toLowerCase() : null;
+  const normalizedPhone = phone ?? null;
+
+  if (normalizedEmail) {
+    const existingByEmail = await db.user.findUnique({
+      where: { email: normalizedEmail },
+    });
+    if (existingByEmail) throw new ConflictError("Email already registered");
+  }
+  if (normalizedPhone) {
+    const existingByPhone = await db.user.findUnique({
+      where: { phone: normalizedPhone },
+    });
+    if (existingByPhone) throw new ConflictError("Phone already registered");
+  }
 
   const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-  const verificationToken = generateToken();
+  const verificationToken = normalizedEmail ? generateToken() : null;
 
   const user = await db.user.create({
     data: {
       fullName,
-      email: normalizedEmail,
-      phone,
+      email: normalizedEmail ?? `phone-${normalizedPhone}@placeholder.invalid`,
+      phone: normalizedPhone,
       password: hashedPassword,
       accountStatus: "ACTIVE",
       role,
-      emailVerified: false,
+      // Phone-only signups have no email channel to verify against, so the
+      // account starts already-verified. If an email is later added via
+      // profile update (out of scope), it would re-trigger the verify flow.
+      emailVerified: !normalizedEmail,
       emailVerificationToken: verificationToken,
-      emailVerificationExpires: expiresAt(EMAIL_VERIFICATION_TTL_MS),
+      emailVerificationExpires: verificationToken
+        ? expiresAt(EMAIL_VERIFICATION_TTL_MS)
+        : null,
     },
   });
 
-  await sendMailSafe(
-    {
-      to: normalizedEmail,
-      subject: "Verify your School Recommendation account",
-      text:
-        `Hi ${fullName},\n\n` +
-        `Welcome! Please verify your email by visiting:\n` +
-        `${appBaseUrl()}/verify-email?token=${verificationToken}\n\n` +
-        `Or POST the token to /api/auth/verify-email. The link expires in 24 hours.`,
-    },
-    { event: "register", userId: user.id }
-  );
+  if (normalizedEmail && verificationToken) {
+    await sendMailSafe(
+      {
+        to: normalizedEmail,
+        subject: "Verify your School Recommendation account",
+        text:
+          `Hi ${fullName},\n\n` +
+          `Welcome! Please verify your email by visiting:\n` +
+          `${appBaseUrl()}/verify-email?token=${verificationToken}\n\n` +
+          `Or POST the token to /api/auth/verify-email. The link expires in 24 hours.`,
+      },
+      { event: "register", userId: user.id }
+    );
+  }
 
   return sanitizeUser(user);
 }
@@ -165,13 +190,26 @@ export async function resendVerificationEmail({ email }) {
 // Login
 // -----------------------------------------------------------------------------
 
-export async function loginUser({ email, password }) {
-  if (!email || !password) {
-    throw new ValidationError("Email and password are required");
+export async function loginUser({ identifier, email, password }) {
+  // Accept either the new `identifier` field (email or phone) or the legacy
+  // `email` field so older clients still work. Validator guarantees at least
+  // one is present.
+  const raw = (identifier ?? email ?? "").trim();
+  if (!raw || !password) {
+    throw new ValidationError("identifier and password are required");
   }
 
-  const normalizedEmail = email.toLowerCase();
-  const user = await db.user.findUnique({ where: { email: normalizedEmail } });
+  // Phone numbers are 5-15 digits — anything containing "@" is treated as an
+  // email lookup, everything else as a phone lookup. This is intentional:
+  // backend stores phones verbatim (no normalization), so a digit-only
+  // identifier maps 1:1 to the `phone` column.
+  let user;
+  if (raw.includes("@")) {
+    const normalizedEmail = raw.toLowerCase();
+    user = await db.user.findUnique({ where: { email: normalizedEmail } });
+  } else {
+    user = await db.user.findUnique({ where: { phone: raw } });
+  }
 
   if (!user) throw new UnauthorizedError("Invalid credentials");
 
