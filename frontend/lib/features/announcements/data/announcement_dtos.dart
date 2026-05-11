@@ -94,6 +94,33 @@ extension PublisherTypeX on PublisherType {
       s == 'MOE' ? PublisherType.moe : PublisherType.schoolAdmin;
 }
 
+/// Phase 11 — slim join row the backend includes on announcement payloads
+/// so we don't have to round-trip /api/schools/:id to print "Sunrise
+/// Academy" next to a ministry-wide post.
+class AnnouncementSchoolSummary {
+  final int id;
+  final String schoolName;
+  final String? verificationStatus;
+  const AnnouncementSchoolSummary({
+    required this.id,
+    required this.schoolName,
+    required this.verificationStatus,
+  });
+
+  factory AnnouncementSchoolSummary.fromJson(Map<String, dynamic> json) {
+    int parseInt(dynamic v) {
+      if (v is num) return v.toInt();
+      if (v is String) return int.tryParse(v) ?? 0;
+      return 0;
+    }
+    return AnnouncementSchoolSummary(
+      id: parseInt(json['id']),
+      schoolName: (json['schoolName'] ?? '') as String,
+      verificationStatus: json['verificationStatus'] as String?,
+    );
+  }
+}
+
 class Announcement {
   final int id;
   final int publisherId;
@@ -104,6 +131,12 @@ class Announcement {
   final AnnouncementCategory category;
   final UrgencyLevel urgencyLevel;
   final DateTime datePosted;
+  // Phase 11 — optional banner image (relative URL, e.g.
+  // `/uploads/announcement-images/abc.png`). Callers concatenate the API
+  // base URL themselves.
+  final String? imgUrl;
+  // Phase 11 — joined school summary (null for ministry-wide posts).
+  final AnnouncementSchoolSummary? school;
 
   const Announcement({
     required this.id,
@@ -115,6 +148,8 @@ class Announcement {
     required this.category,
     required this.urgencyLevel,
     required this.datePosted,
+    required this.imgUrl,
+    required this.school,
   });
 
   factory Announcement.fromJson(Map<String, dynamic> json) {
@@ -132,6 +167,7 @@ class Announcement {
       if (v is String) return DateTime.tryParse(v) ?? DateTime.now();
       return DateTime.now();
     }
+    final schoolJson = (json['school'] as Map?)?.cast<String, dynamic>();
     return Announcement(
       id: parseInt(json['id']),
       publisherId: parseInt(json['publisherId']),
@@ -144,6 +180,10 @@ class Announcement {
       urgencyLevel:
           UrgencyLevelX.fromWire(json['urgencyLevel'] as String?),
       datePosted: parseDate(json['datePosted'] ?? json['createdAt']),
+      imgUrl: json['imgUrl'] as String?,
+      school: schoolJson == null
+          ? null
+          : AnnouncementSchoolSummary.fromJson(schoolJson),
     );
   }
 }

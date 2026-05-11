@@ -23,6 +23,68 @@ extension CurriculumX on Curriculum {
   }
 }
 
+/// Phase 11 — school level (pre-primary / primary / secondary). Stored on
+/// the School row and surfaced in filters + detail badges.
+enum SchoolLevel { prePrimary, primary, secondary }
+
+extension SchoolLevelX on SchoolLevel {
+  String toWire() {
+    switch (this) {
+      case SchoolLevel.prePrimary:
+        return 'PRE_PRIMARY';
+      case SchoolLevel.primary:
+        return 'PRIMARY';
+      case SchoolLevel.secondary:
+        return 'SECONDARY';
+    }
+  }
+
+  String label() {
+    switch (this) {
+      case SchoolLevel.prePrimary:
+        return 'Pre-primary';
+      case SchoolLevel.primary:
+        return 'Primary';
+      case SchoolLevel.secondary:
+        return 'Secondary';
+    }
+  }
+
+  static SchoolLevel? fromWire(String? s) {
+    switch (s) {
+      case 'PRE_PRIMARY':
+        return SchoolLevel.prePrimary;
+      case 'PRIMARY':
+        return SchoolLevel.primary;
+      case 'SECONDARY':
+        return SchoolLevel.secondary;
+      default:
+        return null;
+    }
+  }
+}
+
+/// One entry from `school.facilityImages` (Phase 11). The URL is relative
+/// to the API base (e.g. `/uploads/facility-images/abc.png`) — callers
+/// concatenate `AppConfig.apiBaseUrl` themselves so this DTO stays plain.
+class FacilityImage {
+  final int id;
+  final String imageUrl;
+  const FacilityImage({required this.id, required this.imageUrl});
+
+  factory FacilityImage.fromJson(Map<String, dynamic> json) {
+    int parseInt(dynamic v) {
+      if (v is num) return v.toInt();
+      if (v is String) return int.tryParse(v) ?? 0;
+      return 0;
+    }
+    return FacilityImage(
+      id: parseInt(json['id']),
+      imageUrl: (json['imageUrl'] ?? '') as String,
+    );
+  }
+}
+
 enum VerificationStatus { pending, verified, rejected }
 
 extension VerificationStatusX on VerificationStatus {
@@ -68,6 +130,14 @@ class School {
   final int? reviewCount;
   final VerificationStatus verificationStatus;
 
+  /// Phase 11 — null when the school hasn't been categorised yet.
+  final SchoolLevel? schoolLevel;
+
+  /// Phase 11 — facility images attached to this school. Only populated on
+  /// the detail response (`GET /api/schools/:id`); the list endpoint
+  /// returns an empty list to keep payloads small.
+  final List<FacilityImage> facilityImages;
+
   /// Only set on detail responses.
   final int? followerCount;
 
@@ -88,6 +158,8 @@ class School {
     required this.rating,
     required this.reviewCount,
     required this.verificationStatus,
+    required this.schoolLevel,
+    required this.facilityImages,
     required this.followerCount,
     required this.distanceKm,
   });
@@ -114,6 +186,7 @@ class School {
       return int.tryParse(v.toString());
     }
 
+    final imgs = (json['facilityImages'] as List?) ?? const [];
     return School(
       id: coerceInt(json['id'])!,
       schoolName: json['schoolName'] as String,
@@ -129,6 +202,11 @@ class School {
       reviewCount: coerceInt(json['reviewCount']),
       verificationStatus:
           VerificationStatusX.fromWire(json['verificationStatus'] as String?),
+      schoolLevel: SchoolLevelX.fromWire(json['schoolLevel'] as String?),
+      facilityImages: imgs
+          .whereType<Map>()
+          .map((m) => FacilityImage.fromJson(m.cast<String, dynamic>()))
+          .toList(),
       followerCount: coerceInt(json['followerCount']),
       distanceKm: coerceDouble(json['distanceKm']),
     );
@@ -179,6 +257,9 @@ class SchoolListFilters {
   final num? maxFee;
   final String? near;
   final num? radiusKm;
+  // Phase 11 additions.
+  final num? minRating;
+  final SchoolLevel? schoolLevel;
   final int page;
   final int limit;
 
@@ -189,6 +270,8 @@ class SchoolListFilters {
     this.maxFee,
     this.near,
     this.radiusKm,
+    this.minRating,
+    this.schoolLevel,
     this.page = 1,
     this.limit = 10,
   });
@@ -200,6 +283,8 @@ class SchoolListFilters {
     Object? maxFee = _sentinel,
     Object? near = _sentinel,
     Object? radiusKm = _sentinel,
+    Object? minRating = _sentinel,
+    Object? schoolLevel = _sentinel,
     int? page,
     int? limit,
   }) {
@@ -213,6 +298,12 @@ class SchoolListFilters {
       near: identical(near, _sentinel) ? this.near : near as String?,
       radiusKm:
           identical(radiusKm, _sentinel) ? this.radiusKm : radiusKm as num?,
+      minRating: identical(minRating, _sentinel)
+          ? this.minRating
+          : minRating as num?,
+      schoolLevel: identical(schoolLevel, _sentinel)
+          ? this.schoolLevel
+          : schoolLevel as SchoolLevel?,
       page: page ?? this.page,
       limit: limit ?? this.limit,
     );
@@ -226,6 +317,8 @@ class SchoolListFilters {
       if (maxFee != null) 'maxFee': maxFee.toString(),
       if (near != null && near!.isNotEmpty) 'near': near,
       if (radiusKm != null) 'radiusKm': radiusKm.toString(),
+      if (minRating != null) 'minRating': minRating.toString(),
+      if (schoolLevel != null) 'schoolLevel': schoolLevel!.toWire(),
       'page': page.toString(),
       'limit': limit.toString(),
     };

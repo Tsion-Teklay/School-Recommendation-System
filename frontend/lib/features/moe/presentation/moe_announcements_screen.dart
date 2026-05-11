@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/widgets/responsive_shell.dart';
+import '../../admin/presentation/admin_announcements_screen.dart';
 import '../../announcements/data/announcement_dtos.dart';
 import '../../announcements/data/announcement_repository.dart';
 import '../../auth/data/auth_repository.dart';
@@ -56,15 +57,25 @@ class _MoeAnnouncementsScreenState
   }
 
   Future<void> _compose() async {
-    final result = await showDialog<AnnouncementInput>(
+    final result = await showDialog<AnnouncementComposeResult>(
       context: context,
-      builder: (_) => const _MoeComposeDialog(),
+      builder: (_) => const AnnouncementComposeDialog(
+        schools: [],
+        forMoE: true,
+      ),
     );
     if (result == null) return;
     try {
-      await ref
-          .read(announcementRepositoryProvider)
-          .createForMoe(result);
+      final repo = ref.read(announcementRepositoryProvider);
+      final created = await repo.createForMoe(result.input);
+      // Phase 11 — attach the optional banner image after creation.
+      if (result.image != null) {
+        await repo.uploadImage(
+          id: created.id,
+          filename: result.image!.filename,
+          bytes: result.image!.bytes,
+        );
+      }
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Ministry announcement published.')),
@@ -185,94 +196,6 @@ class _MoeAnnouncementsScreenState
   }
 }
 
-class _MoeComposeDialog extends StatefulWidget {
-  const _MoeComposeDialog();
-
-  @override
-  State<_MoeComposeDialog> createState() => _MoeComposeDialogState();
-}
-
-class _MoeComposeDialogState extends State<_MoeComposeDialog> {
-  final _titleCtrl = TextEditingController();
-  final _contentCtrl = TextEditingController();
-  AnnouncementCategory _category = AnnouncementCategory.policy;
-  UrgencyLevel _urgency = UrgencyLevel.normal;
-
-  @override
-  void dispose() {
-    _titleCtrl.dispose();
-    _contentCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('New ministry announcement'),
-      content: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 480),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextField(
-                controller: _titleCtrl,
-                decoration: const InputDecoration(labelText: 'Title'),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _contentCtrl,
-                decoration: const InputDecoration(labelText: 'Content'),
-                minLines: 3,
-                maxLines: 8,
-              ),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<AnnouncementCategory>(
-                value: _category,
-                decoration: const InputDecoration(labelText: 'Category'),
-                items: [
-                  for (final c in AnnouncementCategory.values)
-                    DropdownMenuItem(value: c, child: Text(c.label())),
-                ],
-                onChanged: (v) =>
-                    setState(() => _category = v ?? _category),
-              ),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<UrgencyLevel>(
-                value: _urgency,
-                decoration: const InputDecoration(labelText: 'Urgency'),
-                items: [
-                  for (final u in UrgencyLevel.values)
-                    DropdownMenuItem(value: u, child: Text(u.label())),
-                ],
-                onChanged: (v) => setState(() => _urgency = v ?? _urgency),
-              ),
-            ],
-          ),
-        ),
-      ),
-      actions: [
-        TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel')),
-        FilledButton(
-          onPressed: () {
-            if (_titleCtrl.text.trim().isEmpty ||
-                _contentCtrl.text.trim().isEmpty) {
-              return;
-            }
-            Navigator.of(context).pop(AnnouncementInput(
-              title: _titleCtrl.text.trim(),
-              content: _contentCtrl.text.trim(),
-              category: _category,
-              urgencyLevel: _urgency,
-              schoolId: null,
-            ));
-          },
-          child: const Text('Publish'),
-        ),
-      ],
-    );
-  }
-}
+// Phase 11: the dedicated MoE compose dialog was retired in favor of the
+// shared `AnnouncementComposeDialog` (forMoE=true) so the image-attachment
+// path is identical across roles.

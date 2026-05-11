@@ -5,10 +5,16 @@ import {
   getOne,
   update,
   remove,
+  uploadImage,
+  removeImage,
 } from "../controllers/announcement.controller.js";
-import { authenticate } from "../middlewares/auth.middleware.js";
+import {
+  authenticate,
+  optionalAuthenticate,
+} from "../middlewares/auth.middleware.js";
 import { authorizeRoles } from "../middlewares/role.middleware.js";
 import { validate } from "../middlewares/validate.middleware.js";
+import { announcementImageUpload } from "../config/uploads.js";
 import { idParamsSchema } from "../schemas/common.schema.js";
 import {
   createAnnouncementBodySchema,
@@ -34,7 +40,15 @@ const router = express.Router();
  *     responses:
  *       200: { description: Paginated list }
  */
-router.get("/", validate({ query: listAnnouncementsQuerySchema }), getAll);
+// `optionalAuthenticate` lets `req.user` be populated when a valid JWT is
+// present (so `followedOnly=true` can resolve) without forcing auth on the
+// public listing.
+router.get(
+  "/",
+  optionalAuthenticate,
+  validate({ query: listAnnouncementsQuerySchema }),
+  getAll
+);
 
 /**
  * @openapi
@@ -126,6 +140,42 @@ router.delete(
   authorizeRoles("MOE_OFFICER", "SCHOOL_ADMIN"),
   validate({ params: idParamsSchema }),
   remove
+);
+
+/**
+ * @openapi
+ * /api/announcements/{id}/image:
+ *   post:
+ *     tags: [Announcements]
+ *     summary: Attach (or replace) a single image on an announcement (owner only)
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               image: { type: string, format: binary }
+ *   delete:
+ *     tags: [Announcements]
+ *     summary: Clear the image on an announcement (owner only)
+ *     security: [{ bearerAuth: [] }]
+ */
+router.post(
+  "/:id/image",
+  authenticate,
+  authorizeRoles("MOE_OFFICER", "SCHOOL_ADMIN"),
+  validate({ params: idParamsSchema }),
+  announcementImageUpload,
+  uploadImage
+);
+router.delete(
+  "/:id/image",
+  authenticate,
+  authorizeRoles("MOE_OFFICER", "SCHOOL_ADMIN"),
+  validate({ params: idParamsSchema }),
+  removeImage
 );
 
 export default router;

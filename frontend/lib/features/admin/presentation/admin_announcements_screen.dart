@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/config.dart';
+import '../../../shared/utils/image_picker.dart';
 import '../../../shared/widgets/responsive_shell.dart';
 import '../../announcements/data/announcement_dtos.dart';
 import '../../announcements/data/announcement_repository.dart';
@@ -9,6 +11,14 @@ import '../../auth/data/auth_repository.dart';
 import '../../auth/state/auth_controller.dart';
 import '../../schools/data/school_dtos.dart';
 import '../../schools/data/school_repository.dart';
+
+/// Bundle returned by the compose dialog so the caller can both create the
+/// announcement AND (optionally) upload an image attached to it.
+class AnnouncementComposeResult {
+  final AnnouncementInput input;
+  final PickedImage? image;
+  const AnnouncementComposeResult({required this.input, this.image});
+}
 
 /// School-admin announcement management. Lists announcements published by
 /// the current admin (filtered client-side on `publisherId == me.id`) and
@@ -70,18 +80,26 @@ class _AdminAnnouncementsScreenState
       );
       return;
     }
-    final result = await showDialog<AnnouncementInput>(
+    final result = await showDialog<AnnouncementComposeResult>(
       context: context,
-      builder: (_) => _AnnouncementComposeDialog(
+      builder: (_) => AnnouncementComposeDialog(
         schools: _mySchools,
         forMoE: false,
       ),
     );
     if (result == null) return;
     try {
-      await ref
-          .read(announcementRepositoryProvider)
-          .createForSchool(result);
+      final repo = ref.read(announcementRepositoryProvider);
+      final created = await repo.createForSchool(result.input);
+      // Phase 11 — if the publisher attached an image in the same
+      // dialog, attach it to the freshly created announcement.
+      if (result.image != null) {
+        await repo.uploadImage(
+          id: created.id,
+          filename: result.image!.filename,
+          bytes: result.image!.bytes,
+        );
+      }
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Announcement posted.')),
@@ -234,26 +252,31 @@ class _AnnouncementTile extends StatelessWidget {
 
 /// Reused by both the school-admin and MoE flows. Pass `forMoE = true` and
 /// an empty `schools` list when posting a ministry-level announcement.
-class _AnnouncementComposeDialog extends StatefulWidget {
+///
+/// Phase 11: also accepts an optional banner image (web file picker).
+class AnnouncementComposeDialog extends StatefulWidget {
   final List<School> schools;
   final bool forMoE;
-  const _AnnouncementComposeDialog({
+  const AnnouncementComposeDialog({
+    super.key,
     required this.schools,
     required this.forMoE,
   });
 
   @override
-  State<_AnnouncementComposeDialog> createState() =>
+  State<AnnouncementComposeDialog> createState() =>
       _AnnouncementComposeDialogState();
 }
 
 class _AnnouncementComposeDialogState
-    extends State<_AnnouncementComposeDialog> {
+    extends State<AnnouncementComposeDialog> {
   final _titleCtrl = TextEditingController();
   final _contentCtrl = TextEditingController();
   AnnouncementCategory _category = AnnouncementCategory.other;
   UrgencyLevel _urgency = UrgencyLevel.normal;
   int? _schoolId;
+  PickedImage? _picked;
+  String? _pickError;
 
   @override
   void initState() {
@@ -270,8 +293,20 @@ class _AnnouncementComposeDialogState
     super.dispose();
   }
 
+  Future<void> _pickImage() async {
+    setState(() => _pickError = null);
+    try {
+      final picked = await pickImageFromUser();
+      if (picked == null) return;
+      setState(() => _picked = picked);
+    } catch (e) {
+      setState(() => _pickError = e.toString());
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return AlertDialog(
       title: Text(widget.forMoE
           ? 'New ministry announcement'
@@ -327,6 +362,14 @@ class _AnnouncementComposeDialogState
                 onChanged: (v) =>
                     setState(() => _urgency = v ?? _urgency),
               ),
+              const SizedBox(height: 12),
+              // Phase 11 — optional banner image.
+              ImageAttachmentRow(
+                picked: _picked,
+                onPick: _pickImage,
+                onClear: () => setState(() => _picked = null),
+                error: _pickError,
+              ),
             ],
           ),
         ),
@@ -341,17 +384,107 @@ class _AnnouncementComposeDialogState
                 _contentCtrl.text.trim().isEmpty) {
               return;
             }
-            Navigator.of(context).pop(AnnouncementInput(
+            final input = AnnouncementInput(
               title: _titleCtrl.text.trim(),
               content: _contentCtrl.text.trim(),
               category: _category,
               urgencyLevel: _urgency,
               schoolId: widget.forMoE ? null : _schoolId,
-            ));
+            );
+            Navigator.of(context).pop(
+              AnnouncementComposeResult(input: input, image: _picked),
+            );
           },
-          child: const Text('Publish'),
+          child: Text(theme.platform == TargetPlatform.iOS
+              ? 'Publish'
+              : 'Publish'),
         ),
       ],
     );
   }
+}
+
+/// Compact thumbnail + "Attach"/"Replace" / "Remove" controls used by both
+/// compose dialogs to manage a single banner image.
+class ImageAttachmentRow extends StatelessWidget {
+  final PickedImage? picked;
+  final VoidCallback onPick;
+  final VoidCallback onClear;
+  final String? error;
+  const ImageAttachmentRow({
+    super.key,
+    required this.picked,
+    required this.onPick,
+    required this.onClear,
+    this.error,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            if (picked != null)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.memory(
+                  picked!.bytes,
+                  width: 80,
+                  height: 60,
+                  fit: BoxFit.cover,
+                ),
+              )
+            else
+              Container(
+                width: 80,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.image_outlined),
+              ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                picked?.filename ?? 'No image attached (optional)',
+                style: theme.textTheme.bodySmall,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 4),
+            if (picked != null)
+              IconButton(
+                tooltip: 'Remove',
+                icon: const Icon(Icons.close),
+                onPressed: onClear,
+              ),
+            TextButton.icon(
+              onPressed: onPick,
+              icon: Icon(picked == null
+                  ? Icons.attach_file
+                  : Icons.swap_horiz),
+              label: Text(picked == null ? 'Attach' : 'Replace'),
+            ),
+          ],
+        ),
+        if (error != null) ...[
+          const SizedBox(height: 4),
+          Text(error!, style: TextStyle(color: theme.colorScheme.error)),
+        ],
+      ],
+    );
+  }
+}
+
+// Keep the relative-to-absolute image helper colocated with the dialog so
+// the tile rendering also works.
+String absoluteAnnouncementImage(String url) {
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  if (url.startsWith('/')) return '${AppConfig.apiBaseUrl}$url';
+  return '${AppConfig.apiBaseUrl}/$url';
 }

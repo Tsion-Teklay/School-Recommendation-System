@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/config.dart';
+import '../../../shared/utils/image_picker.dart';
 import '../../../shared/widgets/responsive_shell.dart';
 import '../../auth/data/auth_repository.dart';
 import '../../schools/data/school_dtos.dart';
@@ -33,6 +35,10 @@ class _AdminSchoolManageScreenState
   String? _submitError;
   final _notesCtrl = TextEditingController();
   final List<PickedFile> _picked = [];
+
+  // Phase 11 — facility image upload state.
+  bool _uploadingImage = false;
+  String? _imageError;
 
   @override
   void initState() {
@@ -118,6 +124,68 @@ class _AdminSchoolManageScreenState
     });
   }
 
+  Future<void> _pickAndUploadFacilityImage() async {
+    setState(() {
+      _uploadingImage = true;
+      _imageError = null;
+    });
+    try {
+      final picked = await pickImageFromUser();
+      if (picked == null) {
+        setState(() => _uploadingImage = false);
+        return;
+      }
+      await ref.read(schoolRepositoryProvider).uploadFacilityImage(
+            schoolId: widget.schoolId,
+            filename: picked.filename,
+            bytes: picked.bytes,
+            contentType: picked.contentType,
+          );
+      await _load();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Facility image uploaded.')),
+      );
+    } on ApiException catch (e) {
+      setState(() => _imageError = e.message);
+    } catch (e) {
+      setState(() => _imageError = e.toString());
+    } finally {
+      if (mounted) setState(() => _uploadingImage = false);
+    }
+  }
+
+  Future<void> _deleteFacilityImage(FacilityImage img) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete photo?'),
+        content: const Text(
+            'This will remove the image from the school detail page.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel')),
+          FilledButton.tonal(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('Delete')),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    try {
+      await ref.read(schoolRepositoryProvider).deleteFacilityImage(
+            schoolId: widget.schoolId,
+            imageId: img.id,
+          );
+      await _load();
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.message)));
+    }
+  }
+
   Future<void> _submitVerification() async {
     if (_picked.isEmpty) {
       setState(() => _submitError = 'Attach at least one document.');
@@ -177,6 +245,15 @@ class _AdminSchoolManageScreenState
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     if (_school != null) _SchoolSummary(school: _school!),
+                    const SizedBox(height: 16),
+                    if (_school != null)
+                      _FacilityImagesCard(
+                        images: _school!.facilityImages,
+                        uploading: _uploadingImage,
+                        error: _imageError,
+                        onAdd: _pickAndUploadFacilityImage,
+                        onDelete: _deleteFacilityImage,
+                      ),
                     const SizedBox(height: 16),
                     Card(
                       child: Padding(
@@ -290,6 +367,148 @@ class _AdminSchoolManageScreenState
                 ),
     );
   }
+}
+
+class _FacilityImagesCard extends StatelessWidget {
+  final List<FacilityImage> images;
+  final bool uploading;
+  final String? error;
+  final VoidCallback onAdd;
+  final Future<void> Function(FacilityImage img) onDelete;
+  const _FacilityImagesCard({
+    required this.images,
+    required this.uploading,
+    required this.error,
+    required this.onAdd,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text('Facility photos', style: theme.textTheme.titleLarge),
+                const Spacer(),
+                Text('${images.length}',
+                    style: theme.textTheme.titleMedium),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'PNG / JPEG / WebP, ≤10MB. These show up in the carousel '
+              'on the public school detail page.',
+              style: theme.textTheme.bodySmall,
+            ),
+            const SizedBox(height: 12),
+            if (error != null) ...[
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.errorContainer,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.error_outline,
+                        color: theme.colorScheme.onErrorContainer,
+                        size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        error!,
+                        style: TextStyle(
+                            color: theme.colorScheme.onErrorContainer),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+            if (images.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Text('No photos uploaded yet.'),
+              )
+            else
+              SizedBox(
+                height: 140,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: images.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (_, i) {
+                    final img = images[i];
+                    return Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.network(
+                            _absoluteImage(img.imageUrl),
+                            width: 180,
+                            height: 140,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              width: 180,
+                              height: 140,
+                              color: theme
+                                  .colorScheme.surfaceContainerHighest,
+                              alignment: Alignment.center,
+                              child: const Icon(Icons
+                                  .image_not_supported_outlined),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 4,
+                          right: 4,
+                          child: Material(
+                            color: Colors.black54,
+                            shape: const CircleBorder(),
+                            child: IconButton(
+                              icon: const Icon(Icons.delete,
+                                  color: Colors.white, size: 18),
+                              tooltip: 'Delete',
+                              onPressed: () => onDelete(img),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: uploading ? null : onAdd,
+              icon: uploading
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child:
+                          CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.add_a_photo),
+              label: Text(uploading ? 'Uploading…' : 'Add photo'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+String _absoluteImage(String url) {
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  if (url.startsWith('/')) return '${AppConfig.apiBaseUrl}$url';
+  return '${AppConfig.apiBaseUrl}/$url';
 }
 
 class _SchoolSummary extends StatelessWidget {
