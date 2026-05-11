@@ -1,0 +1,89 @@
+import request from "supertest";
+import app from "../app.js";
+import { db } from "../config/db.js";
+import { cleanDatabase } from "./utils/cleanup.js";
+import { registerVerifiedUser } from "./utils/auth.js";
+
+let parentToken;
+let schoolId;
+
+beforeAll(async () => {
+  // Use the central utility to wipe all tables in the correct order
+  await cleanDatabase();
+
+  // 1. Create parent (auto-verified)
+  const parent = await registerVerifiedUser({
+    fullName: "Parent User",
+    email: "fav@test.com",
+    phone: "0955555555",
+    role: "PARENT",
+  });
+  parentToken = parent.token;
+
+  // IMPORTANT: manually create parent record so favorites can link to it
+  await db.parent.create({
+    data: {
+      userId: parent.user.id,
+      address: "Addis",
+      latitude: 9.0,
+      longitude: 38.0,
+    },
+  });
+
+  // 2. Create school (need admin)
+  const admin = await registerVerifiedUser({
+    fullName: "Admin",
+    email: "adminfav@test.com",
+    phone: "0966666666",
+    role: "SCHOOL_ADMIN",
+  });
+
+  const schoolRes = await request(app)
+    .post("/api/schools")
+    .set("Authorization", `Bearer ${admin.token}`)
+    .send({
+      schoolName: "Fav School",
+      address: "Addis",
+      contactEmail: "fav@school.com",
+      contactPhone: "0910000000",
+      curriculum: "LOCAL",
+      tuitionFee: 3000,
+      latitude: 9.0,
+      longitude: 38.0,
+    });
+
+  schoolId = schoolRes.body.school.id;
+});
+
+afterAll(async () => {
+  await db.$disconnect();
+});
+
+describe("Favorites API", () => {
+  it("should add favorite", async () => {
+    const res = await request(app)
+      .post(`/api/favorites/${schoolId}`)
+      .set("Authorization", `Bearer ${parentToken}`);
+
+    if (res.statusCode !== 201) console.log("Add Favorite Error:", res.body);
+    expect(res.statusCode).toBe(201);
+  });
+
+  it("should get favorites", async () => {
+    const res = await request(app)
+      .get("/api/favorites")
+      .set("Authorization", `Bearer ${parentToken}`);
+
+    expect(res.statusCode).toBe(200);
+    // Ensure the data key exists based on your controller pattern
+    expect(Array.isArray(res.body.data)).toBe(true);
+  });
+
+  it("should remove favorite", async () => {
+    const res = await request(app)
+      .delete(`/api/favorites/${schoolId}`)
+      .set("Authorization", `Bearer ${parentToken}`);
+
+    expect(res.statusCode).toBe(200);
+  });
+});
