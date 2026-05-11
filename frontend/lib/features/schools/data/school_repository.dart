@@ -96,9 +96,14 @@ class SchoolRepository {
       throw _toApiException(res);
     }
     final body = res.data as Map<String, dynamic>;
-    return FacilityImage.fromJson(
-      body['facilityImage'] as Map<String, dynamic>,
-    );
+    // Backend controller wraps the new row as `{ message, image }`. The
+    // older key `facilityImage` is tolerated for forward compatibility.
+    final raw = (body['image'] ?? body['facilityImage']) as Map<String, dynamic>?;
+    if (raw == null) {
+      throw ApiException('Upload succeeded but response was empty',
+          statusCode: res.statusCode);
+    }
+    return FacilityImage.fromJson(raw);
   }
 
   /// Phase 11 — delete a facility image by id. School admin only.
