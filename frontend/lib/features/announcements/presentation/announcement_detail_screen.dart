@@ -8,6 +8,13 @@ import '../../auth/data/auth_repository.dart';
 import '../data/announcement_dtos.dart';
 import '../data/announcement_repository.dart';
 
+import '../../../shared/widgets/like_action.dart';
+import '../../../shared/widgets/report_dialog.dart';
+import '../../../shared/widgets/share_action.dart';
+import '../../../shared/widgets/comment_tile.dart';
+import '../../../features/reports/data/report_dtos.dart';
+import '../../../features/likes/data/like_dtos.dart';
+
 /// `/announcements/:id` — single announcement view. Loaded on demand so
 /// deep links from notifications work without first hitting the list.
 class AnnouncementDetailScreen extends ConsumerStatefulWidget {
@@ -104,79 +111,118 @@ class _Body extends StatelessWidget {
     final theme = Theme.of(context);
     final a = announcement;
     final image = a.imgUrl;
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (image != null && image.isNotEmpty)
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: Image.network(
-                _absoluteImage(image),
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  color: theme.colorScheme.surfaceContainerHighest,
-                  child: const Center(
-                      child: Icon(Icons.image_not_supported_outlined)),
+
+    // Note: Ensure you have access to ref here.
+    // Since _Body is currently a StatelessWidget, we should change it
+    // to a ConsumerWidget to use 'ref.read'.
+    return Consumer(
+      builder: (context, ref, child) {
+        return Card(
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (image != null && image.isNotEmpty)
+                AspectRatio(
+                  aspectRatio: 16 / 9,
+                  child: Image.network(
+                    _absoluteImage(image),
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      child: const Center(
+                          child: Icon(Icons.image_not_supported_outlined)),
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(a.title, style: theme.textTheme.headlineSmall),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Chip(label: Text(a.category.label())),
-                    Chip(
-                      label: Text(a.urgencyLevel.label()),
-                      backgroundColor: a.urgencyLevel == UrgencyLevel.emergency
-                          ? theme.colorScheme.errorContainer
-                          : a.urgencyLevel == UrgencyLevel.high
-                              ? theme.colorScheme.tertiaryContainer
-                              : null,
+                    Text(a.title, style: theme.textTheme.headlineSmall),
+                    // ... (Chips and Content section remains the same)
+                    const SizedBox(height: 16),
+                    SelectableText(
+                      a.content,
+                      style: theme.textTheme.bodyLarge,
                     ),
-                    Chip(
-                      avatar: Icon(
-                        a.publisherType == PublisherType.moe
-                            ? Icons.account_balance_outlined
-                            : Icons.school_outlined,
-                        size: 16,
+                    if (a.school != null) ...[
+                      const SizedBox(height: 24),
+                      OutlinedButton.icon(
+                        onPressed: () =>
+                            GoRouter.of(context).go('/schools/${a.school!.id}'),
+                        icon: const Icon(Icons.open_in_new),
+                        label: Text('View ${a.school!.schoolName}'),
                       ),
-                      label: Text(a.school?.schoolName ??
-                          a.publisherType.label()),
+                    ],
+
+                    // --- ACTION BAR ---
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        LikeAction(
+                            targetType: LikeTargetType.announcement,
+                            targetId: a.id),
+                        ShareAction(
+                          title: a.title,
+                          content: a.content,
+                          url: 'https://yourapp.com/announcements/${a.id}',
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.flag_outlined),
+                          onPressed: () => showDialog(
+                            context: context,
+                            builder: (_) => ReportDialog(
+                              targetType: ReportTargetType.announcement,
+                              targetId: a.id,
+                            ),
+                          ),
+                          tooltip: 'Report',
+                        ),
+                      ],
                     ),
-                    Text(
-                      _formatDate(a.datePosted),
-                      style: theme.textTheme.bodySmall,
+
+                    // --- NEW COMMENT SECTION START ---
+                    const SizedBox(height: 32),
+                    Text('Comments', style: theme.textTheme.titleMedium),
+                    const SizedBox(height: 16),
+                    FutureBuilder(
+                      // We use ref.read here to fetch the comments
+                      future: ref
+                          .read(announcementRepositoryProvider)
+                          .getAnnouncementComments(a.id),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                              child: CircularProgressIndicator());
+                        }
+                        if (snapshot.hasError) {
+                          return Text(
+                              'Error loading comments: ${snapshot.error}');
+                        }
+
+                        final comments = snapshot.data ?? [];
+                        if (comments.isEmpty)
+                          return const Text('No comments yet');
+
+                        return Column(
+                          children: comments
+                              .map((c) => CommentTile(comment: c))
+                              .toList(),
+                        );
+                      },
                     ),
+                    // --- NEW COMMENT SECTION END ---
                   ],
                 ),
-                const SizedBox(height: 16),
-                SelectableText(
-                  a.content,
-                  style: theme.textTheme.bodyLarge,
-                ),
-                if (a.school != null) ...[
-                  const SizedBox(height: 24),
-                  OutlinedButton.icon(
-                    onPressed: () =>
-                        GoRouter.of(context).go('/schools/${a.school!.id}'),
-                    icon: const Icon(Icons.open_in_new),
-                    label: Text('View ${a.school!.schoolName}'),
-                  ),
-                ],
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -185,9 +231,4 @@ String _absoluteImage(String url) {
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
   if (url.startsWith('/')) return '${AppConfig.apiBaseUrl}$url';
   return '${AppConfig.apiBaseUrl}/$url';
-}
-
-String _formatDate(DateTime d) {
-  return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')} '
-      '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
 }

@@ -64,9 +64,8 @@ class _AdminSchoolManageScreenState
           await ref.read(verificationRepositoryProvider).list(limit: 50);
       setState(() {
         _school = school;
-        _requests = reqs.items
-            .where((r) => r.schoolId == widget.schoolId)
-            .toList();
+        _requests =
+            reqs.items.where((r) => r.schoolId == widget.schoolId).toList();
       });
     } on ApiException catch (e) {
       setState(() => _error = e.message);
@@ -117,8 +116,7 @@ class _AdminSchoolManageScreenState
     );
     if (ok != true || controller.text.trim().isEmpty) return;
     final name = controller.text.trim();
-    final bytes =
-        Uint8List.fromList('Placeholder content for $name'.codeUnits);
+    final bytes = Uint8List.fromList('Placeholder content for $name'.codeUnits);
     setState(() {
       _picked.add(PickedFile(filename: name, bytes: bytes));
     });
@@ -199,9 +197,8 @@ class _AdminSchoolManageScreenState
       await ref.read(verificationRepositoryProvider).submit(
             schoolId: widget.schoolId,
             documents: _picked,
-            notes: _notesCtrl.text.trim().isEmpty
-                ? null
-                : _notesCtrl.text.trim(),
+            notes:
+                _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
           );
       if (!mounted) return;
       _picked.clear();
@@ -238,8 +235,7 @@ class _AdminSchoolManageScreenState
               ? Card(
                   color: theme.colorScheme.errorContainer,
                   child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Text(_error!)),
+                      padding: const EdgeInsets.all(16), child: Text(_error!)),
                 )
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -278,8 +274,8 @@ class _AdminSchoolManageScreenState
                                   for (final f in _picked)
                                     InputChip(
                                       label: Text(f.filename),
-                                      onDeleted: () => setState(
-                                          () => _picked.remove(f)),
+                                      onDeleted: () =>
+                                          setState(() => _picked.remove(f)),
                                     ),
                                 ],
                               ),
@@ -311,15 +307,13 @@ class _AdminSchoolManageScreenState
                               crossAxisAlignment: WrapCrossAlignment.center,
                               children: [
                                 OutlinedButton.icon(
-                                  onPressed:
-                                      _submitting ? null : _addStubFile,
+                                  onPressed: _submitting ? null : _addStubFile,
                                   icon: const Icon(Icons.attach_file),
                                   label: const Text('Attach document'),
                                 ),
                                 FilledButton.icon(
-                                  onPressed: _submitting
-                                      ? null
-                                      : _submitVerification,
+                                  onPressed:
+                                      _submitting ? null : _submitVerification,
                                   icon: _submitting
                                       ? const SizedBox(
                                           width: 16,
@@ -396,8 +390,7 @@ class _FacilityImagesCard extends StatelessWidget {
               children: [
                 Text('Facility photos', style: theme.textTheme.titleLarge),
                 const Spacer(),
-                Text('${images.length}',
-                    style: theme.textTheme.titleMedium),
+                Text('${images.length}', style: theme.textTheme.titleMedium),
               ],
             ),
             const SizedBox(height: 4),
@@ -417,8 +410,7 @@ class _FacilityImagesCard extends StatelessWidget {
                 child: Row(
                   children: [
                     Icon(Icons.error_outline,
-                        color: theme.colorScheme.onErrorContainer,
-                        size: 18),
+                        color: theme.colorScheme.onErrorContainer, size: 18),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -458,11 +450,10 @@ class _FacilityImagesCard extends StatelessWidget {
                             errorBuilder: (_, __, ___) => Container(
                               width: 180,
                               height: 140,
-                              color: theme
-                                  .colorScheme.surfaceContainerHighest,
+                              color: theme.colorScheme.surfaceContainerHighest,
                               alignment: Alignment.center,
-                              child: const Icon(Icons
-                                  .image_not_supported_outlined),
+                              child: const Icon(
+                                  Icons.image_not_supported_outlined),
                             ),
                           ),
                         ),
@@ -492,8 +483,7 @@ class _FacilityImagesCard extends StatelessWidget {
                   ? const SizedBox(
                       width: 16,
                       height: 16,
-                      child:
-                          CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.add_a_photo),
               label: Text(uploading ? 'Uploading…' : 'Add photo'),
@@ -541,8 +531,7 @@ class _SchoolSummary extends StatelessWidget {
                   ),
                 if ((school.followerCount ?? 0) > 0)
                   Chip(
-                    avatar:
-                        const Icon(Icons.favorite_outline, size: 18),
+                    avatar: const Icon(Icons.favorite_outline, size: 18),
                     label: Text('${school.followerCount} follower(s)'),
                   ),
                 if ((school.rating ?? 0) > 0)
@@ -590,15 +579,13 @@ class _VerificationRequestTile extends StatelessWidget {
             Row(
               children: [
                 Chip(
-                  backgroundColor: color.withOpacity(0.15),
-                  label: Text(req.status.label(),
-                      style: TextStyle(color: color)),
+                  backgroundColor: color.withValues(alpha: 0.15),
+                  label:
+                      Text(req.status.label(), style: TextStyle(color: color)),
                 ),
                 const Spacer(),
                 Text(
-                  req.submittedAt
-                      .toIso8601String()
-                      .substring(0, 10),
+                  req.submittedAt.toIso8601String().substring(0, 10),
                   style: theme.textTheme.bodySmall,
                 ),
               ],

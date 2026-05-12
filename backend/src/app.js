@@ -76,36 +76,37 @@ app.use("/api/me/follows", subscriptionRoutes.myFollowsRouter);
 // Phase 4: side-by-side comparisons.
 app.use(
   "/api/comparisons",
-  (await import("./routes/comparison.routes.js")).default
+  (await import("./routes/comparison.routes.js")).default,
 );
 app.use(
   "/api/recommendations",
-  (await import("./routes/recommendation.routes.js")).default
+  (await import("./routes/recommendation.routes.js")).default,
 );
 app.use(
   "/api/preferences",
-  (await import("./routes/preference.routes.js")).default
+  (await import("./routes/preference.routes.js")).default,
 );
 app.use(
   "/api/favorites",
-  (await import("./routes/favorite.routes.js")).default
+  (await import("./routes/favorite.routes.js")).default,
 );
 app.use("/api/reviews", (await import("./routes/review.routes.js")).default);
 app.use(
   "/api/announcements",
-  (await import("./routes/announcement.routes.js")).default
+  (await import("./routes/announcement.routes.js")).default,
 );
 app.use("/api/reports", (await import("./routes/report.routes.js")).default);
 // Phase 5: discussion forum (threaded posts + replies, content moderated).
 app.use("/api/forum", (await import("./routes/forum.routes.js")).default);
 app.use(
   "/api/notifications",
-  (await import("./routes/notification.routes.js")).default
+  (await import("./routes/notification.routes.js")).default,
 );
 app.use(
   "/api/analytics",
-  (await import("./routes/analytics.routes.js")).default
+  (await import("./routes/analytics.routes.js")).default,
 );
+app.use("/api/likes", (await import("./routes/like.routes.js")).default);
 
 // Phase 3: school-verification workflow. The router registers paths under
 // both /api/schools/:id/verification-requests (submit) and

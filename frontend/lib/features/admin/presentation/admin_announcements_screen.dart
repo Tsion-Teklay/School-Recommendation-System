@@ -53,10 +53,9 @@ class _AdminAnnouncementsScreenState
       final me = ref.read(authControllerProvider).user;
       final repo = ref.read(announcementRepositoryProvider);
       final result = await repo.list(limit: 50);
-      final mySchools =
-          await ref.read(schoolRepositoryProvider).list(
-                const SchoolListFilters(limit: 100),
-              );
+      final mySchools = await ref.read(schoolRepositoryProvider).list(
+            const SchoolListFilters(limit: 100),
+          );
       setState(() {
         _items = result.items
             .where((a) => me != null && a.publisherId == me.id)
@@ -75,8 +74,7 @@ class _AdminAnnouncementsScreenState
   Future<void> _compose() async {
     if (_mySchools.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('You need at least one school to post.')),
+        const SnackBar(content: Text('You need at least one school to post.')),
       );
       return;
     }
@@ -268,8 +266,7 @@ class AnnouncementComposeDialog extends StatefulWidget {
       _AnnouncementComposeDialogState();
 }
 
-class _AnnouncementComposeDialogState
-    extends State<AnnouncementComposeDialog> {
+class _AnnouncementComposeDialogState extends State<AnnouncementComposeDialog> {
   final _titleCtrl = TextEditingController();
   final _contentCtrl = TextEditingController();
   AnnouncementCategory _category = AnnouncementCategory.other;
@@ -320,7 +317,7 @@ class _AnnouncementComposeDialogState
             children: [
               if (!widget.forMoE && widget.schools.isNotEmpty)
                 DropdownButtonFormField<int>(
-                  value: _schoolId,
+                  initialValue: _schoolId,
                   decoration: const InputDecoration(labelText: 'School'),
                   items: [
                     for (final s in widget.schools)
@@ -342,25 +339,23 @@ class _AnnouncementComposeDialogState
               ),
               const SizedBox(height: 8),
               DropdownButtonFormField<AnnouncementCategory>(
-                value: _category,
+                initialValue: _category,
                 decoration: const InputDecoration(labelText: 'Category'),
                 items: [
                   for (final c in AnnouncementCategory.values)
                     DropdownMenuItem(value: c, child: Text(c.label())),
                 ],
-                onChanged: (v) =>
-                    setState(() => _category = v ?? _category),
+                onChanged: (v) => setState(() => _category = v ?? _category),
               ),
               const SizedBox(height: 8),
               DropdownButtonFormField<UrgencyLevel>(
-                value: _urgency,
+                initialValue: _urgency,
                 decoration: const InputDecoration(labelText: 'Urgency'),
                 items: [
                   for (final u in UrgencyLevel.values)
                     DropdownMenuItem(value: u, child: Text(u.label())),
                 ],
-                onChanged: (v) =>
-                    setState(() => _urgency = v ?? _urgency),
+                onChanged: (v) => setState(() => _urgency = v ?? _urgency),
               ),
               const SizedBox(height: 12),
               // Phase 11 — optional banner image.
@@ -395,9 +390,8 @@ class _AnnouncementComposeDialogState
               AnnouncementComposeResult(input: input, image: _picked),
             );
           },
-          child: Text(theme.platform == TargetPlatform.iOS
-              ? 'Publish'
-              : 'Publish'),
+          child: Text(
+              theme.platform == TargetPlatform.iOS ? 'Publish' : 'Publish'),
         ),
       ],
     );
@@ -465,9 +459,7 @@ class ImageAttachmentRow extends StatelessWidget {
               ),
             TextButton.icon(
               onPressed: onPick,
-              icon: Icon(picked == null
-                  ? Icons.attach_file
-                  : Icons.swap_horiz),
+              icon: Icon(picked == null ? Icons.attach_file : Icons.swap_horiz),
               label: Text(picked == null ? 'Attach' : 'Replace'),
             ),
           ],

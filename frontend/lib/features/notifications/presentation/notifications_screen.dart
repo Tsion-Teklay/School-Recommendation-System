@@ -52,8 +52,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                     ButtonSegment(value: true, label: Text('Unread')),
                   ],
                   selected: {controller.unreadOnly},
-                  onSelectionChanged: (s) =>
-                      controller.setUnreadOnly(s.first),
+                  onSelectionChanged: (s) => controller.setUnreadOnly(s.first),
                 ),
               ),
               const SizedBox(width: 12),
@@ -107,7 +106,9 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
               padding: EdgeInsets.symmetric(vertical: 16),
               child: Center(child: CircularProgressIndicator()),
             ),
-          if (!controller.loading && !controller.appending && controller.hasMore)
+          if (!controller.loading &&
+              !controller.appending &&
+              controller.hasMore)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: Center(
@@ -146,10 +147,10 @@ class _NotificationTile extends StatelessWidget {
       // Highlight unread with a subtle tint so the eye lands there first.
       color: n.isRead
           ? null
-          : theme.colorScheme.primaryContainer.withOpacity(0.35),
+          : theme.colorScheme.primaryContainer.withValues(alpha: 0.35),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: theme.colorScheme.primary.withOpacity(0.15),
+          backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.15),
           foregroundColor: theme.colorScheme.primary,
           child: Icon(_iconFor(n.sourceType)),
         ),

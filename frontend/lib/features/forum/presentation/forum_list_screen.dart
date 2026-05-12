@@ -130,9 +130,9 @@ class _PostTile extends StatelessWidget {
                   CircleAvatar(
                     child: Text(
                       (post.author?.fullName ?? '?')
-                          .characters
-                          .firstOrNull
-                          ?.toUpperCase() ??
+                              .characters
+                              .firstOrNull
+                              ?.toUpperCase() ??
                           '?',
                     ),
                   ),
@@ -170,8 +170,7 @@ class _PostTile extends StatelessWidget {
 
 class _ComposeDialog extends StatefulWidget {
   final String title;
-  final String? initial;
-  const _ComposeDialog({required this.title, this.initial});
+  const _ComposeDialog({required this.title});
 
   @override
   State<_ComposeDialog> createState() => _ComposeDialogState();
@@ -182,7 +181,7 @@ class _ComposeDialogState extends State<_ComposeDialog> {
   @override
   void initState() {
     super.initState();
-    _ctrl = TextEditingController(text: widget.initial ?? '');
+    _ctrl = TextEditingController();
   }
 
   @override
