@@ -36,6 +36,23 @@ class _AdminSchoolManageScreenState
   final _notesCtrl = TextEditingController();
   final List<PickedFile> _picked = [];
 
+  bool _editing = false;  
+  bool _saving = false;  
+  String? _saveError;  
+
+  // Add controllers for edit form  
+  final _editSchoolName = TextEditingController();  
+  final _editAddress = TextEditingController();  
+  final _editContactEmail = TextEditingController();  
+  final _editContactPhone = TextEditingController();  
+  final _editTuitionFee = TextEditingController();  
+  final _editFacilities = TextEditingController();  
+  final _editLatitude = TextEditingController();  
+  final _editLongitude = TextEditingController();  
+  
+  Curriculum? _editCurriculum;  
+  SchoolLevel? _editSchoolLevel; 
+
   // Phase 11 — facility image upload state.
   bool _uploadingImage = false;
   String? _imageError;
@@ -49,6 +66,14 @@ class _AdminSchoolManageScreenState
   @override
   void dispose() {
     _notesCtrl.dispose();
+    _editSchoolName.dispose();  
+    _editAddress.dispose();  
+    _editContactEmail.dispose();  
+    _editContactPhone.dispose();  
+    _editTuitionFee.dispose();  
+    _editFacilities.dispose();  
+    _editLatitude.dispose();  
+    _editLongitude.dispose();  
     super.dispose();
   }
 
@@ -217,6 +242,86 @@ class _AdminSchoolManageScreenState
     }
   }
 
+void _startEdit() {  
+  if (_school == null) return;  
+  setState(() {  
+    _editing = true;  
+    _saveError = null;  
+    _editSchoolName.text = _school!.schoolName;  
+    _editAddress.text = _school!.address;  
+    _editContactEmail.text = _school!.contactEmail;  
+    _editContactPhone.text = _school!.contactPhone ?? '';  
+    _editTuitionFee.text = _school!.tuitionFee.toString();  
+    _editFacilities.text = _school!.facilities ?? '';  
+    _editLatitude.text = _school!.latitude?.toString() ?? '';  
+    _editLongitude.text = _school!.longitude?.toString() ?? '';  
+    _editCurriculum = _school!.curriculum;  
+    _editSchoolLevel = _school!.schoolLevel;  
+  });  
+}  
+  
+// Add this method to cancel edit  
+void _cancelEdit() {  
+  setState(() {  
+    _editing = false;  
+    _saveError = null;  
+  });  
+}  
+  
+// Add this method to save changes  
+Future<void> _saveEdit() async {  
+  if (_school == null) return;  
+  setState(() {  
+    _saving = true;  
+    _saveError = null;  
+  });  
+  try {  
+    final updated = await ref.read(schoolRepositoryProvider).update(  
+          id: _school!.id,  
+          schoolName: _editSchoolName.text.trim().isEmpty  
+              ? null  
+              : _editSchoolName.text.trim(),  
+          address: _editAddress.text.trim().isEmpty  
+              ? null  
+              : _editAddress.text.trim(),  
+          contactEmail: _editContactEmail.text.trim().isEmpty  
+              ? null  
+              : _editContactEmail.text.trim(),  
+          contactPhone: _editContactPhone.text.trim().isEmpty  
+              ? null  
+              : _editContactPhone.text.trim(),  
+          curriculum: _editCurriculum,  
+          schoolLevel: _editSchoolLevel,  
+          tuitionFee: _editTuitionFee.text.trim().isEmpty  
+              ? null  
+              : num.tryParse(_editTuitionFee.text.trim()),  
+          facilities: _editFacilities.text.trim().isEmpty  
+              ? null  
+              : _editFacilities.text.trim(),  
+          latitude: _editLatitude.text.trim().isEmpty  
+              ? null  
+              : double.tryParse(_editLatitude.text.trim()),  
+          longitude: _editLongitude.text.trim().isEmpty  
+              ? null  
+              : double.tryParse(_editLongitude.text.trim()),  
+        );  
+    if (!mounted) return;  
+    setState(() {  
+      _school = updated;  
+      _editing = false;  
+    });  
+    ScaffoldMessenger.of(context).showSnackBar(  
+      const SnackBar(content: Text('School updated successfully')),  
+    );  
+  } on ApiException catch (e) {  
+    setState(() => _saveError = e.message);  
+  } catch (e) {  
+    setState(() => _saveError = e.toString());  
+  } finally {  
+    if (mounted) setState(() => _saving = false);  
+  }  
+}
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -240,7 +345,30 @@ class _AdminSchoolManageScreenState
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (_school != null) _SchoolSummary(school: _school!),
+                    if (_school != null)  
+                    _SchoolSummary(  
+                      school: _school!,  
+                      editing: _editing,  
+                      saving: _saving,  
+                      saveError: _saveError,  
+                      onEdit: _startEdit,  
+                      onCancel: _cancelEdit,  
+                      onSave: _saveEdit,  
+                      controllers: [  
+                        _editSchoolName,  
+                        _editAddress,  
+                        _editContactEmail,  
+                        _editContactPhone,  
+                        _editTuitionFee,  
+                        _editFacilities,  
+                        _editLatitude,  
+                        _editLongitude,  
+                      ],  
+                      editCurriculum: _editCurriculum,  
+                      editSchoolLevel: _editSchoolLevel,  
+                      onCurriculumChanged: (v) => setState(() => _editCurriculum = v),  
+                      onSchoolLevelChanged: (v) => setState(() => _editSchoolLevel = v),  
+                    ),
                     const SizedBox(height: 16),
                     if (_school != null)
                       _FacilityImagesCard(
@@ -501,54 +629,241 @@ String _absoluteImage(String url) {
   return '${AppConfig.apiBaseUrl}/$url';
 }
 
-class _SchoolSummary extends StatelessWidget {
-  final School school;
-  const _SchoolSummary({required this.school});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(school.schoolName, style: theme.textTheme.headlineSmall),
-            const SizedBox(height: 4),
-            Text(school.address, style: theme.textTheme.bodyMedium),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                Chip(label: Text(school.curriculum.label())),
-                Chip(label: Text(school.verificationStatus.label())),
-                if (school.tuitionFee > 0)
-                  Chip(
-                    avatar: const Icon(Icons.payments_outlined, size: 18),
-                    label: Text('${school.tuitionFee} / year'),
-                  ),
-                if ((school.followerCount ?? 0) > 0)
-                  Chip(
-                    avatar: const Icon(Icons.favorite_outline, size: 18),
-                    label: Text('${school.followerCount} follower(s)'),
-                  ),
-                if ((school.rating ?? 0) > 0)
-                  Chip(
-                    avatar: const Icon(Icons.star_outline, size: 18),
-                    label: Text(
-                      '${(school.rating!).toStringAsFixed(1)} '
-                      '(${school.reviewCount ?? 0})',
-                    ),
-                  ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+class _SchoolSummary extends StatelessWidget {  
+  final School school;  
+  final bool editing;  
+  final bool saving;  
+  final String? saveError;  
+  final VoidCallback onEdit;  
+  final VoidCallback onCancel;  
+  final VoidCallback onSave;  
+  final List<TextEditingController> controllers;  
+  final Curriculum? editCurriculum;  
+  final SchoolLevel? editSchoolLevel;  
+  final ValueChanged<Curriculum?> onCurriculumChanged;  
+  final ValueChanged<SchoolLevel?> onSchoolLevelChanged;  
+  
+  const _SchoolSummary({  
+    required this.school,  
+    required this.editing,  
+    required this.saving,  
+    this.saveError,  
+    required this.onEdit,  
+    required this.onCancel,  
+    required this.onSave,  
+    required this.controllers,  
+    this.editCurriculum,  
+    this.editSchoolLevel,  
+    required this.onCurriculumChanged,  
+    required this.onSchoolLevelChanged,  
+  });  
+  
+  @override  
+  Widget build(BuildContext context) {  
+    final theme = Theme.of(context);  
+    return Card(  
+      child: Padding(  
+        padding: const EdgeInsets.all(16),  
+        child: Column(  
+          crossAxisAlignment: CrossAxisAlignment.start,  
+          children: [  
+            Row(  
+              children: [  
+                Expanded(  
+                  child: Text(  
+                    editing ? 'Edit school' : school.schoolName,  
+                    style: theme.textTheme.headlineSmall,  
+                  ),  
+                ),  
+                if (!editing)  
+                  IconButton(  
+                    tooltip: 'Edit',  
+                    onPressed: onEdit,  
+                    icon: const Icon(Icons.edit_outlined),  
+                  ),  
+              ],  
+            ),  
+            if (!editing) ...[  
+              const SizedBox(height: 4),  
+              Text(school.address, style: theme.textTheme.bodyMedium),  
+              const SizedBox(height: 12),  
+              Wrap(  
+                spacing: 8,  
+                runSpacing: 8,  
+                children: [  
+                  Chip(label: Text(school.curriculum.label())),  
+                  Chip(label: Text(school.verificationStatus.label())),  
+                  if (school.tuitionFee > 0)  
+                    Chip(  
+                      avatar: const Icon(Icons.payments_outlined, size: 18),  
+                      label: Text('${school.tuitionFee} / year'),  
+                    ),  
+                  if ((school.followerCount ?? 0) > 0)  
+                    Chip(  
+                      avatar: const Icon(Icons.favorite_outline, size: 18),  
+                      label: Text('${school.followerCount} follower(s)'),  
+                    ),  
+                  if ((school.rating ?? 0) > 0)  
+                    Chip(  
+                      avatar: const Icon(Icons.star_outline, size: 18),  
+                      label: Text(  
+                        '${(school.rating!).toStringAsFixed(1)} '  
+                        '(${school.reviewCount ?? 0})',  
+                      ),  
+                    ),  
+                ],  
+              ),  
+            ],  
+            if (editing) ...[  
+              const SizedBox(height: 16),  
+              if (saveError != null) ...[  
+                Container(  
+                  padding: const EdgeInsets.all(12),  
+                  decoration: BoxDecoration(  
+                    color: theme.colorScheme.errorContainer,  
+                    borderRadius: BorderRadius.circular(8),  
+                  ),  
+                  child: Text(  
+                    saveError!,  
+                    style: TextStyle(color: theme.colorScheme.onErrorContainer),  
+                  ),  
+                ),  
+                const SizedBox(height: 16),  
+              ],  
+              TextFormField(  
+                controller: controllers[0],  
+                decoration: const InputDecoration(  
+                  labelText: 'School name',  
+                  border: OutlineInputBorder(),  
+                ),  
+              ),  
+              const SizedBox(height: 12),  
+              TextFormField(  
+                controller: controllers[1],  
+                decoration: const InputDecoration(  
+                  labelText: 'Address',  
+                  border: OutlineInputBorder(),  
+                ),  
+              ),  
+              const SizedBox(height: 12),  
+              TextFormField(  
+                controller: controllers[2],  
+                decoration: const InputDecoration(  
+                  labelText: 'Contact email',  
+                  border: OutlineInputBorder(),  
+                ),  
+                keyboardType: TextInputType.emailAddress,  
+              ),  
+              const SizedBox(height: 12),  
+              TextFormField(  
+                controller: controllers[3],  
+                decoration: const InputDecoration(  
+                  labelText: 'Contact phone',  
+                  border: OutlineInputBorder(),  
+                ),  
+                keyboardType: TextInputType.phone,  
+              ),  
+              const SizedBox(height: 12),  
+              DropdownButtonFormField<Curriculum>(  
+                decoration: const InputDecoration(  
+                  labelText: 'Curriculum',  
+                  border: OutlineInputBorder(),  
+                ),  
+                value: editCurriculum,  
+                items: Curriculum.values  
+                    .map((c) => DropdownMenuItem(  
+                          value: c,  
+                          child: Text(c.label()),  
+                        ))  
+                    .toList(),  
+                onChanged: onCurriculumChanged,  
+              ),  
+              const SizedBox(height: 12),  
+              DropdownButtonFormField<SchoolLevel>(  
+                decoration: const InputDecoration(  
+                  labelText: 'School level',  
+                  border: OutlineInputBorder(),  
+                ),  
+                value: editSchoolLevel,  
+                items: SchoolLevel.values  
+                    .map((l) => DropdownMenuItem(  
+                          value: l,  
+                          child: Text(l.label()),  
+                        ))  
+                    .toList(),  
+                onChanged: onSchoolLevelChanged,  
+              ),  
+              const SizedBox(height: 12),  
+              TextFormField(  
+                controller: controllers[4],  
+                decoration: const InputDecoration(  
+                  labelText: 'Tuition fee',  
+                  border: OutlineInputBorder(),  
+                  prefixText: 'ETB ',  
+                ),  
+                keyboardType: TextInputType.number,  
+              ),  
+              const SizedBox(height: 12),  
+              TextFormField(  
+                controller: controllers[5],  
+                decoration: const InputDecoration(  
+                  labelText: 'Facilities',  
+                  border: OutlineInputBorder(),  
+                ),  
+                maxLines: 3,  
+              ),  
+              const SizedBox(height: 12),  
+              Row(  
+                children: [  
+                  Expanded(  
+                    child: TextFormField(  
+                      controller: controllers[6],  
+                      decoration: const InputDecoration(  
+                        labelText: 'Latitude',  
+                        border: OutlineInputBorder(),  
+                      ),  
+                      keyboardType: TextInputType.number,  
+                    ),  
+                  ),  
+                  const SizedBox(width: 12),  
+                  Expanded(  
+                    child: TextFormField(  
+                      controller: controllers[7],  
+                      decoration: const InputDecoration(  
+                        labelText: 'Longitude',  
+                        border: OutlineInputBorder(),  
+                      ),  
+                      keyboardType: TextInputType.number,  
+                    ),  
+                  ),  
+                ],  
+              ),  
+              const SizedBox(height: 16),  
+              Row(  
+                children: [  
+                  FilledButton(  
+                    onPressed: saving ? null : onSave,  
+                    child: saving  
+                        ? const SizedBox(  
+                            height: 20,  
+                            width: 20,  
+                            child: CircularProgressIndicator(strokeWidth: 2),  
+                          )  
+                        : const Text('Save'),  
+                  ),  
+                  const SizedBox(width: 12),  
+                  OutlinedButton(  
+                    onPressed: saving ? null : onCancel,  
+                    child: const Text('Cancel'),  
+                  ),  
+                ],  
+              ),  
+            ],  
+          ],  
+        ),  
+      ),  
+    );  
+  }  
 }
 
 class _VerificationRequestTile extends StatelessWidget {

@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/landing/presentation/landing_screen.dart';
+import '../features/schools/presentation/manage_followed_schools_screen.dart';
+import '../features/moderation/presentation/admin_user_create_screen.dart';
 import '../features/admin/presentation/admin_announcements_screen.dart';
 import '../features/admin/presentation/admin_home_screen.dart';
 import '../features/admin/presentation/admin_school_manage_screen.dart';
+import '../features/admin/presentation/admin_school_create_screen.dart';
 import '../features/announcements/presentation/announcement_detail_screen.dart';
 import '../features/announcements/presentation/announcements_feed_screen.dart';
 import '../features/auth/presentation/email_verify_screen.dart';
@@ -34,6 +38,7 @@ import '../features/schools/presentation/schools_list_screen.dart';
 /// + reset-password are public because they're entered from email deep links;
 /// hiding them behind auth would be a chicken-and-egg loop.
 const _publicRoutes = <String>{
+  '/landing',
   '/login',
   '/register',
   '/forgot-password',
@@ -49,7 +54,7 @@ final routerProvider = Provider<GoRouter>((ref) {
   final auth = ref.read(authControllerProvider);
 
   return GoRouter(
-    initialLocation: '/',
+    initialLocation: '/landing',
     refreshListenable: auth,
     redirect: (context, state) {
       if (auth.initializing) return null;
@@ -59,18 +64,22 @@ final routerProvider = Provider<GoRouter>((ref) {
       );
 
       if (!auth.isAuthenticated && !goingPublic) {
-        return '/login';
+        return '/landing';
       }
       if (auth.isAuthenticated && goingPublic) {
         if (state.matchedLocation.startsWith('/verify-email') ||
             state.matchedLocation.startsWith('/reset-password')) {
           return null;
         }
+        if (state.matchedLocation == '/landing') {
+          return '/';
+        }
         return '/';
       }
       return null;
     },
     routes: [
+      GoRoute(path: '/landing', builder: (_, __) => const LandingScreen()),
       GoRoute(path: '/', builder: (_, __) => const HomeScreen()),
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
       GoRoute(path: '/register', builder: (_, __) => const RegisterScreen()),
@@ -91,11 +100,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
-      // Phase 10: parent-only recommendation preferences screen (budget,
-      // curriculum, distance, home pin). Access control is enforced by the
-      // backend's `authorizeRoles("PARENT")` middleware; we keep the route
-      // public-to-authenticated and rely on a 403 response if a non-parent
-      // somehow gets here.
+      GoRoute(  
+        path: '/followed-schools',  
+        builder: (_, __) => const ManageFollowedSchoolsScreen(),  
+      ),
       GoRoute(
         path: '/preferences',
         builder: (_, __) => const PreferencesScreen(),
@@ -189,6 +197,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, __) => const AdminAnnouncementsScreen(),
       ),
       GoRoute(
+        path: '/admin/schools/create',
+        builder: (_, __) => const AdminSchoolCreateScreen(),
+      ),
+      GoRoute(
         path: '/admin/schools/:id',
         builder: (_, state) {
           final raw = state.pathParameters['id'];
@@ -201,6 +213,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           return AdminSchoolManageScreen(schoolId: id);
         },
       ),
+
       // Phase 9: MoE portal.
       GoRoute(path: '/moe', builder: (_, __) => const MoeHomeScreen()),
       GoRoute(
@@ -219,6 +232,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/moderation',
         builder: (_, __) => const ModerationReportsScreen(),
+      ),
+      GoRoute(  
+        path: '/moderation/create-user',  
+        builder: (_, __) => const AdminUserCreateScreen(),  
       ),
     ],
     errorBuilder: (_, state) => Scaffold(

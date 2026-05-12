@@ -93,14 +93,20 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
               ),
             )
           else if (_schools.isEmpty)
-            const Card(
+            Card(
               child: Padding(
                 padding: EdgeInsets.all(16),
-                child: Text(
-                  "You don't manage any schools yet. Schools are linked to your "
-                  "account via their adminId — contact the MoE if you don't see "
-                  "yours listed here.",
-                ),
+                child: Column(  
+                  children: [  
+                    const Text('You haven\'t registered a school yet.'),  
+                    const SizedBox(height: 12),  
+                    FilledButton.icon(  
+                      onPressed: () => context.go('/admin/schools/create'),  
+                      icon: const Icon(Icons.add),  
+                      label: const Text('Register your school'),  
+                    ),  
+                  ],  
+                ), 
               ),
             )
           else
