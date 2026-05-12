@@ -137,6 +137,37 @@ class SchoolRepository {
         .map((n) => n.toInt())
         .toSet();
   }
+
+/// Create a new school. School admin only. Returns the newly created School.  
+Future<School> create({  
+  required String schoolName,  
+  required String address,  
+  required String contactEmail,  
+  String? contactPhone,  
+  required Curriculum curriculum,  
+  SchoolLevel? schoolLevel,  
+  required num tuitionFee,  
+  String? facilities,  
+  double? latitude,  
+  double? longitude,  
+}) async {  
+  final res = await _dio.post('/api/schools', data: {  
+    'schoolName': schoolName,  
+    'address': address,  
+    'contactEmail': contactEmail,  
+    if (contactPhone != null) 'contactPhone': contactPhone,  
+    'curriculum': curriculum.toWire(),  
+    if (schoolLevel != null) 'schoolLevel': schoolLevel.toWire(),  
+    'tuitionFee': tuitionFee,  
+    if (facilities != null) 'facilities': facilities,  
+    if (latitude != null) 'latitude': latitude,  
+    if (longitude != null) 'longitude': longitude,  
+  });  
+  if (res.statusCode != 201) throw _toApiException(res);  
+  final body = res.data as Map<String, dynamic>;  
+  return School.fromJson(body['school'] as Map<String, dynamic>);  
+}
+
 }
 
 /// Re-export the ApiException builder from auth_repository so screens that
