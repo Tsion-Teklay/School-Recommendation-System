@@ -196,6 +196,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 icon: const Icon(Icons.tune),
                 label: const Text('Recommendation preferences'),
               ),
+            if (user.role == UserRole.parent)  
+              OutlinedButton.icon(  
+                onPressed: () => context.go('/followed-schools'),  
+                icon: const Icon(Icons.school),  
+                label: const Text('Manage followed schools'),  
+              ),  
             if (user.role == UserRole.parent) const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: _changePassword,
