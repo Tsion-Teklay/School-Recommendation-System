@@ -1,3 +1,4 @@
+import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -107,6 +108,17 @@ class _ModerationReportsScreenState
             ],
           ),
           const SizedBox(height: 16),
+          Card(  
+            child: Padding(  
+              padding: const EdgeInsets.all(16),  
+              child: FilledButton.icon(  
+                onPressed: () => context.go('/moderation/create-user'),  
+                icon: const Icon(Icons.person_add),  
+                label: const Text('Create admin user'),  
+              ),  
+            ),  
+          ),
+          
           if (_error != null)
             Card(
               color: theme.colorScheme.errorContainer,

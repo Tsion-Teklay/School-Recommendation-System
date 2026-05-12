@@ -168,6 +168,59 @@ Future<School> create({
   return School.fromJson(body['school'] as Map<String, dynamic>);  
 }
 
+/// Update a school. School admin only. Returns the updated School.  
+Future<School> update({  
+  required int id,  
+  String? schoolName,  
+  String? address,  
+  String? contactEmail,  
+  String? contactPhone,  
+  Curriculum? curriculum,  
+  SchoolLevel? schoolLevel,  
+  num? tuitionFee,  
+  String? facilities,  
+  double? latitude,  
+  double? longitude,  
+}) async {  
+  final data = <String, dynamic>{};  
+  if (schoolName != null) data['schoolName'] = schoolName;  
+  if (address != null) data['address'] = address;  
+  if (contactEmail != null) data['contactEmail'] = contactEmail;  
+  if (contactPhone != null) data['contactPhone'] = contactPhone;  
+  if (curriculum != null) data['curriculum'] = curriculum.toWire();  
+  if (schoolLevel != null) data['schoolLevel'] = schoolLevel.toWire();  
+  if (tuitionFee != null) data['tuitionFee'] = tuitionFee;  
+  if (facilities != null) data['facilities'] = facilities;  
+  if (latitude != null) data['latitude'] = latitude;  
+  if (longitude != null) data['longitude'] = longitude;  
+  
+  final res = await _dio.put('/api/schools/$id', data: data);  
+  if (res.statusCode != 200) throw _toApiException(res);  
+  final body = res.data as Map<String, dynamic>;  
+  return School.fromJson(body['school'] as Map<String, dynamic>);  
+}
+
+/// Get paginated list of schools the current parent follows.  
+Future<SchoolsPage> myFollowedSchools({int limit = 50, int page = 1}) async {  
+  final res = await _dio.get(  
+    '/api/me/follows',  
+    queryParameters: {'limit': limit, 'page': page},  
+  );  
+  if (res.statusCode != 200) throw _toApiException(res);  
+  final body = res.data as Map<String, dynamic>;  
+  final data = (body['data'] as List)  
+      .cast<Map<String, dynamic>>()  
+      .map((row) {  
+        // Backend returns { school: { id, ... } }  
+        final schoolData = row['school'] as Map<String, dynamic>;  
+        return School.fromJson(schoolData);  
+      })  
+      .toList();  
+  return SchoolsPage(  
+    data,  
+    Pagination.fromJson(body['meta'] as Map<String, dynamic>),  
+  );  
+}
 }
 
 /// Re-export the ApiException builder from auth_repository so screens that

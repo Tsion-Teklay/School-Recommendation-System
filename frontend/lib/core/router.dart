@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/landing/presentation/landing_screen.dart';
+import '../features/schools/presentation/manage_followed_schools_screen.dart';
+import '../features/moderation/presentation/admin_user_create_screen.dart';
 import '../features/admin/presentation/admin_announcements_screen.dart';
 import '../features/admin/presentation/admin_home_screen.dart';
 import '../features/admin/presentation/admin_school_manage_screen.dart';
@@ -98,11 +100,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
-      // Phase 10: parent-only recommendation preferences screen (budget,
-      // curriculum, distance, home pin). Access control is enforced by the
-      // backend's `authorizeRoles("PARENT")` middleware; we keep the route
-      // public-to-authenticated and rely on a 403 response if a non-parent
-      // somehow gets here.
+      GoRoute(  
+        path: '/followed-schools',  
+        builder: (_, __) => const ManageFollowedSchoolsScreen(),  
+      ),
       GoRoute(
         path: '/preferences',
         builder: (_, __) => const PreferencesScreen(),
@@ -231,6 +232,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/moderation',
         builder: (_, __) => const ModerationReportsScreen(),
+      ),
+      GoRoute(  
+        path: '/moderation/create-user',  
+        builder: (_, __) => const AdminUserCreateScreen(),  
       ),
     ],
     errorBuilder: (_, state) => Scaffold(
