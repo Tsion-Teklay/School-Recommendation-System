@@ -8,6 +8,12 @@ import '../../auth/state/auth_controller.dart';
 import '../data/forum_dtos.dart';
 import '../state/forum_detail_controller.dart';
 
+import '../../../shared/widgets/like_action.dart';  
+import '../../../shared/widgets/report_dialog.dart';  
+import '../../../shared/widgets/share_action.dart';  
+import '../../../features/reports/data/report_dtos.dart';  
+import '../../../features/likes/data/like_dtos.dart';
+
 class ForumDetailScreen extends ConsumerStatefulWidget {
   final int postId;
   const ForumDetailScreen({super.key, required this.postId});
@@ -261,6 +267,34 @@ class _PostBody extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(post.content),
+              
+              // --- STEP 11: ACTION BAR INSERTED HERE ---
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  LikeAction(targetType: LikeTargetType.forumPost, targetId: post.id),
+                  ShareAction(
+                    title: post.content.length > 50 
+                        ? '${post.content.substring(0, 50)}...' 
+                        : post.content,
+                    content: post.content,
+                    url: 'https://yourapp.com/forum/${post.id}',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.flag_outlined, size: 20),
+                    onPressed: () => showDialog(
+                      context: context,
+                      builder: (_) => ReportDialog(
+                        targetType: ReportTargetType.forumPost,
+                        targetId: post.id,
+                      ),
+                    ),
+                    tooltip: 'Report',
+                  ),
+                ],
+              ),
+              // --- END OF INSERTION ---
             ],
           ),
         ),
@@ -268,7 +302,6 @@ class _PostBody extends StatelessWidget {
     );
   }
 }
-
 class _EditDialog extends StatefulWidget {
   final String initial;
   const _EditDialog({required this.initial});

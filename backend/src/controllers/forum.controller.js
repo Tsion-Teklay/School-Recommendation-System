@@ -30,3 +30,9 @@ export const deletePost = asyncHandler(async (req, res) => {
   const result = await forum.deletePost(req.user, req.params.id);
   res.json(result);
 });
+
+export const getAnnouncementCommentsHandler = asyncHandler(async (req, res) => {  
+  const { announcementId } = req.params;  
+  const comments = await getAnnouncementComments(announcementId);  
+  res.status(200).json({ data: comments });  
+});

@@ -21,12 +21,41 @@ import { validateContent } from "./moderation.service.js";
 
 const AUTHOR_SELECT = { id: true, fullName: true, role: true };
 
-export async function createPost(authorId, { content }) {
-  validateContent(content, { field: "content" });
-  return db.discussionForum.create({
-    data: { authorId, content },
-    include: { author: { select: AUTHOR_SELECT } },
-  });
+export async function createPost(data, userId) {  
+  const { content, threadId, targetType = "FORUM_POST" } = data;  
+  
+  return db.discussionForum.create({  
+    data: {  
+      authorId: userId,  
+      content,  
+      threadId: threadId ? Number(threadId) : null,  
+      targetType,  
+    },  
+    include: {  
+      author: { select: { id: true, fullName: true, email: true } },  
+      thread: true,  
+    },  
+  });  
+}  
+  
+export async function getAnnouncementComments(announcementId) {  
+  return db.discussionForum.findMany({  
+    where: {  
+      targetType: "ANNOUNCEMENT",  
+      targetId: Number(announcementId),  
+      threadId: null, // Only top-level comments  
+    },  
+    include: {  
+      author: { select: { id: true, fullName: true, email: true } },  
+      replies: {  
+        include: {  
+          author: { select: { id: true, fullName: true, email: true } },  
+        },  
+        orderBy: { timestamp: "asc" },  
+      },  
+    },  
+    orderBy: { timestamp: "desc" },  
+  });  
 }
 
 export async function replyToPost(authorId, parentId, { content }) {
