@@ -20,10 +20,7 @@ class ReportRepository {
     final body = res.data as Map<String, dynamic>;
     final data = body['data'];
     final rows = data is Map ? (data['data'] as List? ?? []) : (data as List);
-    return rows
-        .cast<Map<String, dynamic>>()
-        .map(Report.fromJson)
-        .toList();
+    return rows.cast<Map<String, dynamic>>().map(Report.fromJson).toList();
   }
 
   Future<Report> getById(int id) async {
@@ -48,6 +45,16 @@ class ReportRepository {
       data: input.toJson(),
     );
     if (res.statusCode != 200 && res.statusCode != 201) {
+      throw _toApiException(res);
+    }
+  }
+
+  Future<void> submitReport(ReportRequest request) async {
+    final res = await _dio.post(
+      '/api/reports',
+      data: request.toJson(),
+    );
+    if (res.statusCode != 201 && res.statusCode != 200) {
       throw _toApiException(res);
     }
   }

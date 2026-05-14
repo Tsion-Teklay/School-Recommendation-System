@@ -112,6 +112,16 @@ enum VerificationRequestStatus {
   REJECTED @map("rejected")
 }
 
+enum LikeTargetType {  
+  ANNOUNCEMENT @map("announcement")  
+  FORUM_POST   @map("forum_post")  
+}
+
+enum ForumTargetType {  
+  FORUM_POST      @map("forum_post")  
+  ANNOUNCEMENT    @map("announcement")  
+}
+
 model User {
   id            Int           @id @default(autoincrement())
   fullName      String        @map("full_name") @db.VarChar(100)
@@ -146,6 +156,7 @@ model User {
   reports       Report[] @relation("Reporter")
   forumPosts    DiscussionForum[]
   notifications Notification[]
+  likes         Like[]
 
   subscriptions          Subscription[]
   verificationsSubmitted VerificationRequest[] @relation("VerificationSubmitter")
@@ -251,6 +262,19 @@ model Report {
   @@map("report")
 }
 
+model Like {  
+  id         Int           @id @default(autoincrement()) @map("like_id")  
+  userId     Int           @map("user_id")  
+  targetType LikeTargetType @map("target_type")  
+  targetId   Int           @map("target_id")  
+  createdAt  DateTime      @default(now()) @map("created_at")  
+  
+  user User @relation(fields: [userId], references: [id])  
+  
+  @@unique([userId, targetType, targetId])  
+  @@map("like")  
+}
+
 model Parent {
   userId    Int     @id @map("user_id")
   address   String  @db.VarChar(255)
@@ -289,6 +313,7 @@ model DiscussionForum {
   timestamp DateTime          @default(now())
   threadId  Int?              @map("thread_id")
   isEdited  Boolean           @default(false) @map("is_edited")
+  targetType ForumTargetType   @default(FORUM_POST) @map("target_type")  
 
   author  User              @relation(fields: [authorId], references: [id])
   thread  DiscussionForum?  @relation("ForumThread", fields: [threadId], references: [id])

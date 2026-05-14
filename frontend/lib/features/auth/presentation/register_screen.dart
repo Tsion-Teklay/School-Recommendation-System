@@ -118,8 +118,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             TextFormField(
               controller: _name,
               decoration: const InputDecoration(labelText: 'Full name'),
-              validator: (v) =>
-                  (v ?? '').trim().isNotEmpty ? null : 'Required',
+              validator: (v) => (v ?? '').trim().isNotEmpty ? null : 'Required',
             ),
             const SizedBox(height: 12),
             SegmentedButton<_IdentifierKind>(
@@ -146,8 +145,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 keyboardType: TextInputType.emailAddress,
                 decoration: const InputDecoration(
                   labelText: 'Email',
-                  helperText:
-                      "We'll send a verification link to this address.",
+                  helperText: "We'll send a verification link to this address.",
                 ),
                 validator: (v) => EmailValidator.validate((v ?? '').trim())
                     ? null
@@ -183,11 +181,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<UserRole>(
-              value: _role,
+              initialValue: _role,
               decoration: const InputDecoration(labelText: 'I am a…'),
               items: const [
-                DropdownMenuItem(
-                    value: UserRole.parent, child: Text('Parent')),
+                DropdownMenuItem(value: UserRole.parent, child: Text('Parent')),
                 DropdownMenuItem(
                     value: UserRole.schoolAdmin,
                     child: Text('School administrator')),
