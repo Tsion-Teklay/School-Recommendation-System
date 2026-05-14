@@ -1,5 +1,9 @@
 import { db } from "../config/db.js";
-import { ForbiddenError, NotFoundError, ValidationError } from "../utils/errors.js";
+import {
+  ForbiddenError,
+  NotFoundError,
+  ValidationError,
+} from "../utils/errors.js";
 
 // ✅ Create School
 export async function createSchool(data, userId) {
@@ -17,7 +21,13 @@ export async function createSchool(data, userId) {
   } = data;
 
   // Basic validation (also enforced at route level via Zod)
-  if (!schoolName || !address || !contactEmail || !curriculum || tuitionFee === undefined) {
+  if (
+    !schoolName ||
+    !address ||
+    !contactEmail ||
+    !curriculum ||
+    tuitionFee === undefined
+  ) {
     throw new ValidationError("Missing required fields");
   }
 
@@ -129,10 +139,16 @@ export async function getAllSchools(query) {
     const lat = Number(latStr);
     const lng = Number(lngStr);
     if (
-      Number.isNaN(lat) || Number.isNaN(lng) ||
-      lat < -90 || lat > 90 || lng < -180 || lng > 180
+      Number.isNaN(lat) ||
+      Number.isNaN(lng) ||
+      lat < -90 ||
+      lat > 90 ||
+      lng < -180 ||
+      lng > 180
     ) {
-      throw new ValidationError("near must be 'lat,lng' with valid coordinates");
+      throw new ValidationError(
+        "near must be 'lat,lng' with valid coordinates",
+      );
     }
     const r = radiusKm ? Number(radiusKm) : 25;
     if (!Number.isFinite(r) || r <= 0) {
@@ -166,7 +182,7 @@ export async function getAllSchools(query) {
           geo.lat,
           geo.lng,
           Number(s.latitude),
-          Number(s.longitude)
+          Number(s.longitude),
         ),
       }))
       .filter((s) => s.distanceKm <= geo.radiusKm)

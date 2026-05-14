@@ -8,13 +8,19 @@ import '../../auth/state/auth_controller.dart';
 import '../data/forum_dtos.dart';
 import '../state/forum_detail_controller.dart';
 
+import '../../../shared/widgets/like_action.dart';
+import '../../../shared/widgets/report_dialog.dart';
+import '../../../shared/widgets/share_action.dart';
+import '../../../features/reports/data/report_dtos.dart';
+import '../../../features/likes/data/like_dtos.dart';
+import '../../../features/likes/state/like_controller.dart';
+
 class ForumDetailScreen extends ConsumerStatefulWidget {
   final int postId;
   const ForumDetailScreen({super.key, required this.postId});
 
   @override
-  ConsumerState<ForumDetailScreen> createState() =>
-      _ForumDetailScreenState();
+  ConsumerState<ForumDetailScreen> createState() => _ForumDetailScreenState();
 }
 
 class _ForumDetailScreenState extends ConsumerState<ForumDetailScreen> {
@@ -38,8 +44,7 @@ class _ForumDetailScreenState extends ConsumerState<ForumDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final controller =
-        ref.watch(forumDetailControllerProvider(widget.postId));
+    final controller = ref.watch(forumDetailControllerProvider(widget.postId));
     final me = ref.watch(authControllerProvider).user;
     final post = controller.post;
 
@@ -87,8 +92,7 @@ class _ForumDetailScreenState extends ConsumerState<ForumDetailScreen> {
                 _PostBody(
                   post: r,
                   isMine: r.authorId == me?.id,
-                  isModerator:
-                      me != null && me.role.toWire() == 'MODERATOR',
+                  isModerator: me != null && me.role.toWire() == 'MODERATOR',
                   onEdit: () => _editPost(r),
                   onDelete: () => _deletePost(r),
                   isReply: true,
@@ -144,7 +148,8 @@ class _ForumDetailScreenState extends ConsumerState<ForumDetailScreen> {
   }
 
   Future<void> _editPost(ForumPost post) async {
-    final controller = ref.read(forumDetailControllerProvider(widget.postId).notifier);
+    final controller =
+        ref.read(forumDetailControllerProvider(widget.postId).notifier);
     final result = await showDialog<String>(
       context: context,
       builder: (_) => _EditDialog(initial: post.content),
@@ -160,7 +165,8 @@ class _ForumDetailScreenState extends ConsumerState<ForumDetailScreen> {
   }
 
   Future<void> _deletePost(ForumPost post) async {
-    final controller = ref.read(forumDetailControllerProvider(widget.postId).notifier);
+    final controller =
+        ref.read(forumDetailControllerProvider(widget.postId).notifier);
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -189,14 +195,16 @@ class _ForumDetailScreenState extends ConsumerState<ForumDetailScreen> {
   }
 }
 
-class _PostBody extends StatelessWidget {
+class _PostBody extends ConsumerStatefulWidget {
   final ForumPost post;
   final bool isMine;
   final bool isModerator;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final bool isReply;
+
   const _PostBody({
+    super.key,
     required this.post,
     required this.isMine,
     required this.isModerator,
@@ -206,8 +214,34 @@ class _PostBody extends StatelessWidget {
   });
 
   @override
+  ConsumerState<_PostBody> createState() => _PostBodyState();
+}
+
+class _PostBodyState extends ConsumerState<_PostBody> {
+  @override
+  void initState() {
+    super.initState();
+
+    // Load initial like data
+    Future.microtask(() {
+      ref.read(likeControllerProvider).refreshLikeData(
+            LikeTargetType.forumPost,
+            widget.post.id,
+          );
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final post = widget.post;
+    final isMine = widget.isMine;
+    final isModerator = widget.isModerator;
+    final isReply = widget.isReply;
+    final onEdit = widget.onEdit;
+    final onDelete = widget.onDelete;
+
     final theme = Theme.of(context);
+
     return Padding(
       padding: EdgeInsets.only(left: isReply ? 24 : 0, bottom: 8),
       child: Card(
@@ -216,14 +250,15 @@ class _PostBody extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // HEADER
               Row(
                 children: [
                   CircleAvatar(
                     child: Text(
                       (post.author?.fullName ?? '?')
-                          .characters
-                          .firstOrNull
-                          ?.toUpperCase() ??
+                              .characters
+                              .firstOrNull
+                              ?.toUpperCase() ??
                           '?',
                     ),
                   ),
@@ -232,8 +267,10 @@ class _PostBody extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(post.author?.fullName ?? 'User',
-                            style: theme.textTheme.titleSmall),
+                        Text(
+                          post.author?.fullName ?? 'User',
+                          style: theme.textTheme.titleSmall,
+                        ),
                         Text(
                           '${post.author?.role.label() ?? ''} · '
                           '${post.timestamp.toIso8601String().substring(0, 16).replaceAll("T", " ")}'
@@ -246,21 +283,74 @@ class _PostBody extends StatelessWidget {
                   if (isMine || isModerator)
                     PopupMenuButton<String>(
                       onSelected: (v) {
-                        if (v == 'edit' && isMine) onEdit();
-                        if (v == 'delete') onDelete();
+                        if (v == 'edit' && isMine) {
+                          onEdit();
+                        }
+
+                        if (v == 'delete') {
+                          onDelete();
+                        }
                       },
                       itemBuilder: (_) => [
                         if (isMine)
                           const PopupMenuItem(
-                              value: 'edit', child: Text('Edit')),
+                            value: 'edit',
+                            child: Text('Edit'),
+                          ),
                         const PopupMenuItem(
-                            value: 'delete', child: Text('Delete')),
+                          value: 'delete',
+                          child: Text('Delete'),
+                        ),
                       ],
                     ),
                 ],
               ),
+
               const SizedBox(height: 12),
+
+              // POST CONTENT
               Text(post.content),
+
+              const SizedBox(height: 8),
+
+              // ACTION BAR
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  // LIKE
+                  LikeAction(
+                    targetType: LikeTargetType.forumPost,
+                    targetId: post.id,
+                  ),
+
+                  // SHARE
+                  ShareAction(
+                    title: post.content.length > 50
+                        ? '${post.content.substring(0, 50)}...'
+                        : post.content,
+                    content: post.content,
+                    url: 'https://yourapp.com/forum/${post.id}',
+                  ),
+
+                  // REPORT
+                  IconButton(
+                    icon: const Icon(
+                      Icons.flag_outlined,
+                      size: 20,
+                    ),
+                    tooltip: 'Report',
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (_) => ReportDialog(
+                          targetType: ReportTargetType.forumPost,
+                          targetId: post.id,
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
             ],
           ),
         ),
