@@ -102,53 +102,6 @@ class _AdminSchoolManageScreenState
     }
   }
 
-<<<<<<< HEAD
-  Future<void> _addStubFile() async {
-    // We don't pull in `file_picker` for the MVP; we let the admin describe
-    // a single placeholder note and build a tiny in-memory stub file for
-    // submission. End-to-end testing on web can swap this for a real file
-    // picker in a follow-up. For now, prompt the admin to type a filename
-    // and we'll send a minimal text payload as the document.
-    final controller = TextEditingController();
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Attach a placeholder document'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'File picker integration ships separately. Until then, submit '
-              'a placeholder describing the document name; the MoE reviewer '
-              'will follow up offline if needed.',
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: controller,
-              decoration: const InputDecoration(
-                labelText: 'Filename (e.g. license.pdf)',
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Cancel')),
-          FilledButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text('Attach')),
-        ],
-      ),
-    );
-    if (ok != true || controller.text.trim().isEmpty) return;
-    final name = controller.text.trim();
-    final bytes = Uint8List.fromList('Placeholder content for $name'.codeUnits);
-    setState(() {
-      _picked.add(PickedFile(filename: name, bytes: bytes));
-    });
-  }
-=======
   Future<void> _addStubFile() async {  
   try {  
     final result = await FilePicker.platform.pickFiles(  
@@ -209,7 +162,6 @@ class _AdminSchoolManageScreenState
     );  
   }  
 }
->>>>>>> develop
 
   Future<void> _pickAndUploadFacilityImage() async {
     setState(() {
