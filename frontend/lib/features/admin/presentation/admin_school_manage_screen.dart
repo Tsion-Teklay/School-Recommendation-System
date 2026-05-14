@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:file_picker/file_picker.dart';
 
 import '../../../core/config.dart';
 import '../../../shared/utils/image_picker.dart';
@@ -101,51 +102,66 @@ class _AdminSchoolManageScreenState
     }
   }
 
-  Future<void> _addStubFile() async {
-    // We don't pull in `file_picker` for the MVP; we let the admin describe
-    // a single placeholder note and build a tiny in-memory stub file for
-    // submission. End-to-end testing on web can swap this for a real file
-    // picker in a follow-up. For now, prompt the admin to type a filename
-    // and we'll send a minimal text payload as the document.
-    final controller = TextEditingController();
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Attach a placeholder document'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'File picker integration ships separately. Until then, submit '
-              'a placeholder describing the document name; the MoE reviewer '
-              'will follow up offline if needed.',
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: controller,
-              decoration: const InputDecoration(
-                labelText: 'Filename (e.g. license.pdf)',
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Cancel')),
-          FilledButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text('Attach')),
-        ],
-      ),
-    );
-    if (ok != true || controller.text.trim().isEmpty) return;
-    final name = controller.text.trim();
-    final bytes = Uint8List.fromList('Placeholder content for $name'.codeUnits);
-    setState(() {
-      _picked.add(PickedFile(filename: name, bytes: bytes));
-    });
-  }
+  Future<void> _addStubFile() async {  
+  try {  
+    final result = await FilePicker.platform.pickFiles(  
+      type: FileType.custom,  
+      allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],  
+      withData: true,  
+    );  
+  
+    if (result == null || result.files.isEmpty) return;  
+  
+    final file = result.files.first;  
+      
+    // Validate file size (10MB limit)  
+    if (file.size != null && file.size! > 10 * 1024 * 1024) {  
+      if (!mounted) return;  
+      ScaffoldMessenger.of(context).showSnackBar(  
+        const SnackBar(content: Text('File size exceeds 10MB limit')),  
+      );  
+      return;  
+    }  
+  
+    // Get MIME type  
+    String? contentType;  
+    if (file.extension != null) {  
+      switch (file.extension!.toLowerCase()) {  
+        case 'pdf':  
+          contentType = 'application/pdf';  
+          break;  
+        case 'png':  
+          contentType = 'image/png';  
+          break;  
+        case 'jpg':  
+        case 'jpeg':  
+          contentType = 'image/jpeg';  
+          break;  
+      }  
+    }  
+  
+    if (file.bytes == null) {  
+      if (!mounted) return;  
+      ScaffoldMessenger.of(context).showSnackBar(  
+        const SnackBar(content: Text('Failed to read file')),  
+      );  
+      return;  
+    }  
+  
+    setState(() {  
+      _picked.add(PickedFile(  
+        filename: file.name,  
+        bytes: file.bytes!,  
+        contentType: contentType,  
+      ));  
+    });  
+  } catch (e) {  
+    if (!mounted) return;  
+    ScaffoldMessenger.of(context).showSnackBar(  
+      SnackBar(content: Text('Error picking file: ${e.toString()}')),  
+    );  
+  }  
+}
 
   Future<void> _pickAndUploadFacilityImage() async {
     setState(() {
