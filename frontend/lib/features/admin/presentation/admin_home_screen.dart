@@ -38,7 +38,8 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
       final repo = ref.read(schoolRepositoryProvider);
       // Pull a generous page (100) and filter client-side. School admins
       // typically own a handful of schools; cheap enough.
-      final page = await repo.list(const SchoolListFilters(limit: 100));
+      final user = ref.read(authControllerProvider).user;
+      final page = await repo.list( SchoolListFilters(adminId: user?.id, limit: 100));
       setState(() {
         _schools = page.items;
       });
