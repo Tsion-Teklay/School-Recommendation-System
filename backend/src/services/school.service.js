@@ -83,6 +83,7 @@ function haversineKm(lat1, lng1, lat2, lng2) {
 // ✅ Get All Schools (PUBLIC)
 export async function getAllSchools(query) {
   const {
+    adminId,
     search,
     curriculum,
     schoolLevel,
@@ -96,6 +97,11 @@ export async function getAllSchools(query) {
   } = query;
 
   const filters = {};
+
+  //filter by owner adminId (for admin dashboard listing)
+  if (adminId) {
+    filters.adminId = Number(adminId);
+  }
 
   // 🔍 Search by school name
   if (search) {
