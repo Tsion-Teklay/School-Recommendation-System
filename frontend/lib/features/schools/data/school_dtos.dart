@@ -78,6 +78,7 @@ class FacilityImage {
       if (v is String) return int.tryParse(v) ?? 0;
       return 0;
     }
+
     return FacilityImage(
       id: parseInt(json['id']),
       imageUrl: (json['imageUrl'] ?? '') as String,
@@ -232,6 +233,7 @@ class Pagination {
       if (v is String) return int.tryParse(v) ?? fallback;
       return fallback;
     }
+
     return Pagination(
       total: parseInt(json['total'], 0),
       page: parseInt(json['page'], 1),
@@ -251,6 +253,7 @@ class SchoolsPage {
 /// backend. `near` is a "lat,lng" string when set; we keep it untyped here
 /// to match the wire format.
 class SchoolListFilters {
+  final int? adminId;
   final String? search;
   final Curriculum? curriculum;
   final num? minFee;
@@ -264,6 +267,7 @@ class SchoolListFilters {
   final int limit;
 
   const SchoolListFilters({
+    this.adminId,
     this.search,
     this.curriculum,
     this.minFee,
@@ -298,9 +302,8 @@ class SchoolListFilters {
       near: identical(near, _sentinel) ? this.near : near as String?,
       radiusKm:
           identical(radiusKm, _sentinel) ? this.radiusKm : radiusKm as num?,
-      minRating: identical(minRating, _sentinel)
-          ? this.minRating
-          : minRating as num?,
+      minRating:
+          identical(minRating, _sentinel) ? this.minRating : minRating as num?,
       schoolLevel: identical(schoolLevel, _sentinel)
           ? this.schoolLevel
           : schoolLevel as SchoolLevel?,
@@ -311,6 +314,7 @@ class SchoolListFilters {
 
   Map<String, dynamic> toQueryParams() {
     return {
+      if (adminId != null) 'adminId': adminId.toString(),
       if (search != null && search!.isNotEmpty) 'search': search,
       if (curriculum != null) 'curriculum': curriculum!.toWire(),
       if (minFee != null) 'minFee': minFee.toString(),
@@ -346,6 +350,7 @@ class Recommendation {
       if (v is String) return num.tryParse(v) ?? fallback;
       return fallback;
     }
+
     final raw = (json['breakdown'] as Map?) ?? const {};
     final bd = <String, num>{};
     raw.forEach((k, v) {

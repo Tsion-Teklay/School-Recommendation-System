@@ -15,12 +15,19 @@ export const create = asyncHandler(async (req, res) => {
   });
 });
 
-export const getAll = asyncHandler(async (req, res) => {
-  const result = await getAllSchools(req.query);
-  res.json({
-    message: "Schools fetched successfully",
-    ...result,
-  });
+export const getAll = asyncHandler(async (req, res) => {  
+  const query = { ...req.query };  
+    
+  // If user is an admin, force the filter to their own ID  
+  if (req.user?.role === 'SCHOOL_ADMIN') {  
+    query.adminId = req.user.id;  
+  }  
+  
+  const result = await getAllSchools(query);  
+  res.json({  
+    message: "Schools fetched successfully",  
+    ...result,  
+  });  
 });
 
 export const getOne = asyncHandler(async (req, res) => {
