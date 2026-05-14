@@ -37,5 +37,11 @@ router.get(
   validate({ query: recommendationsQuerySchema }),
   recommend
 );
+router.patch(
+  "/:id/feedback",
+  authenticate,
+  authorizeRoles("PARENT"),
+  recommendationController.feedback
+);
 
 export default router;
