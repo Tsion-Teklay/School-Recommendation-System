@@ -32,6 +32,7 @@ export const recommend = asyncHandler(async (req, res) => {
     req.user?.id
   );
 
+
   // Don't forward `result.meta` directly: it carries the pagination shape of
   // the *internal* candidate-pool query (e.g. `{ total: 200, totalPages: 4 }`
   // when the filters match more schools than the pool size). The caller would
@@ -50,3 +51,33 @@ export const recommend = asyncHandler(async (req, res) => {
     },
   });
 });
+
+export async function feedback(req, res) {
+  const { id } = req.params;
+
+  const { result, schoolId } = req.body;
+
+  const history =
+    await prisma.recommendationHistory.update({
+      where: {
+        id: Number(id)
+      },
+      data: {
+        interactionResult: result
+      }
+    });
+
+  await axios.post(
+    `${process.env.ML_SERVICE_URL}/feedback`,
+    {
+      recommendation_id: id,
+      result,
+      school_id: schoolId,
+      parent_id: history.parentId
+    }
+  );
+
+  return res.json({
+    success: true
+  });
+}
