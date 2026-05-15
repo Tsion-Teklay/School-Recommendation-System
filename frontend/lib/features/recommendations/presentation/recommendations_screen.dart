@@ -89,9 +89,8 @@ class RecommendationsScreen extends ConsumerWidget {
                       school: r.school,
                       onTap: () => context.go('/schools/${r.school.id}'),
                       trailing: IconButton(
-                        tooltip: inCart
-                            ? 'Remove from compare'
-                            : 'Add to compare',
+                        tooltip:
+                            inCart ? 'Remove from compare' : 'Add to compare',
                         icon: Icon(
                           inCart
                               ? Icons.check_box
@@ -106,8 +105,8 @@ class RecommendationsScreen extends ConsumerWidget {
                           } else if (!cart.add(r.school)) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                  content: Text(
-                                      'Compare cart is full (max 5).')),
+                                  content:
+                                      Text('Compare cart is full (max 5).')),
                             );
                           }
                         },
@@ -144,7 +143,8 @@ class _CriteriaSummary extends StatelessWidget {
     }
 
     add('curriculum', 'curriculum');
-    add('maxFee', 'max fee');
+    add('max_budget', 'max budget');
+    add('min_budget', 'min budget');
     add('lat', 'lat');
     add('lng', 'lng');
 
