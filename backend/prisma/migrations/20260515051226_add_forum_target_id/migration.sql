@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `discussion_forum` ADD COLUMN `target_id` INTEGER NULL;

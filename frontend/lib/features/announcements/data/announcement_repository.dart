@@ -135,7 +135,20 @@ class AnnouncementRepository {
 
   Future<List<Comment>> getAnnouncementComments(int id) async {
     final res = await _dio.get('/api/forum/announcement/$id');
-    return (res.data['data'] as List).map((c) => Comment.fromJson(c)).toList();
+    if (res.statusCode != 200) throw _toApiException(res);
+    final body = res.data as Map<String, dynamic>;
+    return (body['data'] as List)
+        .cast<Map<String, dynamic>>()
+        .map((c) => Comment.fromJson(c))
+        .toList();
+  }
+
+  Future<void> postAnnouncementComment(int announcementId, String content) async {
+    final res = await _dio.post(
+      '/api/forum/announcement/$announcementId',
+      data: {'content': content},
+    );
+    if (res.statusCode != 201) throw _toApiException(res);
   }
 }
 
