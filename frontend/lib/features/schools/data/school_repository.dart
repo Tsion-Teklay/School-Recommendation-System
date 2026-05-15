@@ -31,6 +31,21 @@ class SchoolRepository {
     );
   }
 
+  Future<void> sendRecommendationFeedback({
+    required int historyId,
+    required String result,
+    required int schoolId,
+  }) async {
+    final res = await _dio.post(
+      '/api/recommendations/$historyId/feedback',
+      data: {
+        'result': result,
+        'schoolId': schoolId,
+      },
+    );
+    if (res.statusCode != 200) throw _toApiException(res);
+  }
+
   Future<School> getById(int id) async {
     final res = await _dio.get('/api/schools/$id');
     if (res.statusCode != 200) throw _toApiException(res);
@@ -38,11 +53,12 @@ class SchoolRepository {
     return School.fromJson(body['school'] as Map<String, dynamic>);
   }
 
-  /// Returns the recommendations + the criteria the backend used so the UI
-  /// can show the "based on your preferences (curriculum=LOCAL, max fee
-  /// 60,000…)" subtitle.
-  Future<({List<Recommendation> items, Map<String, dynamic> criteria})>
-      recommend({Curriculum? curriculum, num? maxFee}) async {
+  Future<
+      ({
+        List<Recommendation> items,
+        Map<String, dynamic> criteria,
+        int? historyId
+      })> recommend({Curriculum? curriculum, num? maxFee}) async {
     final res = await _dio.get(
       '/api/recommendations',
       queryParameters: {
@@ -57,7 +73,12 @@ class SchoolRepository {
         .map(Recommendation.fromJson)
         .toList();
     final criteria = (body['criteria'] as Map?)?.cast<String, dynamic>() ?? {};
-    return (items: items, criteria: criteria);
+    final historyId = body['historyId'] as int?; // ADD THIS
+    return (
+      items: items,
+      criteria: criteria,
+      historyId: historyId
+    ); // UPDATE RETURN TYPE
   }
 
   Future<void> follow(int schoolId) async {
@@ -98,7 +119,8 @@ class SchoolRepository {
     final body = res.data as Map<String, dynamic>;
     // Backend controller wraps the new row as `{ message, image }`. The
     // older key `facilityImage` is tolerated for forward compatibility.
-    final raw = (body['image'] ?? body['facilityImage']) as Map<String, dynamic>?;
+    final raw =
+        (body['image'] ?? body['facilityImage']) as Map<String, dynamic>?;
     if (raw == null) {
       throw ApiException('Upload succeeded but response was empty',
           statusCode: res.statusCode);
@@ -138,89 +160,86 @@ class SchoolRepository {
         .toSet();
   }
 
-/// Create a new school. School admin only. Returns the newly created School.  
-Future<School> create({  
-  required String schoolName,  
-  required String address,  
-  required String contactEmail,  
-  String? contactPhone,  
-  required Curriculum curriculum,  
-  SchoolLevel? schoolLevel,  
-  required num tuitionFee,  
-  String? facilities,  
-  double? latitude,  
-  double? longitude,  
-}) async {  
-  final res = await _dio.post('/api/schools', data: {  
-    'schoolName': schoolName,  
-    'address': address,  
-    'contactEmail': contactEmail,  
-    if (contactPhone != null) 'contactPhone': contactPhone,  
-    'curriculum': curriculum.toWire(),  
-    if (schoolLevel != null) 'schoolLevel': schoolLevel.toWire(),  
-    'tuitionFee': tuitionFee,  
-    if (facilities != null) 'facilities': facilities,  
-    if (latitude != null) 'latitude': latitude,  
-    if (longitude != null) 'longitude': longitude,  
-  });  
-  if (res.statusCode != 201) throw _toApiException(res);  
-  final body = res.data as Map<String, dynamic>;  
-  return School.fromJson(body['school'] as Map<String, dynamic>);  
-}
+  /// Create a new school. School admin only. Returns the newly created School.
+  Future<School> create({
+    required String schoolName,
+    required String address,
+    required String contactEmail,
+    String? contactPhone,
+    required Curriculum curriculum,
+    SchoolLevel? schoolLevel,
+    required num tuitionFee,
+    String? facilities,
+    double? latitude,
+    double? longitude,
+  }) async {
+    final res = await _dio.post('/api/schools', data: {
+      'schoolName': schoolName,
+      'address': address,
+      'contactEmail': contactEmail,
+      if (contactPhone != null) 'contactPhone': contactPhone,
+      'curriculum': curriculum.toWire(),
+      if (schoolLevel != null) 'schoolLevel': schoolLevel.toWire(),
+      'tuitionFee': tuitionFee,
+      if (facilities != null) 'facilities': facilities,
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
+    });
+    if (res.statusCode != 201) throw _toApiException(res);
+    final body = res.data as Map<String, dynamic>;
+    return School.fromJson(body['school'] as Map<String, dynamic>);
+  }
 
-/// Update a school. School admin only. Returns the updated School.  
-Future<School> update({  
-  required int id,  
-  String? schoolName,  
-  String? address,  
-  String? contactEmail,  
-  String? contactPhone,  
-  Curriculum? curriculum,  
-  SchoolLevel? schoolLevel,  
-  num? tuitionFee,  
-  String? facilities,  
-  double? latitude,  
-  double? longitude,  
-}) async {  
-  final data = <String, dynamic>{};  
-  if (schoolName != null) data['schoolName'] = schoolName;  
-  if (address != null) data['address'] = address;  
-  if (contactEmail != null) data['contactEmail'] = contactEmail;  
-  if (contactPhone != null) data['contactPhone'] = contactPhone;  
-  if (curriculum != null) data['curriculum'] = curriculum.toWire();  
-  if (schoolLevel != null) data['schoolLevel'] = schoolLevel.toWire();  
-  if (tuitionFee != null) data['tuitionFee'] = tuitionFee;  
-  if (facilities != null) data['facilities'] = facilities;  
-  if (latitude != null) data['latitude'] = latitude;  
-  if (longitude != null) data['longitude'] = longitude;  
-  
-  final res = await _dio.put('/api/schools/$id', data: data);  
-  if (res.statusCode != 200) throw _toApiException(res);  
-  final body = res.data as Map<String, dynamic>;  
-  return School.fromJson(body['school'] as Map<String, dynamic>);  
-}
+  /// Update a school. School admin only. Returns the updated School.
+  Future<School> update({
+    required int id,
+    String? schoolName,
+    String? address,
+    String? contactEmail,
+    String? contactPhone,
+    Curriculum? curriculum,
+    SchoolLevel? schoolLevel,
+    num? tuitionFee,
+    String? facilities,
+    double? latitude,
+    double? longitude,
+  }) async {
+    final data = <String, dynamic>{};
+    if (schoolName != null) data['schoolName'] = schoolName;
+    if (address != null) data['address'] = address;
+    if (contactEmail != null) data['contactEmail'] = contactEmail;
+    if (contactPhone != null) data['contactPhone'] = contactPhone;
+    if (curriculum != null) data['curriculum'] = curriculum.toWire();
+    if (schoolLevel != null) data['schoolLevel'] = schoolLevel.toWire();
+    if (tuitionFee != null) data['tuitionFee'] = tuitionFee;
+    if (facilities != null) data['facilities'] = facilities;
+    if (latitude != null) data['latitude'] = latitude;
+    if (longitude != null) data['longitude'] = longitude;
 
-/// Get paginated list of schools the current parent follows.  
-Future<SchoolsPage> myFollowedSchools({int limit = 50, int page = 1}) async {  
-  final res = await _dio.get(  
-    '/api/me/follows',  
-    queryParameters: {'limit': limit, 'page': page},  
-  );  
-  if (res.statusCode != 200) throw _toApiException(res);  
-  final body = res.data as Map<String, dynamic>;  
-  final data = (body['data'] as List)  
-      .cast<Map<String, dynamic>>()  
-      .map((row) {  
-        // Backend returns { school: { id, ... } }  
-        final schoolData = row['school'] as Map<String, dynamic>;  
-        return School.fromJson(schoolData);  
-      })  
-      .toList();  
-  return SchoolsPage(  
-    data,  
-    Pagination.fromJson(body['meta'] as Map<String, dynamic>),  
-  );  
-}
+    final res = await _dio.put('/api/schools/$id', data: data);
+    if (res.statusCode != 200) throw _toApiException(res);
+    final body = res.data as Map<String, dynamic>;
+    return School.fromJson(body['school'] as Map<String, dynamic>);
+  }
+
+  /// Get paginated list of schools the current parent follows.
+  Future<SchoolsPage> myFollowedSchools({int limit = 50, int page = 1}) async {
+    final res = await _dio.get(
+      '/api/me/follows',
+      queryParameters: {'limit': limit, 'page': page},
+    );
+    if (res.statusCode != 200) throw _toApiException(res);
+    final body = res.data as Map<String, dynamic>;
+    final data = (body['data'] as List).cast<Map<String, dynamic>>().map((row) {
+      // Backend returns { school: { id, ... } }
+      final schoolData = row['school'] as Map<String, dynamic>;
+      return School.fromJson(schoolData);
+    }).toList();
+    return SchoolsPage(
+      data,
+      Pagination.fromJson(body['meta'] as Map<String, dynamic>),
+    );
+  }
 }
 
 /// Re-export the ApiException builder from auth_repository so screens that

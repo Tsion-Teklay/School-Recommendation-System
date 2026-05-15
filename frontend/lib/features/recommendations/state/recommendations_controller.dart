@@ -10,12 +10,14 @@ class RecommendationsState {
   final Map<String, dynamic> criteria;
   final bool loading;
   final String? error;
+  final int? historyId; // ADD THIS
 
   const RecommendationsState({
     required this.items,
     required this.criteria,
     required this.loading,
     required this.error,
+    this.historyId, // ADD THIS
   });
 
   RecommendationsState copyWith({
@@ -23,12 +25,14 @@ class RecommendationsState {
     Map<String, dynamic>? criteria,
     bool? loading,
     Object? error = _sentinel,
+    int? historyId, // ADD THIS
   }) {
     return RecommendationsState(
       items: items ?? this.items,
       criteria: criteria ?? this.criteria,
       loading: loading ?? this.loading,
       error: identical(error, _sentinel) ? this.error : error as String?,
+      historyId: historyId ?? this.historyId, // ADD THIS
     );
   }
 }
@@ -70,6 +74,7 @@ class RecommendationsController extends ChangeNotifier {
       _set(_state.copyWith(
         items: result.items,
         criteria: result.criteria,
+        historyId: result.historyId, // ADD THIS
         loading: false,
         error: null,
       ));
