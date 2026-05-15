@@ -31,13 +31,26 @@ function resolveCriteria(query, ctx) {
   const pref = ctx.preference;
   const parent = ctx.parent;
 
+  // Parse ?near=lat,lng override so callers can override the parent's home-pin.
+  let nearLat = null;
+  let nearLng = null;
+  if (query.near) {
+    const [latStr, lngStr] = String(query.near).split(",");
+    nearLat = Number(latStr);
+    nearLng = Number(lngStr);
+    if (Number.isNaN(nearLat) || Number.isNaN(nearLng)) {
+      nearLat = null;
+      nearLng = null;
+    }
+  }
+
   return {
     curriculum: query.curriculum || pref?.curriculum || "LOCAL",
     minBudget: Number(query.minFee ?? pref?.minBudget ?? 0),
     maxBudget: Number(query.maxFee ?? pref?.maxBudget ?? 100000),
-    distance: Number(pref?.distance ?? 25),
-    lat: Number(parent?.latitude ?? 9.02),
-    lng: Number(parent?.longitude ?? 38.75),
+    distance: Number(query.radiusKm ?? pref?.distance ?? 25),
+    lat: Number(nearLat ?? parent?.latitude ?? 9.02),
+    lng: Number(nearLng ?? parent?.longitude ?? 38.75),
   };
 }
 
@@ -123,7 +136,7 @@ export async function getRecommendations(
             interactionResult: "IGNORED",
             recommendedSchools: {
               create: rankedFromAI.map((r) => ({
-                schoolId: r.school_id,
+                schoolId: r.school_id || r.id,
               })),
             },
             preferenceCriteria: {
