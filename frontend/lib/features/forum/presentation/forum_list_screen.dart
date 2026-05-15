@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../shared/widgets/responsive_shell.dart';
 import '../../auth/data/auth_dtos.dart';
+import '../../likes/data/like_dtos.dart';
+import '../../likes/state/like_controller.dart';
 import '../data/forum_dtos.dart';
 import '../state/forum_list_controller.dart';
 
@@ -110,13 +112,32 @@ class _ForumListScreenState extends ConsumerState<ForumListScreen> {
   }
 }
 
-class _PostTile extends StatelessWidget {
+class _PostTile extends ConsumerStatefulWidget {
   final ForumPost post;
   const _PostTile({required this.post});
 
   @override
+  ConsumerState<_PostTile> createState() => _PostTileState();
+}
+
+class _PostTileState extends ConsumerState<_PostTile> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      ref
+          .read(likeControllerProvider)
+          .refreshLikeData(LikeTargetType.forumPost, widget.post.id);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final post = widget.post;
+    final ctl = ref.watch(likeControllerProvider);
+    final likeCount = ctl.getLikeCount(LikeTargetType.forumPost, post.id);
+
     return Card(
       child: InkWell(
         onTap: () => context.go('/forum/${post.id}'),
@@ -151,6 +172,14 @@ class _PostTile extends StatelessWidget {
                       ],
                     ),
                   ),
+                  if (likeCount > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: Chip(
+                        avatar: const Icon(Icons.favorite, size: 16, color: Colors.red),
+                        label: Text('$likeCount'),
+                      ),
+                    ),
                   if ((post.replyCount ?? 0) > 0)
                     Chip(
                       avatar: const Icon(Icons.chat_bubble_outline, size: 16),

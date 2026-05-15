@@ -314,6 +314,7 @@ model DiscussionForum {
   threadId  Int?              @map("thread_id")
   isEdited  Boolean           @default(false) @map("is_edited")
   targetType ForumTargetType   @default(FORUM_POST) @map("target_type")  
+  targetId   Int?              @map("target_id")
 
   author  User              @relation(fields: [authorId], references: [id])
   thread  DiscussionForum?  @relation("ForumThread", fields: [threadId], references: [id])
