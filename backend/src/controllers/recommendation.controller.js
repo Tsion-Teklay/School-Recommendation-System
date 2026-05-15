@@ -1,4 +1,6 @@
+import axios from "axios";
 import { asyncHandler } from "../middlewares/async.middleware.js";
+import { db as prisma } from "../config/db.js";
 import { getAllSchools } from "../services/school.service.js";
 import { getRecommendations } from "../services/recommendation.service.js";
 
@@ -10,67 +12,46 @@ import { getRecommendations } from "../services/recommendation.service.js";
  * We always fetch a 50-school candidate pool from page 1 here, regardless of
  * any `?limit=` or `?page=` the caller passed: re-ranking is cheap and we
  * want the parent to see the best options after scoring, not the first N by
- * insertion order. NOTE: the `?limit=` and `?page=` from `paginationQuery`
- * default to 10/1 inside Zod, so a naive `req.query.limit ?? 50` fallback
- * would never fire (`??` only catches null/undefined, not the Zod-defaulted
- * value). Pinning both candidate-pool size and page avoids that footgun and
- * also stops `?page=2` from silently shifting the candidate window past the
- * top schools.
+ * insertion order.
  */
 const RECOMMENDATION_CANDIDATE_POOL = 50;
 
 export const recommend = asyncHandler(async (req, res) => {
-  console.log("DEBUG: Controller started. User ID:", req.user?.id);
-
   const result = await getAllSchools({
     ...req.query,
     page: 1,
     limit: RECOMMENDATION_CANDIDATE_POOL,
   });
 
-  console.log(`DEBUG: Found ${result.data?.length || 0} candidate schools.`);
+  const recommendationResult = await getRecommendations(
+    result.data,
+    req.query,
+    req.user?.id,
+  );
 
-  // ADD A TRY-CATCH HERE JUST FOR LOCAL DEBUGGING
-  try {
-    const recommendationResult = await getRecommendations(
-      result.data,
-      req.query,
-      req.user?.id,
-    );
-
-    // If the service fails and returns undefined/null
-    if (!recommendationResult) {
-      console.error("DEBUG: getRecommendations returned null/undefined!");
-      return res
-        .status(500)
-        .json({ error: "Service failed to return results" });
-    }
-
-    const { ranked, criteria } = recommendationResult;
-    console.log("DEBUG: Successfully ranked schools:", ranked?.length);
-
-    res.json({
-      message: "Recommendations generated",
-      data: ranked,
-      criteria,
-      meta: {
-        total: ranked.length,
-        page: 1,
-        limit: ranked.length,
-        totalPages: 1,
-      },
-    });
-  } catch (error) {
-    console.error("DEBUG: Error caught in Controller:", error.message);
-    // Log the full stack trace to see exactly which line in the service failed
-    console.error(error.stack);
-    throw error; // Re-throw so the asyncHandler/middleware still sees it
+  if (!recommendationResult) {
+    return res
+      .status(500)
+      .json({ error: "Service failed to return results" });
   }
+
+  const { ranked, criteria } = recommendationResult;
+
+  res.json({
+    message: "Recommendations generated",
+    data: ranked,
+    criteria,
+    meta: {
+      total: ranked.length,
+      page: 1,
+      limit: ranked.length,
+      totalPages: 1,
+    },
+  });
 });
 
-export async function feedback(req, res) {
+export const feedback = asyncHandler(async (req, res) => {
   const { id } = req.params;
-
   const { result, schoolId } = req.body;
 
   const history = await prisma.recommendationHistory.update({
@@ -92,4 +73,4 @@ export async function feedback(req, res) {
   return res.json({
     success: true,
   });
-}
+});
