@@ -1,28 +1,30 @@
 import axios from "axios";
-import prisma from "../config/prisma.js";
+import { db as prisma } from "../config/db.js";
 
 const ML_SERVICE_URL = process.env.ML_SERVICE_URL;
 
 export async function getRecommendations(
-  schools, // These come from your DB via Prisma
+  schools, // Full school objects from Prisma
   query = {},
-  userId = null
+  userId = null,
 ) {
   const ctx = await loadParentContext(userId);
   const criteria = resolveCriteria(query, ctx);
 
-  // FIX 1: Transform the schools array to match the Python Pydantic model
+  // Transform the schools array to match the Python Pydantic model
   const schoolsForAI = schools.map((school) => ({
     id: school.id,
-    name: school.schoolName, // Mapping schoolName -> name
-    curriculum: school.curriculum.toLowerCase(), // Enum -> lowercase string
-    tuition_fee: Number(school.tuitionFee), // Decimal -> Number
-    rating: Number(school.rating), // Decimal -> Number
-    latitude: Number(school.latitude), // Decimal -> Number
-    longitude: Number(school.longitude), // Decimal -> Number
-    facilities: school.facilities || "", // Handle nulls
+    schoolName: school.school_name,
+    curriculum: school.curriculum.toLowerCase(),
+    tuition_fee: Number(school.tuitionFee),
+    rating: Number(school.rating),
+    latitude: Number(school.latitude),
+    longitude: Number(school.longitude),
+    facilities: school.facilities || "",
     verification_status: school.verificationStatus.toLowerCase(),
-    school_level: school.schoolLevel ? school.schoolLevel.toLowerCase() : "primary",
+    school_level: school.schoolLevel
+      ? school.schoolLevel.toLowerCase()
+      : "primary",
   }));
 
   try {
@@ -30,7 +32,6 @@ export async function getRecommendations(
     const response = await axios.post(`${ML_SERVICE_URL}/recommend`, {
       parent_id: userId,
       preferences: {
-        // FIX 2: Ensure preferences are numbers/lowercase too
         curriculum: criteria.curriculum.toLowerCase(),
         min_budget: Number(criteria.minBudget),
         max_budget: Number(criteria.maxBudget),
@@ -38,11 +39,46 @@ export async function getRecommendations(
         lat: Number(criteria.lat),
         lng: Number(criteria.lng),
       },
-      schools: schoolsForAI, // Send the cleaned data
+      schools: schoolsForAI,
     });
 
-    // STEP 2 — Extract Ranked Results
-    const ranked = response.data.ranked;
+    const rankedFromAI = response.data.ranked;
+
+    // STEP 2 — HYDRATION: Map AI results back to full Prisma objects
+    // This ensures Flutter's School.fromJson(json) gets the fields it needs
+    // Inside the try block after const rankedFromAI = response.data.ranked;
+
+    const finalRankedResults = rankedFromAI
+      .map((rankItem) => {
+        // 1. MUST use school_id because that is what your AI JSON shows
+        const aiId = rankItem.school_id || rankItem.id;
+
+        // 2. Use String coercion to ensure '1' matches 1
+        const originalSchool = schools.find(
+          (s) => String(s.id) === String(aiId),
+        );
+
+        if (!originalSchool) {
+          console.warn(`Could not find school in DB with ID: ${aiId}`);
+          return null;
+        }
+
+        // 3. Combine them for the Flutter Frontend
+        return {
+          ...originalSchool,
+          // Add these specifically for the Recommendation DTO in Flutter
+          schoolName: originalSchool.school_name, // Map snake_case to camelCase
+          score: rankItem.score,
+          breakdown: rankItem.breakdown || {},
+        };
+      })
+      .filter(Boolean); // Remove any nulls if a school wasn't found
+
+    return {
+      ranked: finalRankedResults,
+      criteria,
+      historyId: history.id,
+    };
 
     // STEP 3 — Save Recommendation History
     const history = await prisma.recommendationHistory.create({
@@ -50,10 +86,8 @@ export async function getRecommendations(
         parentId: userId,
         interactionResult: "IGNORED",
         recommendedSchools: {
-          create: ranked.map((school) => ({
-            // FIX 3: Ensure this matches your Python response key
-            // (usually school_id if you mapped it that way in Python)
-            schoolId: school.id || school.school_id, 
+          create: rankedFromAI.map((school) => ({
+            schoolId: school.id || school.school_id,
           })),
         },
         preferenceCriteria: {
@@ -70,14 +104,12 @@ export async function getRecommendations(
     });
 
     return {
-      ranked,
+      ranked: finalRankedResults, // Send the full objects, not just AI scores
       criteria,
       historyId: history.id,
     };
   } catch (err) {
     console.error("AI Service Error:", err.message);
-
-    // Fallback logic
     return fallbackRecommendationSystem(schools, criteria);
   }
 }

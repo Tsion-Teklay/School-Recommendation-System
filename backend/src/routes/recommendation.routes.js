@@ -4,6 +4,7 @@ import { authenticate } from "../middlewares/auth.middleware.js";
 import { authorizeRoles } from "../middlewares/role.middleware.js";
 import { validate } from "../middlewares/validate.middleware.js";
 import { recommendationsQuerySchema } from "../schemas/recommendation.schema.js";
+import * as recommendationController from "../controllers/recommendation.controller.js";
 
 const router = express.Router();
 
