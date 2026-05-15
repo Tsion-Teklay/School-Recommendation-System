@@ -20,36 +20,52 @@ import { getRecommendations } from "../services/recommendation.service.js";
 const RECOMMENDATION_CANDIDATE_POOL = 50;
 
 export const recommend = asyncHandler(async (req, res) => {
+  console.log("DEBUG: Controller started. User ID:", req.user?.id);
+
   const result = await getAllSchools({
     ...req.query,
     page: 1,
     limit: RECOMMENDATION_CANDIDATE_POOL,
   });
 
-  const { ranked, criteria } = await getRecommendations(
-    result.data,
-    req.query,
-    req.user?.id
-  );
+  console.log(`DEBUG: Found ${result.data?.length || 0} candidate schools.`);
 
+  // ADD A TRY-CATCH HERE JUST FOR LOCAL DEBUGGING
+  try {
+    const recommendationResult = await getRecommendations(
+      result.data,
+      req.query,
+      req.user?.id,
+    );
 
-  // Don't forward `result.meta` directly: it carries the pagination shape of
-  // the *internal* candidate-pool query (e.g. `{ total: 200, totalPages: 4 }`
-  // when the filters match more schools than the pool size). The caller would
-  // see `totalPages > 1` and assume `?page=2` returns the next slice — but the
-  // controller pins page=1, so paginating the recommendations endpoint is a
-  // no-op. Surface a meta object that describes what we actually returned.
-  res.json({
-    message: "Recommendations generated",
-    data: ranked,
-    criteria,
-    meta: {
-      total: ranked.length,
-      page: 1,
-      limit: ranked.length,
-      totalPages: 1,
-    },
-  });
+    // If the service fails and returns undefined/null
+    if (!recommendationResult) {
+      console.error("DEBUG: getRecommendations returned null/undefined!");
+      return res
+        .status(500)
+        .json({ error: "Service failed to return results" });
+    }
+
+    const { ranked, criteria } = recommendationResult;
+    console.log("DEBUG: Successfully ranked schools:", ranked?.length);
+
+    res.json({
+      message: "Recommendations generated",
+      data: ranked,
+      criteria,
+      meta: {
+        total: ranked.length,
+        page: 1,
+        limit: ranked.length,
+        totalPages: 1,
+      },
+    });
+  } catch (error) {
+    console.error("DEBUG: Error caught in Controller:", error.message);
+    // Log the full stack trace to see exactly which line in the service failed
+    console.error(error.stack);
+    throw error; // Re-throw so the asyncHandler/middleware still sees it
+  }
 });
 
 export async function feedback(req, res) {
@@ -57,27 +73,23 @@ export async function feedback(req, res) {
 
   const { result, schoolId } = req.body;
 
-  const history =
-    await prisma.recommendationHistory.update({
-      where: {
-        id: Number(id)
-      },
-      data: {
-        interactionResult: result
-      }
-    });
+  const history = await prisma.recommendationHistory.update({
+    where: {
+      id: Number(id),
+    },
+    data: {
+      interactionResult: result,
+    },
+  });
 
-  await axios.post(
-    `${process.env.ML_SERVICE_URL}/feedback`,
-    {
-      recommendation_id: id,
-      result,
-      school_id: schoolId,
-      parent_id: history.parentId
-    }
-  );
+  await axios.post(`${process.env.ML_SERVICE_URL}/feedback`, {
+    recommendation_id: id,
+    result,
+    school_id: schoolId,
+    parent_id: history.parentId,
+  });
 
   return res.json({
-    success: true
+    success: true,
   });
 }

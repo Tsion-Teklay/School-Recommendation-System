@@ -1,80 +1,68 @@
-const { PrismaClient, Curriculum, SchoolLevel, UserRole, AccountStatus } = require('@prisma/client');
-const prisma = new PrismaClient();
+import {
+  UserRole,
+  AccountStatus,
+  Curriculum,
+  SchoolLevel,
+  VerificationStatus,
+} from "@prisma/client";
+import { db } from "../src/config/db.js";
+const prisma = db;
 
 async function main() {
-  // 1. Create a dummy School Admin first
-  const admin = await prisma.user.upsert({
-    where: { email: 'admin@test.com' },
-    update: {},
-    create: {
-      fullName: 'Default Admin',
-      email: 'admin@test.com',
-      password: 'hashedpassword123', // In real life, hash this!
-      role: UserRole.SCHOOL_ADMIN,
-      accountStatus: AccountStatus.ACTIVE,
-      emailVerified: true
-    }
-  });
+  console.log("Cleaning up old seed data...");
+  // Clear schools first because they depend on users
+  await prisma.school.deleteMany({});
+  await prisma.user.deleteMany({ where: { role: UserRole.SCHOOL_ADMIN } });
 
-  // 2. Define 20 schools
-  const schoolsData = [
-    {
-      adminId: admin.id,
-      schoolName: "Addis International Academy",
-      address: "Bole, Addis Ababa",
-      contactEmail: "info@addisacademy.com",
-      contactPhone: "0911223344",
-      curriculum: Curriculum.INTERNATIONAL,
-      schoolLevel: SchoolLevel.SECONDARY,
-      tuitionFee: 15500.50,
-      rating: 4.8,
-      latitude: 9.0128,
-      longitude: 38.7525,
-      facilities: "Swimming Pool, IT Lab, Science Lab, Football Pitch",
-      verificationStatus: "VERIFIED"
-    },
-    {
-      adminId: admin.id,
-      schoolName: "Ethio-Knowledge School",
-      address: "Megenagna, Addis Ababa",
-      contactEmail: "contact@ethioschool.com",
-      contactPhone: "0911556677",
-      curriculum: Curriculum.LOCAL,
-      schoolLevel: SchoolLevel.PRIMARY,
-      tuitionFee: 4200.00,
-      rating: 3.9,
-      latitude: 9.0333,
-      longitude: 38.7667,
-      facilities: "Library, Playground",
-      verificationStatus: "VERIFIED"
-    }
-    // ... we will generate the rest in the loop below
-  ];
+  const totalSchools = 20;
+  console.log(`Starting seed for ${totalSchools} schools...`);
 
-  // Fill up to 20 schools with random variations
-  for (let i = 3; i <= 20; i++) {
-    schoolsData.push({
-      adminId: admin.id,
-      schoolName: `Standard School ${i}`,
-      address: `Area ${i}, Addis Ababa`,
-      contactEmail: `school${i}@test.com`,
-      contactPhone: `09220000${i}`,
-      curriculum: i % 3 === 0 ? Curriculum.INTERNATIONAL : Curriculum.LOCAL,
-      schoolLevel: i % 2 === 0 ? SchoolLevel.PRIMARY : SchoolLevel.SECONDARY,
-      tuitionFee: Math.floor(Math.random() * (18000 - 3000) + 3000),
-      rating: parseFloat((Math.random() * (5 - 2) + 2).toFixed(2)),
-      latitude: 9.03 + (Math.random() - 0.5) * 0.05,
-      longitude: 38.74 + (Math.random() - 0.5) * 0.05,
-      facilities: "Library, Science Lab",
-      verificationStatus: "VERIFIED"
+  for (let i = 1; i <= totalSchools; i++) {
+    const email = `admin${i}@school.com`;
+
+    await prisma.user.create({
+      data: {
+        fullName: `Admin of School ${i}`,
+        email: email,
+        password: "hashed_password_123", // Realistically, hash this with bcrypt
+        role: UserRole.SCHOOL_ADMIN,
+        accountStatus: AccountStatus.ACTIVE,
+        emailVerified: true,
+        // Nested creation of the school
+        administeredSchools: {
+          create: {
+            schoolName:
+              i === 1 ? "Addis International Academy" : `Standard School ${i}`,
+            address: `Addis Ababa, Zone ${i}`,
+            contactEmail: `info@school${i}.com`,
+            contactPhone: `09110000${i.toString().padStart(2, "0")}`,
+            curriculum:
+              i % 3 === 0 ? Curriculum.INTERNATIONAL : Curriculum.LOCAL,
+            schoolLevel:
+              i % 2 === 0 ? SchoolLevel.PRIMARY : SchoolLevel.SECONDARY,
+            tuitionFee: Math.floor(Math.random() * (20000 - 5000) + 5000),
+            latitude: 9.0128 + (Math.random() - 0.5) * 0.1,
+            longitude: 38.7525 + (Math.random() - 0.5) * 0.1,
+            facilities: "Library, Science Lab, Playground",
+            verificationStatus: VerificationStatus.VERIFIED,
+            rating: parseFloat((Math.random() * (5 - 3) + 3).toFixed(2)),
+            reviewCount: 0,
+          },
+        },
+      },
     });
   }
 
-  console.log("Seeding Database...");
-  await prisma.school.createMany({ data: schoolsData });
-  console.log("✅ Seeded 20 schools successfully.");
+  console.log(
+    `✅ Successfully seeded ${totalSchools} schools with 20 unique admins.`,
+  );
 }
 
 main()
-  .catch((e) => { console.error(e); process.exit(1); })
-  .finally(async () => { await prisma.$disconnect(); });
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
