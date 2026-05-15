@@ -7,6 +7,7 @@ import '../../../shared/widgets/school_card.dart';
 import '../../auth/state/auth_controller.dart';
 import '../../schools/state/compare_cart.dart';
 import '../state/recommendations_controller.dart';
+import '../../schools/data/school_repository.dart';
 
 /// Parent home — `GET /api/recommendations` ranked schools with the score
 /// breakdown surfaced under each card. The breakdown is what differentiates
@@ -87,7 +88,26 @@ class RecommendationsScreen extends ConsumerWidget {
                   children: [
                     SchoolCard(
                       school: r.school,
-                      onTap: () => context.go('/schools/${r.school.id}'),
+                      onTap: () async {
+                        // Navigate to detail
+                        context.go('/schools/${r.school.id}');
+
+                        // Send feedback (fire-and-forget)
+                        if (state.historyId != null) {
+                          try {
+                            print("historyId: ${state.historyId}");
+                            await ref
+                                .read(schoolRepositoryProvider)
+                                .sendRecommendationFeedback(
+                                  historyId: state.historyId!,
+                                  result: 'OPENED',
+                                  schoolId: r.school.id,
+                                );
+                          } catch (e) {
+                            // Log error silently to not block UI
+                          }
+                        }
+                      },
                       trailing: IconButton(
                         tooltip:
                             inCart ? 'Remove from compare' : 'Add to compare',
