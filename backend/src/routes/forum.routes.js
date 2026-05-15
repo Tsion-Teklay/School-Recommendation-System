@@ -38,6 +38,28 @@ router.post(
 
 /**
  * @openapi
+ * /api/forum/announcement/{announcementId}:
+ *   get:
+ *     tags: [Forum]
+ *     summary: Get comments on an announcement (public)
+ *   post:
+ *     tags: [Forum]
+ *     summary: Post a comment on an announcement (any authenticated user)
+ *     security: [{ bearerAuth: [] }]
+ */
+router.get(
+  "/announcement/:announcementId",
+  controller.getAnnouncementCommentsHandler
+);
+
+router.post(
+  "/announcement/:announcementId",
+  authenticate,
+  controller.createAnnouncementCommentHandler
+);
+
+/**
+ * @openapi
  * /api/forum/{id}:
  *   get:
  *     tags: [Forum]
@@ -87,3 +109,4 @@ router.post(
 );
 
 export default router;
+

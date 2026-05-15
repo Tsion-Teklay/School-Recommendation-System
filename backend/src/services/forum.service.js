@@ -22,7 +22,7 @@ import { validateContent } from "./moderation.service.js";
 const AUTHOR_SELECT = { id: true, fullName: true, role: true };
 
 export async function createPost(data, userId) {  
-  const { content, threadId, targetType = "FORUM_POST" } = data;  
+  const { content, threadId, targetType = "FORUM_POST", targetId = null } = data;  
   
   return db.discussionForum.create({  
     data: {  
@@ -30,6 +30,7 @@ export async function createPost(data, userId) {
       content,  
       threadId: threadId ? Number(threadId) : null,  
       targetType,  
+      targetId: targetId ? Number(targetId) : null,  
     },  
     include: {  
       author: { select: { id: true, fullName: true, email: true } },  
@@ -38,24 +39,45 @@ export async function createPost(data, userId) {
   });  
 }  
   
-export async function getAnnouncementComments(announcementId) {  
-  return db.discussionForum.findMany({  
-    where: {  
-      targetType: "ANNOUNCEMENT",  
-      targetId: Number(announcementId),  
-      threadId: null, // Only top-level comments  
-    },  
-    include: {  
-      author: { select: { id: true, fullName: true, email: true } },  
-      replies: {  
-        include: {  
-          author: { select: { id: true, fullName: true, email: true } },  
-        },  
-        orderBy: { timestamp: "asc" },  
-      },  
-    },  
-    orderBy: { timestamp: "desc" },  
-  });  
+export async function getAnnouncementComments(announcementId) {
+  return db.discussionForum.findMany({
+    where: {
+      targetType: "ANNOUNCEMENT",
+      targetId: Number(announcementId),
+      threadId: null, // Only top-level comments
+    },
+    include: {
+      author: { select: { id: true, fullName: true, role: true } },
+      replies: {
+        include: {
+          author: { select: { id: true, fullName: true, role: true } },
+        },
+        orderBy: { timestamp: "asc" },
+      },
+    },
+    orderBy: { timestamp: "desc" },
+  });
+}
+
+/**
+ * Create a top-level comment on an announcement. Uses the same
+ * DiscussionForum table but with targetType = ANNOUNCEMENT and
+ * targetId = the announcement PK.
+ */
+export async function createAnnouncementComment(announcementId, content, userId) {
+  validateContent(content, { field: "content" });
+
+  return db.discussionForum.create({
+    data: {
+      authorId: userId,
+      content,
+      targetType: "ANNOUNCEMENT",
+      targetId: Number(announcementId),
+    },
+    include: {
+      author: { select: { id: true, fullName: true, role: true } },
+    },
+  });
 }
 
 export async function replyToPost(authorId, parentId, { content }) {
@@ -78,7 +100,7 @@ export async function replyToPost(authorId, parentId, { content }) {
 
 export async function listTopLevelPosts({ page = 1, limit = 10 } = {}) {
   const skip = (Number(page) - 1) * Number(limit);
-  const where = { threadId: null };
+  const where = { threadId: null, targetType: "FORUM_POST" };
   const [posts, total] = await Promise.all([
     db.discussionForum.findMany({
       where,

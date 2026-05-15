@@ -130,7 +130,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     }
     final dest = _routeFor(n);
     if (dest != null) {
-      context.go(dest);
+      context.push(dest);
     }
   }
 }
