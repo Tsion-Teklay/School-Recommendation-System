@@ -102,127 +102,197 @@ class _AnnouncementDetailScreenState
   }
 }
 
-class _Body extends StatelessWidget {
+class _Body extends ConsumerStatefulWidget {
   final Announcement announcement;
   const _Body({required this.announcement});
 
   @override
+  ConsumerState<_Body> createState() => _BodyState();
+}
+
+class _BodyState extends ConsumerState<_Body> {
+  final _commentCtrl = TextEditingController();
+  bool _posting = false;
+  int _commentRefreshKey = 0;
+
+  @override
+  void dispose() {
+    _commentCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _postComment() async {
+    final text = _commentCtrl.text.trim();
+    if (text.isEmpty) return;
+    setState(() => _posting = true);
+    try {
+      await ref
+          .read(announcementRepositoryProvider)
+          .postAnnouncementComment(widget.announcement.id, text);
+      _commentCtrl.clear();
+      // Bump the key to force FutureBuilder to refetch.
+      setState(() => _commentRefreshKey++);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to post comment: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _posting = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final a = announcement;
+    final a = widget.announcement;
     final image = a.imgUrl;
 
-    // Note: Ensure you have access to ref here.
-    // Since _Body is currently a StatelessWidget, we should change it
-    // to a ConsumerWidget to use 'ref.read'.
-    return Consumer(
-      builder: (context, ref, child) {
-        return Card(
-          clipBehavior: Clip.antiAlias,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (image != null && image.isNotEmpty)
-                AspectRatio(
-                  aspectRatio: 16 / 9,
-                  child: Image.network(
-                    _absoluteImage(image),
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: theme.colorScheme.surfaceContainerHighest,
-                      child: const Center(
-                          child: Icon(Icons.image_not_supported_outlined)),
-                    ),
-                  ),
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (image != null && image.isNotEmpty)
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: Image.network(
+                _absoluteImage(image),
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  child: const Center(
+                      child: Icon(Icons.image_not_supported_outlined)),
                 ),
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(a.title, style: theme.textTheme.headlineSmall),
-                    // ... (Chips and Content section remains the same)
-                    const SizedBox(height: 16),
-                    SelectableText(
-                      a.content,
-                      style: theme.textTheme.bodyLarge,
-                    ),
-                    if (a.school != null) ...[
-                      const SizedBox(height: 24),
-                      OutlinedButton.icon(
-                        onPressed: () =>
-                            GoRouter.of(context).go('/schools/${a.school!.id}'),
-                        icon: const Icon(Icons.open_in_new),
-                        label: Text('View ${a.school!.schoolName}'),
-                      ),
-                    ],
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(a.title, style: theme.textTheme.headlineSmall),
+                // ... (Chips and Content section remains the same)
+                const SizedBox(height: 16),
+                SelectableText(
+                  a.content,
+                  style: theme.textTheme.bodyLarge,
+                ),
+                if (a.school != null) ...[
+                  const SizedBox(height: 24),
+                  OutlinedButton.icon(
+                    onPressed: () =>
+                        GoRouter.of(context).go('/schools/${a.school!.id}'),
+                    icon: const Icon(Icons.open_in_new),
+                    label: Text('View ${a.school!.schoolName}'),
+                  ),
+                ],
 
-                    // --- ACTION BAR ---
-                    const SizedBox(height: 24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        LikeAction(
-                            targetType: LikeTargetType.announcement,
-                            targetId: a.id),
-                        ShareAction(
-                          title: a.title,
-                          content: a.content,
-                          url: 'https://yourapp.com/announcements/${a.id}',
+                // --- ACTION BAR ---
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    LikeAction(
+                        targetType: LikeTargetType.announcement,
+                        targetId: a.id),
+                    ShareAction(
+                      title: a.title,
+                      content: a.content,
+                      url: 'https://yourapp.com/announcements/${a.id}',
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.flag_outlined),
+                      onPressed: () => showDialog(
+                        context: context,
+                        builder: (_) => ReportDialog(
+                          targetType: ReportTargetType.announcement,
+                          targetId: a.id,
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.flag_outlined),
-                          onPressed: () => showDialog(
-                            context: context,
-                            builder: (_) => ReportDialog(
-                              targetType: ReportTargetType.announcement,
-                              targetId: a.id,
-                            ),
+                      ),
+                      tooltip: 'Report',
+                    ),
+                  ],
+                ),
+
+                // --- COMMENT SECTION ---
+                const SizedBox(height: 32),
+                Text('Comments', style: theme.textTheme.titleMedium),
+                const SizedBox(height: 12),
+
+                // Comment input
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        TextField(
+                          controller: _commentCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'Add a comment',
+                            hintText: 'Share your thoughts...',
                           ),
-                          tooltip: 'Report',
+                          minLines: 2,
+                          maxLines: 5,
+                        ),
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: FilledButton.icon(
+                            onPressed: _posting ? null : _postComment,
+                            icon: _posting
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2),
+                                  )
+                                : const Icon(Icons.send),
+                            label: const Text('Comment'),
+                          ),
                         ),
                       ],
                     ),
-
-                    // --- NEW COMMENT SECTION START ---
-                    const SizedBox(height: 32),
-                    Text('Comments', style: theme.textTheme.titleMedium),
-                    const SizedBox(height: 16),
-                    FutureBuilder(
-                      // We use ref.read here to fetch the comments
-                      future: ref
-                          .read(announcementRepositoryProvider)
-                          .getAnnouncementComments(a.id),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const Center(
-                              child: CircularProgressIndicator());
-                        }
-                        if (snapshot.hasError) {
-                          return Text(
-                              'Error loading comments: ${snapshot.error}');
-                        }
-
-                        final comments = snapshot.data ?? [];
-                        if (comments.isEmpty)
-                          return const Text('No comments yet');
-
-                        return Column(
-                          children: comments
-                              .map((c) => CommentTile(comment: c))
-                              .toList(),
-                        );
-                      },
-                    ),
-                    // --- NEW COMMENT SECTION END ---
-                  ],
+                  ),
                 ),
-              ),
-            ],
+
+                const SizedBox(height: 16),
+
+                // Comments list
+                FutureBuilder(
+                  key: ValueKey(_commentRefreshKey),
+                  future: ref
+                      .read(announcementRepositoryProvider)
+                      .getAnnouncementComments(a.id),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState ==
+                        ConnectionState.waiting) {
+                      return const Center(
+                          child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return Text(
+                          'Error loading comments: ${snapshot.error}');
+                    }
+
+                    final comments = snapshot.data ?? [];
+                    if (comments.isEmpty) {
+                      return const Text('No comments yet. Be the first to comment!');
+                    }
+
+                    return Column(
+                      children: comments
+                          .map((c) => CommentTile(comment: c))
+                          .toList(),
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 }

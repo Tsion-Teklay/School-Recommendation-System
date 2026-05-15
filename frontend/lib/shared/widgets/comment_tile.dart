@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../features/announcements/data/comment_dtos.dart';
+import '../../features/likes/data/like_dtos.dart';
+import '../../features/reports/data/report_dtos.dart';
+import 'like_action.dart';
+import 'report_dialog.dart';
+import 'share_action.dart';
 
 class CommentTile extends StatelessWidget {
   final Comment comment;
@@ -50,6 +55,31 @@ class CommentTile extends StatelessWidget {
             Text(
               comment.content,
               style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                LikeAction(
+                    targetType: LikeTargetType.forumPost,
+                    targetId: comment.id),
+                ShareAction(
+                  title: 'Comment by ${comment.authorName}',
+                  content: comment.content,
+                  url: 'https://yourapp.com/forum/${comment.id}',
+                ),
+                IconButton(
+                  icon: const Icon(Icons.flag_outlined, size: 20),
+                  onPressed: () => showDialog(
+                    context: context,
+                    builder: (_) => ReportDialog(
+                      targetType: ReportTargetType.forumPost,
+                      targetId: comment.id,
+                    ),
+                  ),
+                  tooltip: 'Report',
+                ),
+              ],
             ),
             if (comment.replies.isNotEmpty) ...[
               const SizedBox(height: 8),
