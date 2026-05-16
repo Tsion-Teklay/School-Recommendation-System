@@ -313,12 +313,15 @@ model DiscussionForum {
   timestamp DateTime          @default(now())
   threadId  Int?              @map("thread_id")
   isEdited  Boolean           @default(false) @map("is_edited")
-  targetType ForumTargetType   @default(FORUM_POST) @map("target_type")  
+  targetType ForumTargetType  @default(FORUM_POST) @map("target_type") 
+  targetId   Int?             @map("target_id") 
 
   author  User              @relation(fields: [authorId], references: [id])
   thread  DiscussionForum?  @relation("ForumThread", fields: [threadId], references: [id])
   replies DiscussionForum[] @relation("ForumThread")
 
+  @@index([authorId], map: "discussion_forum_author_id_fkey")
+  @@index([threadId], map: "discussion_forum_thread_id_fkey")
   @@map("discussion_forum")
 }
 
@@ -435,6 +438,7 @@ model RecommendedSchool {
   id               Int @id @default(autoincrement()) @map("recommended_school_id")
   recommendationId Int @map("recommendation_id")
   schoolId         Int @map("school_id")
+  features         Json?
 
   recommendation RecommendationHistory @relation(fields: [recommendationId], references: [id])
   school         School                @relation(fields: [schoolId], references: [id])

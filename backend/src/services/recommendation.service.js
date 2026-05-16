@@ -204,6 +204,7 @@ export async function getRecommendations(
             recommendedSchools: {
               create: rankedFromAI.map((r) => ({
                 schoolId: r.school_id || r.id,
+                features: r.features 
               })),
             },
 
