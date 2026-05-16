@@ -8,23 +8,7 @@ import { logger } from "../config/logger.js";
 import { createNotification } from "./notification.service.js";
 import { validateContent } from "./moderation.service.js";
 
-/**
- * Phase 4 — targeted announcement fan-out.
- *
- * Two publisher paths now diverge:
- *
- *   SCHOOL_ADMIN: announcement is school-scoped (announcement.schoolId set,
- *     ownership of the school enforced) and only parents subscribed to that
- *     school via the Subscription table receive a notification. This is the
- *     UC09 / UC18 / UC21 behaviour the spec calls for — replacing the prior
- *     blast-all that violated those use cases.
- *
- *   MOE_OFFICER: announcement is platform-wide (no schoolId) and every
- *     parent gets a notification, same as before.
- *
- * Both paths swallow notification failures — announcement creation is the
- * primary write and shouldn't 5xx because a downstream insert blew up.
- */
+
 export async function createAnnouncement(data, user) {
   const publisherType = user.role === "MOE_OFFICER" ? "MOE" : "SCHOOL_ADMIN";
 
@@ -100,74 +84,76 @@ export async function createAnnouncement(data, user) {
   return announcement;
 }
 
-
-// ✅ Get All (with filters + pagination)
-export async function getAllAnnouncements(query, user) {
-  const {
-    category,
-    urgencyLevel,
-    schoolId,
-    followedOnly,
-    page = 1,
-    limit = 10,
-  } = query;
-
-  const where = {
-    ...(category && { category }),
-    ...(urgencyLevel && { urgencyLevel }),
-    ...(schoolId && { schoolId: Number(schoolId) }),
-  };
-
-  // Phase 11 — "only schools I follow". Requires an authenticated parent; we
-  // silently drop the filter for everyone else so the route stays public.
-  if (followedOnly && user && user.role === "PARENT") {
-    const subs = await db.subscription.findMany({
-      where: { parentId: user.id },
-      select: { schoolId: true },
-    });
-    const ids = subs.map((s) => s.schoolId);
-    // If the parent follows nothing, return an empty page rather than the
-    // full feed — that matches user intent.
-    if (ids.length === 0) {
-      return {
-        data: [],
-        meta: { total: 0, page: Number(page), totalPages: 0 },
-      };
-    }
-    where.schoolId = { in: ids };
-  }
-
-  const skip = (Number(page) - 1) * Number(limit);
-
-  const [announcements, total] = await Promise.all([
-    db.announcement.findMany({
-      where,
-      skip,
-      take: Number(limit),
-      orderBy: { createdAt: "desc" },
-      include: {
-        // Phase 11 — feed cards need the school name + verification badge
-        // without a roundtrip per announcement.
-        school: {
-          select: {
-            id: true,
-            schoolName: true,
-            verificationStatus: true,
-          },
-        },
-      },
-    }),
-    db.announcement.count({ where }),
-  ]);
-
-  return {
-    data: announcements,
-    meta: {
-      total,
-      page: Number(page),
-      totalPages: Math.ceil(total / limit),
-    },
-  };
+export async function getAllAnnouncements(query, user) {  
+  const {  
+    category,  
+    urgencyLevel,  
+    schoolId,  
+    followedOnly,  
+    page = 1,  
+    limit = 10,  
+  } = query;  
+  
+  // 1. Identify schools the parent follows  
+  let followedIds = [];  
+  if (user && user.role === "PARENT") {  
+    const subs = await db.subscription.findMany({  
+      where: { parentId: user.id },  
+      select: { schoolId: true },  
+    });  
+    followedIds = subs.map((s) => s.schoolId);  
+  }  
+  
+  // 2. Build the base filter  
+  const where = {  
+    ...(category && { category }),  
+    ...(urgencyLevel && { urgencyLevel }),  
+    ...(schoolId && { schoolId: Number(schoolId) }),  
+  };  
+  
+  // If the user explicitly requested "followed only", apply the filter here  
+  if (followedOnly && user && user.role === "PARENT") {  
+    if (followedIds.length === 0) {  
+      return { data: [], meta: { total: 0, page: Number(page), totalPages: 0 } };  
+    }  
+    where.schoolId = { in: followedIds };  
+  }  
+  
+  // 3. Fetch announcements  
+  // Note: To prioritize followed schools across the whole set, we fetch the   
+  // matches and sort in-memory before slicing for pagination.  
+  const announcements = await db.announcement.findMany({  
+    where,  
+    orderBy: { createdAt: "desc" },  
+    include: {  
+      school: {  
+        select: { id: true, schoolName: true, verificationStatus: true },  
+      },  
+    },  
+  });  
+  
+  // 4. Prioritize followed schools while keeping newest on top  
+  const sorted = announcements.sort((a, b) => {  
+    const aFollowed = followedIds.includes(a.schoolId);  
+    const bFollowed = followedIds.includes(b.schoolId);  
+  
+    if (aFollowed && !bFollowed) return -1;  
+    if (!aFollowed && bFollowed) return 1;  
+    return 0; // Both same status; maintain the 'createdAt desc' order from DB  
+  });  
+  
+  // 5. Apply pagination to the sorted result  
+  const skip = (Number(page) - 1) * Number(limit);  
+  const paginatedData = sorted.slice(skip, skip + Number(limit));  
+  
+  return {  
+    data: paginatedData,  
+    meta: {  
+      total: sorted.length,  
+      page: Number(page),  
+      totalPages: Math.ceil(sorted.length / limit),  
+    },  
+  };  
 }
 
 // ✅ Get One
