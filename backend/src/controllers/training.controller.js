@@ -1,0 +1,66 @@
+import { db as prisma } from "../config/db.js";
+
+export async function getTrainingData(req, res) {
+  try {
+    // STEP 1
+    // Fetch recommendation histories
+    const histories = await prisma.recommendationHistory.findMany({
+      where: {
+        
+      },
+
+      include: {
+        recommendedSchools: true,
+      },
+    });
+
+    // STEP 2
+    // Flatten all rows
+    const trainingRows = [];
+
+    for (const history of histories) {
+      // Convert interaction into ML label
+      const outcome = history.interactionResult === "OPENED" ? 1 : 0;
+
+      // Each recommended school becomes a row
+      for (const school of history.recommendedSchools) {
+        const features = school.features;
+
+        // Skip if no features stored
+        if (!features) continue;
+
+        trainingRows.push({
+          curriculum_score: features.curriculum_score ?? 0,
+
+          budget_score: features.budget_score ?? 0,
+
+          distance_score: features.distance_score ?? 0,
+
+          rating_score: features.rating_score ?? 0,
+
+          facilities_score: features.facilities_score ?? 0,
+
+          verification_score: features.verification_score ?? 0,
+
+          outcome,
+        });
+      }
+    }
+
+    // STEP 3
+    // Return flattened ML data
+    return res.json({
+      count: trainingRows.length,
+
+      data: trainingRows,
+    });
+  } catch (err) {
+    console.error(err);
+
+    return res.status(500).json({
+      success: false,
+
+      error: err.message,
+    });
+  }
+}
