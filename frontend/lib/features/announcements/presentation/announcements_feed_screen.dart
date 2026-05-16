@@ -6,6 +6,8 @@ import '../../../core/config.dart';
 import '../../../shared/widgets/responsive_shell.dart';
 import '../data/announcement_dtos.dart';
 import '../state/announcements_feed_controller.dart';
+import '../../auth/state/auth_controller.dart';
+import '../../auth/data/auth_dtos.dart';
 
 /// `/announcements` — public list of school + ministry announcements.
 /// Parents get an additional "Followed schools only" toggle that bumps
@@ -138,14 +140,14 @@ class _FiltersBar extends ConsumerWidget {
               FilterChip(
                 label: const Text('Followed schools only'),
                 selected: controller.followedOnly,
-                onSelected: (v) =>
-                    controller.applyFilters(followedOnly: v),
+                onSelected: (v) => controller.applyFilters(followedOnly: v),
               ),
             DropdownButton<AnnouncementCategory?>(
               value: controller.category,
               hint: const Text('Any category'),
               items: [
-                const DropdownMenuItem(value: null, child: Text('Any category')),
+                const DropdownMenuItem(
+                    value: null, child: Text('Any category')),
                 for (final c in AnnouncementCategory.values)
                   DropdownMenuItem(value: c, child: Text(c.label())),
               ],
@@ -175,7 +177,7 @@ class _FiltersBar extends ConsumerWidget {
 
 /// Reusable card to render one announcement summary. Used by both the
 /// feed and the recent-announcements section on a school detail page.
-class AnnouncementCard extends StatelessWidget {
+class AnnouncementCard extends ConsumerWidget {
   final Announcement announcement;
   final VoidCallback? onTap;
   const AnnouncementCard({
@@ -185,10 +187,12 @@ class AnnouncementCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final a = announcement;
     final image = a.imgUrl;
+    final user = ref.watch(authControllerProvider).user;
+                     
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -244,10 +248,10 @@ class AnnouncementCard extends StatelessWidget {
                         Chip(
                           visualDensity: VisualDensity.compact,
                           label: Text(a.urgencyLevel.label()),
-                          backgroundColor: a.urgencyLevel ==
-                                  UrgencyLevel.emergency
-                              ? theme.colorScheme.errorContainer
-                              : theme.colorScheme.tertiaryContainer,
+                          backgroundColor:
+                              a.urgencyLevel == UrgencyLevel.emergency
+                                  ? theme.colorScheme.errorContainer
+                                  : theme.colorScheme.tertiaryContainer,
                         ),
                       Chip(
                         visualDensity: VisualDensity.compact,
@@ -257,8 +261,17 @@ class AnnouncementCard extends StatelessWidget {
                               : Icons.school_outlined,
                           size: 16,
                         ),
-                        label: Text(a.school?.schoolName ??
-                            a.publisherType.label()),
+                        label: Text(
+                            a.school?.schoolName ?? a.publisherType.label()),
+                      ),
+                      Chip(
+                        visualDensity: VisualDensity.compact,
+                        avatar: Icon(
+
+                          Icons.school_outlined, size: 16
+                        ),
+                        label: Text(
+                            a.school?.schoolName ?? a.publisherType.label()),
                       ),
                     ],
                   ),
