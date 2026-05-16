@@ -1,9 +1,10 @@
 import express from "express";
-import { recommend } from "../controllers/recommendation.controller.js";
+import { recommend, feedback } from "../controllers/recommendation.controller.js";
 import { authenticate } from "../middlewares/auth.middleware.js";
 import { authorizeRoles } from "../middlewares/role.middleware.js";
 import { validate } from "../middlewares/validate.middleware.js";
 import { recommendationsQuerySchema } from "../schemas/recommendation.schema.js";
+
 
 const router = express.Router();
 
@@ -36,6 +37,12 @@ router.get(
   authorizeRoles("PARENT"),
   validate({ query: recommendationsQuerySchema }),
   recommend
+);
+router.post(
+  "/:id/feedback",
+  authenticate,
+  authorizeRoles("PARENT"),
+  feedback
 );
 
 export default router;

@@ -12,6 +12,8 @@ import {
   notFoundHandler,
 } from "./middlewares/error.middleware.js";
 
+import trainingRoutes from "./routes/training.routes.js";
+
 const app = express();
 
 // --- Security + infra middleware ---------------------------------------------
@@ -112,6 +114,7 @@ app.use("/api/likes", (await import("./routes/like.routes.js")).default);
 // both /api/schools/:id/verification-requests (submit) and
 // /api/verification-requests/* (list/get/review), so it's mounted at /api.
 app.use("/api", (await import("./routes/verification.routes.js")).default);
+app.use("/api/training-data", trainingRoutes);
 
 // Dev-only utility routes — never mount in production.
 if (process.env.NODE_ENV !== "production") {
