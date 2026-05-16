@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import '../../../core/location_helper.dart';
 
 import '../../../core/config.dart';
 import '../../../shared/utils/image_picker.dart';
@@ -54,6 +57,10 @@ class _AdminSchoolManageScreenState
   Curriculum? _editCurriculum;  
   SchoolLevel? _editSchoolLevel; 
 
+  bool _fetchingLocation = false;
+  LatLng? _pin;
+  static const _defaultCentre = LatLng(9.0331, 38.7501);
+
   // Phase 11 — facility image upload state.
   bool _uploadingImage = false;
   String? _imageError;
@@ -77,6 +84,8 @@ class _AdminSchoolManageScreenState
     _editLongitude.dispose();  
     super.dispose();
   }
+
+
 
   Future<void> _load() async {
     setState(() {
@@ -115,7 +124,7 @@ class _AdminSchoolManageScreenState
     final file = result.files.first;  
       
     // Validate file size (10MB limit)  
-    if (file.size != null && file.size! > 10 * 1024 * 1024) {  
+    if (file.size > 10 * 1024 * 1024){  
       if (!mounted) return;  
       ScaffoldMessenger.of(context).showSnackBar(  
         const SnackBar(content: Text('File size exceeds 10MB limit')),  
@@ -271,6 +280,13 @@ void _startEdit() {
     _editFacilities.text = _school!.facilities ?? '';  
     _editLatitude.text = _school!.latitude?.toString() ?? '';  
     _editLongitude.text = _school!.longitude?.toString() ?? '';  
+    if (_school!.latitude != null &&
+    _school!.longitude != null) {
+  _pin = LatLng(
+    _school!.latitude!,
+    _school!.longitude!,
+  );
+}
     _editCurriculum = _school!.curriculum;  
     _editSchoolLevel = _school!.schoolLevel;  
   });  
@@ -338,6 +354,34 @@ Future<void> _saveEdit() async {
   }  
 }
 
+Future<void> _fetchLocation() async {
+  setState(() => _fetchingLocation = true);
+
+  try {
+    final loc = await LocationHelper.getCurrentPosition();
+
+    if (loc != null) {
+      final point = LatLng(loc.latitude, loc.longitude);
+
+      setState(() {
+        _pin = point;
+
+        _editLatitude.text =
+            point.latitude.toStringAsFixed(6);
+
+        _editLongitude.text =
+            point.longitude.toStringAsFixed(6);
+      });
+    }
+  } catch (e) {
+    setState(() => _saveError = e.toString());
+  } finally {
+    if (mounted) {
+      setState(() => _fetchingLocation = false);
+    }
+  }
+}
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -383,7 +427,21 @@ Future<void> _saveEdit() async {
                       editCurriculum: _editCurriculum,  
                       editSchoolLevel: _editSchoolLevel,  
                       onCurriculumChanged: (v) => setState(() => _editCurriculum = v),  
-                      onSchoolLevelChanged: (v) => setState(() => _editSchoolLevel = v),  
+                      onSchoolLevelChanged: (v) => setState(() => _editSchoolLevel = v), 
+                      fetchingLocation: _fetchingLocation,
+onFetchLocation: _fetchLocation,
+pin: _pin,
+onPinChanged: (latLng) {
+  setState(() {
+    _pin = latLng;
+
+    _editLatitude.text =
+        latLng.latitude.toStringAsFixed(6);
+
+    _editLongitude.text =
+        latLng.longitude.toStringAsFixed(6);
+  });
+}, 
                     ),
                     const SizedBox(height: 16),
                     if (_school != null)
@@ -645,34 +703,47 @@ String _absoluteImage(String url) {
   return '${AppConfig.apiBaseUrl}/$url';
 }
 
-class _SchoolSummary extends StatelessWidget {  
-  final School school;  
-  final bool editing;  
-  final bool saving;  
-  final String? saveError;  
-  final VoidCallback onEdit;  
-  final VoidCallback onCancel;  
-  final VoidCallback onSave;  
-  final List<TextEditingController> controllers;  
-  final Curriculum? editCurriculum;  
-  final SchoolLevel? editSchoolLevel;  
-  final ValueChanged<Curriculum?> onCurriculumChanged;  
-  final ValueChanged<SchoolLevel?> onSchoolLevelChanged;  
+class _SchoolSummary extends StatelessWidget {
+  final School school;
+  final bool editing;
+  final bool saving;
+  final String? saveError;
+  final VoidCallback onEdit;
+  final VoidCallback onCancel;
+  final VoidCallback onSave;
+
+  final List<TextEditingController> controllers;
+
+  final Curriculum? editCurriculum;
+  final SchoolLevel? editSchoolLevel;
+
+  final ValueChanged<Curriculum?> onCurriculumChanged;
+  final ValueChanged<SchoolLevel?> onSchoolLevelChanged;
+
+  final bool fetchingLocation;
+  final VoidCallback onFetchLocation;
+
+  final LatLng? pin;
+  final ValueChanged<LatLng> onPinChanged; 
   
-  const _SchoolSummary({  
-    required this.school,  
-    required this.editing,  
-    required this.saving,  
-    this.saveError,  
-    required this.onEdit,  
-    required this.onCancel,  
-    required this.onSave,  
-    required this.controllers,  
-    this.editCurriculum,  
-    this.editSchoolLevel,  
-    required this.onCurriculumChanged,  
-    required this.onSchoolLevelChanged,  
-  });  
+  const _SchoolSummary({
+  required this.school,
+  required this.editing,
+  required this.saving,
+  this.saveError,
+  required this.onEdit,
+  required this.onCancel,
+  required this.onSave,
+  required this.controllers,
+  this.editCurriculum,
+  this.editSchoolLevel,
+  required this.onCurriculumChanged,
+  required this.onSchoolLevelChanged,
+  required this.fetchingLocation,
+  required this.onFetchLocation,
+  required this.pin,
+  required this.onPinChanged,
+}); 
   
   @override  
   Widget build(BuildContext context) {  
@@ -829,31 +900,102 @@ class _SchoolSummary extends StatelessWidget {
                 maxLines: 3,  
               ),  
               const SizedBox(height: 12),  
-              Row(  
-                children: [  
-                  Expanded(  
-                    child: TextFormField(  
-                      controller: controllers[6],  
-                      decoration: const InputDecoration(  
-                        labelText: 'Latitude',  
-                        border: OutlineInputBorder(),  
-                      ),  
-                      keyboardType: TextInputType.number,  
-                    ),  
-                  ),  
-                  const SizedBox(width: 12),  
-                  Expanded(  
-                    child: TextFormField(  
-                      controller: controllers[7],  
-                      decoration: const InputDecoration(  
-                        labelText: 'Longitude',  
-                        border: OutlineInputBorder(),  
-                      ),  
-                      keyboardType: TextInputType.number,  
-                    ),  
-                  ),  
-                ],  
-              ),  
+              Column(
+  crossAxisAlignment: CrossAxisAlignment.start,
+  children: [
+    Row(
+      children: [
+        Expanded(
+          child: Text(
+            'Location',
+            style: theme.textTheme.titleSmall,
+          ),
+        ),
+        TextButton.icon(
+          onPressed: fetchingLocation
+              ? null
+              : onFetchLocation,
+          icon: fetchingLocation
+              ? const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                  ),
+                )
+              : const Icon(
+                  Icons.my_location,
+                  size: 18,
+                ),
+          label: const Text(
+            'Use current location',
+          ),
+        ),
+      ],
+    ),
+
+    const SizedBox(height: 12),
+
+    Row(
+      children: [
+        Expanded(
+          child: TextFormField(
+            controller: controllers[6],
+            decoration: const InputDecoration(
+              labelText: 'Latitude',
+              border: OutlineInputBorder(),
+            ),
+            keyboardType: TextInputType.number,
+            onChanged: (value) {
+              final lat = double.tryParse(value);
+              final lng = double.tryParse(
+                controllers[7].text,
+              );
+
+              if (lat != null && lng != null) {
+                onPinChanged(LatLng(lat, lng));
+              }
+            },
+          ),
+        ),
+
+        const SizedBox(width: 12),
+
+        Expanded(
+          child: TextFormField(
+            controller: controllers[7],
+            decoration: const InputDecoration(
+              labelText: 'Longitude',
+              border: OutlineInputBorder(),
+            ),
+            keyboardType: TextInputType.number,
+            onChanged: (value) {
+              final lat = double.tryParse(
+                controllers[6].text,
+              );
+
+              final lng = double.tryParse(value);
+
+              if (lat != null && lng != null) {
+                onPinChanged(LatLng(lat, lng));
+              }
+            },
+          ),
+        ),
+      ],
+    ),
+
+    const SizedBox(height: 16),
+
+    _MapPicker(
+      pin: pin ?? const LatLng(9.0331, 38.7501),
+      hasPin: pin != null,
+      onTap: (latLng) {
+        onPinChanged(latLng);
+      },
+    ),
+  ],
+),  
               const SizedBox(height: 16),  
               Row(  
                 children: [  
@@ -939,6 +1081,68 @@ class _VerificationRequestTile extends StatelessWidget {
                       style: theme.textTheme.bodySmall),
                 ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MapPicker extends StatelessWidget {
+  final LatLng pin;
+  final bool hasPin;
+  final ValueChanged<LatLng> onTap;
+
+  const _MapPicker({
+    required this.pin,
+    required this.hasPin,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: SizedBox(
+        height: 280,
+        child: FlutterMap(
+          options: MapOptions(
+            initialCenter: pin,
+            initialZoom: 12,
+            onTap: (_, latLng) => onTap(latLng),
+            interactionOptions: const InteractionOptions(
+              flags:
+                  InteractiveFlag.all &
+                  ~InteractiveFlag.rotate,
+            ),
+          ),
+          children: [
+            TileLayer(
+              urlTemplate:
+                  'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+              userAgentPackageName:
+                  'com.school_rec.app',
+            ),
+
+            if (hasPin)
+              MarkerLayer(
+                markers: [
+                  Marker(
+                    point: pin,
+                    width: 40,
+                    height: 40,
+                    alignment: Alignment.topCenter,
+                    child: Icon(
+                      Icons.location_on,
+                      size: 40,
+                      color:
+                          Theme.of(context)
+                              .colorScheme
+                              .primary,
+                    ),
+                  ),
+                ],
+              ),
           ],
         ),
       ),
