@@ -453,6 +453,7 @@ onPinChanged: (latLng) {
                         onDelete: _deleteFacilityImage,
                       ),
                     const SizedBox(height: 16),
+                    if (_school != null && _school!.verificationStatus != VerificationStatus.verified)  
                     Card(
                       child: Padding(
                         padding: const EdgeInsets.all(16),
