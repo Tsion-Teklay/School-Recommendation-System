@@ -100,9 +100,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
-      GoRoute(  
-        path: '/followed-schools',  
-        builder: (_, __) => const ManageFollowedSchoolsScreen(),  
+      GoRoute(
+        path: '/followed-schools',
+        builder: (_, __) => const ManageFollowedSchoolsScreen(),
       ),
       GoRoute(
         path: '/preferences',
@@ -117,12 +117,21 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, state) {
           final raw = state.pathParameters['id'];
           final id = int.tryParse(raw ?? '');
+          
+          // Extract the query parameter from the URI context
+          final recommendationIdRaw = state.uri.queryParameters['recommendationId'];
+          final recommendationId = recommendationIdRaw != null ? int.tryParse(recommendationIdRaw) : null;
+          
           if (id == null) {
             return Scaffold(
               body: Center(child: Text('Invalid school id: $raw')),
             );
           }
-          return SchoolDetailScreen(schoolId: id);
+          
+          return SchoolDetailScreen(
+            schoolId: id,
+            recommendationId: recommendationId,
+          );
         },
       ),
       GoRoute(
@@ -233,9 +242,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/moderation',
         builder: (_, __) => const ModerationReportsScreen(),
       ),
-      GoRoute(  
-        path: '/moderation/create-user',  
-        builder: (_, __) => const AdminUserCreateScreen(),  
+      GoRoute(
+        path: '/moderation/create-user',
+        builder: (_, __) => const AdminUserCreateScreen(),
       ),
     ],
     errorBuilder: (_, state) => Scaffold(

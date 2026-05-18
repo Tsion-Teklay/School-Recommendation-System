@@ -90,13 +90,14 @@ class RecommendationsScreen extends ConsumerWidget {
                       school: r.school,
                       onTap: () async {
                         // Navigate to detail
-                        context.go('/schools/${r.school.id}');
+                        context.go(
+                            '/schools/${r.school.id}?recommendationId=${state.historyId}');
 
                         // Send feedback (fire-and-forget)
                         if (state.historyId != null) {
                           try {
                             print("historyId: ${state.historyId}");
-                            await ref
+                            ref
                                 .read(schoolRepositoryProvider)
                                 .sendRecommendationFeedback(
                                   historyId: state.historyId!,
