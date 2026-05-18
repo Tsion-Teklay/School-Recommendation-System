@@ -68,6 +68,7 @@ enum UrgencyLevel {
 enum InteractionResult {
   OPENED  @map("opened")
   IGNORED @map("ignored")
+  FOLLOWED @map("followed")
 }
 
 enum ReportTargetType {
@@ -435,14 +436,15 @@ model Preference {
 }
 
 model RecommendedSchool {
-  id               Int @id @default(autoincrement()) @map("recommended_school_id")
   recommendationId Int @map("recommendation_id")
   schoolId         Int @map("school_id")
   features         Json?
+  interactionResult String?
 
   recommendation RecommendationHistory @relation(fields: [recommendationId], references: [id])
   school         School                @relation(fields: [schoolId], references: [id])
 
+  @@id([recommendationId, schoolId]) // Changed to composite primary key for targeted updates
   @@map("recommended_school")
 }
 

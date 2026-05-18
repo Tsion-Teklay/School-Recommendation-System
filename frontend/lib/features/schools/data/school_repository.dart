@@ -73,12 +73,12 @@ class SchoolRepository {
         .map(Recommendation.fromJson)
         .toList();
     final criteria = (body['criteria'] as Map?)?.cast<String, dynamic>() ?? {};
-    final historyId = body['historyId'] as int?; // ADD THIS
+    final historyId = body['historyId'] as int?; 
     return (
       items: items,
       criteria: criteria,
       historyId: historyId
-    ); // UPDATE RETURN TYPE
+    );
   }
 
   Future<void> follow(int schoolId) async {
@@ -88,11 +88,35 @@ class SchoolRepository {
     }
   }
 
+  /// High-level orchestration pipeline used when clicking follow directly from a recommendation surface
+  Future<void> followWithInteraction({required int schoolId, int? recommendationId}) async {
+    await follow(schoolId);
+    if (recommendationId != null) {
+      await updateInteractionResult(
+        recommendationId: recommendationId,
+        schoolId: schoolId,
+        result: 'FOLLOWED',
+      );
+    }
+  }
+
   Future<void> unfollow(int schoolId) async {
     final res = await _dio.delete('/api/schools/$schoolId/follow');
     if (res.statusCode != 200 && res.statusCode != 204) {
       throw _toApiException(res);
     }
+  }
+
+  Future<void> updateInteractionResult({
+    required int recommendationId,
+    required int schoolId,
+    required String result,
+  }) async {
+    final res = await _dio.put(
+      '/api/recommendations/$recommendationId/schools/$schoolId/interaction',
+      data: {'result': result},
+    );
+    if (res.statusCode != 200) throw _toApiException(res);
   }
 
   /// Phase 11 — upload one facility image (PNG/JPEG/WebP, ≤ 10MB).
@@ -117,8 +141,6 @@ class SchoolRepository {
       throw _toApiException(res);
     }
     final body = res.data as Map<String, dynamic>;
-    // Backend controller wraps the new row as `{ message, image }`. The
-    // older key `facilityImage` is tolerated for forward compatibility.
     final raw =
         (body['image'] ?? body['facilityImage']) as Map<String, dynamic>?;
     if (raw == null) {
@@ -148,8 +170,6 @@ class SchoolRepository {
     final raw = (body['data'] as List).cast<Map<String, dynamic>>();
     return raw
         .map((row) {
-          // Backend returns rows of { school: { id, ... } }; tolerate either
-          // shape so a future flattening change doesn't break the frontend.
           if (row['school'] is Map) {
             return (row['school'] as Map)['id'] as num?;
           }
@@ -231,7 +251,6 @@ class SchoolRepository {
     if (res.statusCode != 200) throw _toApiException(res);
     final body = res.data as Map<String, dynamic>;
     final data = (body['data'] as List).cast<Map<String, dynamic>>().map((row) {
-      // Backend returns { school: { id, ... } }
       final schoolData = row['school'] as Map<String, dynamic>;
       return School.fromJson(schoolData);
     }).toList();
@@ -242,8 +261,6 @@ class SchoolRepository {
   }
 }
 
-/// Re-export the ApiException builder from auth_repository so screens that
-/// already catch ApiException don't need a second import path.
 ApiException _toApiException(Response<dynamic> r) {
   final data = r.data;
   if (data is Map) {

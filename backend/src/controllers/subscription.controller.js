@@ -1,3 +1,4 @@
+import { db } from "../config/db.js"; // Or your relative path to the Prisma client instance
 import { asyncHandler } from "../middlewares/async.middleware.js";
 import {
   followSchool,
@@ -6,7 +7,20 @@ import {
 } from "../services/subscription.service.js";
 
 export const follow = asyncHandler(async (req, res) => {
-  const subscription = await followSchool(req.user.id, req.params.schoolId);
+  const schoolIdNum = parseInt(req.params.schoolId);
+  const subscription = await followSchool(req.user.id, schoolIdNum);
+
+  // Reactive Telemetry: Update interaction status if the school was part of a recommendation history chain
+  await db.recommendedSchool.updateMany({
+    where: {
+      schoolId: schoolIdNum,
+      recommendation: {
+        parentId: req.user.id
+      }
+    },
+    data: { interactionResult: "FOLLOWED" }
+  });
+
   res.status(201).json({
     message: "Followed school",
     subscription,

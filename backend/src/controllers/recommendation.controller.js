@@ -59,6 +59,29 @@ export const recommend = asyncHandler(async (req, res) => {
   });
 });
 
+export const updateInteractionResult = asyncHandler(async (req, res) => {
+  const { recommendationId, schoolId } = req.params;
+  const { result } = req.body;
+
+  const updated = await prisma.recommendedSchool.updateMany({
+    where: {
+      recommendationId: Number(recommendationId),
+      schoolId: Number(schoolId),
+    },
+
+    data: {
+      interactionResult: result,
+    },
+  });
+
+  console.log(`Interaction upgraded to ${result}`);
+
+  res.json({
+    message: "Interaction result updated",
+    data: updated,
+  });
+});
+
 // ---------------------------------------------------------------------------
 // Recommendation feedback
 // ---------------------------------------------------------------------------
@@ -68,27 +91,66 @@ export const feedback = asyncHandler(async (req, res) => {
 
   const { result, schoolId } = req.body;
 
-  // Update interaction result in DB
-  const history = await prisma.recommendationHistory.update({
+  // Interaction strength ranking
+  const PRIORITY = {
+    IGNORED: 0,
+    OPENED: 1,
+    FAVORITED: 2,
+  };
+
+  // STEP 1
+  // Fetch existing history
+  const existingHistory = await prisma.recommendationHistory.findUnique({
     where: {
       id: Number(id),
     },
-
-    data: {
-      interactionResult: result,
-    },
   });
 
+  if (!existingHistory) {
+    return res.status(404).json({
+      success: false,
+      message: "Recommendation history not found",
+    });
+  }
+
+  // STEP 2
+  // Determine if update is allowed
+  const currentPriority = PRIORITY[existingHistory.interactionResult] ?? 0;
+
+  const incomingPriority = PRIORITY[result] ?? 0;
+
+  let history = existingHistory;
+
+  // Only upgrade interaction strength
+  if (incomingPriority > currentPriority) {
+    history = await prisma.recommendationHistory.update({
+      where: {
+        id: Number(id),
+      },
+
+      data: {
+        interactionResult: result,
+      },
+    });
+
+    console.log(
+      `Interaction upgraded: ${existingHistory.interactionResult} -> ${result}`,
+    );
+  } else {
+    console.log(`Ignored weaker interaction: ${result}`);
+  }
+
+  // STEP 3
   // Send feedback to ML service
   try {
     await axios.post(
       `${process.env.ML_SERVICE_URL}/feedback`,
       {
-        recommendation_id: id,
+        recommendation_id: Number(id),
 
-        result,
+        result: result.toLowerCase(),
 
-        school_id: schoolId,
+        school_id: Number(schoolId),
 
         parent_id: history.parentId,
       },
@@ -99,16 +161,14 @@ export const feedback = asyncHandler(async (req, res) => {
 
     console.log("✅ ML feedback sent");
   } catch (err) {
-    console.error("❌ Failed to send ML feedback:", {
-      message: err.message,
-      status: err.response?.status,
-    });
+    console.error("❌ ML feedback error:", err.response?.data || err.message);
 
-    // Optional:
-    // throw new Error("ML feedback service unavailable");
+    // Do NOT fail user request
+    // recommendation system should remain resilient
   }
 
   return res.json({
     success: true,
+    interactionResult: history.interactionResult,
   });
 });

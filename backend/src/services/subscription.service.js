@@ -43,6 +43,15 @@ export async function followSchool(userId, schoolId) {
       },
     },
   });
+  await db.recommendedSchool.updateMany({  
+  where: {  
+    schoolId: schoolId,  
+    recommendation: {  
+      userId: req.user.id  
+    }  
+  },  
+  data: { interactionResult: "FOLLOWED" }  
+});
 }
 
 /** Unsubscribe; 404 if the caller wasn't following the school. */
