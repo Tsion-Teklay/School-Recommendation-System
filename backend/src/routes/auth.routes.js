@@ -7,6 +7,7 @@ import {
   forgotPassword,
   resetPasswordHandler,
   changePasswordHandler,
+  reactivate,
 } from "../controllers/auth.controller.js";
 import { authenticate } from "../middlewares/auth.middleware.js";
 import { validate } from "../middlewares/validate.middleware.js";
@@ -18,6 +19,7 @@ import {
   forgotPasswordBodySchema,
   resetPasswordBodySchema,
   changePasswordBodySchema,
+  reactivateAccountBodySchema,
 } from "../schemas/auth.schema.js";
 
 const router = express.Router();
@@ -81,6 +83,32 @@ router.post("/register", validate({ body: registerBodySchema }), register);
  *       401: { description: Invalid credentials or account deactivated }
  */
 router.post("/login", validate({ body: loginBodySchema }), login);
+
+/**  
+ * @openapi  
+ * /api/auth/reactivate:  
+ *   post:  
+ *     tags: [Auth]  
+ *     summary: Reactivate a self-deactivated account  
+ *     requestBody:  
+ *       required: true  
+ *       content:  
+ *         application/json:  
+ *           schema:  
+ *             type: object  
+ *             required: [identifier, password]  
+ *             properties:  
+ *               identifier: { type: string }  
+ *               password: { type: string }  
+ *     responses:  
+ *       200: { description: Account reactivated, JWT issued }  
+ *       401: { description: Invalid credentials or account not self-deactivated }  
+ */  
+router.post(  
+  "/reactivate",  
+  validate({ body: reactivateAccountBodySchema }),  
+  reactivate  
+);
 
 /**
  * @openapi
