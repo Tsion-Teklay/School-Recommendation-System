@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../shared/widgets/loading_button.dart';
 import '../../../shared/widgets/responsive_shell.dart';
 import '../state/auth_controller.dart';
+import '../data/auth_repository.dart' show ApiException;
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -19,6 +20,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _password = TextEditingController();
   bool _loading = false;
   String? _error;
+  bool _isSelfDeactivated = false;
 
   @override
   void dispose() {
@@ -27,9 +29,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
-  // Mirrors the backend rule: anything containing "@" is treated as an email
-  // and gets a real email-format check; everything else is treated as a phone
-  // number (5–15 chars, matching the backend Zod schema).
   String? _validateIdentifier(String? raw) {
     final v = (raw ?? '').trim();
     if (v.isEmpty) return 'Email or phone required';
@@ -52,7 +51,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           .login(_identifier.text.trim(), _password.text);
       // Router redirect bounces us to / on auth-state change.
     } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isSelfDeactivated = (e is ApiException && e.code == 'ACCOUNT_SELF_DEACTIVATED');
+        });
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -106,6 +110,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               const SizedBox(height: 8),
               Text(_error!,
                   style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              if (_isSelfDeactivated) ...[  
+                const SizedBox(height: 8),  
+                ElevatedButton(  
+                  onPressed: () => _showReactivateDialog(context),  
+                  child: const Text('Reactivate Account'),  
+                ),  
+              ],
             ],
             const SizedBox(height: 16),
             LoadingButton(
@@ -126,6 +137,59 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showReactivateDialog(BuildContext context) {
+    final identifierController = TextEditingController(text: _identifier.text);
+    final passwordController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reactivate Account'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: identifierController,
+              decoration: const InputDecoration(labelText: 'Email or phone'),
+            ),
+            TextField(
+              controller: passwordController,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'Password'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              try {
+                await ref.read(authControllerProvider).reactivate(
+                      identifierController.text,
+                      passwordController.text,
+                    );
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  context.go('/');
+                }
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Reactivation failed: $e')),
+                  );
+                }
+              }
+            },
+            child: const Text('Reactivate'),
+          ),
+        ],
       ),
     );
   }

@@ -7,6 +7,7 @@ import {
   requestPasswordReset,
   resetPassword,
   changePassword,
+  reactivateAccount,
 } from "../services/auth.service.js";
 
 export const register = asyncHandler(async (req, res) => {
@@ -58,3 +59,8 @@ export const changePasswordHandler = asyncHandler(async (req, res) => {
   await changePassword({ userId: req.user.id, ...req.body });
   res.json({ message: "Password changed successfully" });
 });
+
+export const reactivate = asyncHandler(async (req, res) => {  
+  const result = await reactivateAccount(req.body);  
+  res.json(result);  
+});  
