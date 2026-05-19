@@ -9,6 +9,7 @@ datasource db {
 enum AccountStatus {
   ACTIVE      @map("active")
   DEACTIVATED @map("deactivated")
+  SELF_DEACTIVATED @map("self_deactivated")  
 }
 
 enum UserRole {
@@ -23,10 +24,6 @@ enum Curriculum {
   INTERNATIONAL @map("international")
 }
 
-// Phase 11 — coarse education-level classifier used both for filtering on
-// the schools list and for parents who want a specific stage (e.g. "show me
-// only pre-primary"). Nullable on School so we don't need to backfill every
-// existing row; the filter just skips schools whose level isn't set.
 enum SchoolLevel {
   PRE_PRIMARY @map("pre_primary")
   PRIMARY     @map("primary")
@@ -37,6 +34,7 @@ enum VerificationStatus {
   VERIFIED @map("verified")
   PENDING  @map("pending")
   REJECTED @map("rejected")
+  REVOKED  @map("revoked")
 }
 
 enum ReviewCategoryTag {
@@ -129,6 +127,7 @@ model User {
   phone         String?       @unique @db.VarChar(15)
   password      String        @db.VarChar(255)
   accountStatus AccountStatus @default(ACTIVE) @map("account_status")
+  deactivatedAt DateTime?     @map("deactivated_at") 
   role          UserRole
 
   // --- Phase 1 auth completeness ---------------------------------------
@@ -506,3 +505,4 @@ model ComparisonSchool {
 
   @@map("comparison_school")
 }
+

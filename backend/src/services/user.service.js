@@ -37,10 +37,25 @@ export async function updateMe(userId, { fullName, phone }) {
 }
 
 export async function deactivateMe(userId) {
-  const user = await db.user.update({
-    where: { id: userId },
-    data: { accountStatus: "DEACTIVATED" },
-    select: PUBLIC_USER_SELECT,
-  });
+  const user =await db.user.update({  
+  where: { id: userId },  
+  data: {   
+    accountStatus: "SELF_DEACTIVATED",  
+    deactivatedAt: new Date()   
+  },  
+});
   return user;
+}
+
+export async function enforceDeactivationLimit() {  
+  const cutoff = new Date();  
+  cutoff.setDate(cutoff.getDate() - 30);  
+  
+  await db.user.updateMany({  
+    where: {  
+      accountStatus: "SELF_DEACTIVATED",  
+      deactivatedAt: { lt: cutoff }  
+    },  
+    data: { accountStatus: "DEACTIVATED" }  
+  });  
 }

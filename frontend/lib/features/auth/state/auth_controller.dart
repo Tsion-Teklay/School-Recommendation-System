@@ -113,6 +113,13 @@ class AuthController extends ChangeNotifier {
     _user = null;
     notifyListeners();
   }
+
+  Future<void> reactivate(String identifier, String password) async {  
+  final result = await _repo.reactivate(identifier, password);  
+  await _storage.writeToken(result.token);  
+  _user = result.user;  
+  notifyListeners();  
+}
 }
 
 final authControllerProvider = ChangeNotifierProvider<AuthController>((ref) {

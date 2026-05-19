@@ -56,3 +56,8 @@ export const changePasswordBodySchema = z.object({
   currentPassword: z.string().min(1).max(255),
   newPassword: z.string().min(6).max(255),
 });
+
+export const reactivateAccountBodySchema = z.object({
+  identifier: z.string().trim().min(1),  
+  password: z.string().min(1),  
+});
