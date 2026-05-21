@@ -213,9 +213,14 @@ export async function loginUser({ identifier, email, password }) {
 
   if (!user) throw new UnauthorizedError("Invalid credentials");
 
-  if (user.accountStatus !== "ACTIVE") {
-    throw new UnauthorizedError("Account is deactivated");
-  }
+  if (user.accountStatus !== "ACTIVE") {  
+  if (user.accountStatus === "SELF_DEACTIVATED") {  
+    const err = new UnauthorizedError("Account is self-deactivated");  
+    err.code = "ACCOUNT_SELF_DEACTIVATED";  
+    throw err;  
+  }  
+  throw new UnauthorizedError("Account is deactivated");  
+}
 
   const match = await bcrypt.compare(password, user.password);
   if (!match) throw new UnauthorizedError("Invalid credentials");
@@ -308,4 +313,36 @@ export async function changePassword({ userId, currentPassword, newPassword }) {
 
   const hashed = await bcrypt.hash(newPassword, SALT_ROUNDS);
   await db.user.update({ where: { id: userId }, data: { password: hashed } });
+}
+
+
+export async function reactivateAccount({ identifier, password }) {  
+  const raw = identifier.trim();  
+  if (!raw || !password) {  
+    throw new ValidationError("identifier and password are required");  
+  }  
+  
+  let user;  
+  if (raw.includes("@")) {  
+    const normalizedEmail = raw.toLowerCase();  
+    user = await db.user.findUnique({ where: { email: normalizedEmail } });  
+  } else {  
+    user = await db.user.findUnique({ where: { phone: raw } });  
+  }  
+  
+  if (!user) throw new UnauthorizedError("Invalid credentials");  
+  
+  if (user.accountStatus !== "SELF_DEACTIVATED") {  
+    throw new UnauthorizedError("Account cannot be reactivated");  
+  }  
+  
+  const match = await bcrypt.compare(password, user.password);  
+  if (!match) throw new UnauthorizedError("Invalid credentials");  
+  
+  await db.user.update({  
+    where: { id: user.id },  
+    data: { accountStatus: "ACTIVE", deactivatedAt: null },  
+  });  
+  
+  return { token: signToken(user), user: sanitizeUser(user) };  
 }

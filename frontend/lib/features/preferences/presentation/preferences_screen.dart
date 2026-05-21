@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart';
 
 import '../../../shared/widgets/loading_button.dart';
 import '../../../shared/widgets/responsive_shell.dart';
+import '../../../core/location_helper.dart';
 import '../data/preference_dtos.dart';
 import '../data/preference_repository.dart';
 
@@ -126,6 +127,30 @@ class _PreferencesScreenState extends ConsumerState<PreferencesScreen> {
     if (n > 1000) return 'Max 1000 km';
     return null;
   }
+
+Future<void> _useCurrentLocation() async {  
+  try {  
+    setState(() => _loading = true);  
+    final position = await LocationHelper.getCurrentPosition();  
+    final address = await LocationHelper.getAddressFromCoordinates(  
+      position.latitude,  
+      position.longitude,  
+    );  
+      
+    if (!mounted) return;  
+    setState(() {  
+      _pin = LatLng(position.latitude, position.longitude);  
+      _address.text = address;  
+      _loading = false;  
+    });  
+  } catch (e) {  
+    if (!mounted) return;  
+    setState(() {  
+      _loading = false;  
+      _error = e.toString();  
+    });  
+  }  
+}  
 
   Future<void> _save() async {
     if (!_form.currentState!.validate()) return;
@@ -342,12 +367,23 @@ class _PreferencesScreenState extends ConsumerState<PreferencesScreen> {
                     : 'Required on first save';
               },
             ),
-            const SizedBox(height: 12),
-            _MapPicker(
-              pin: _pin ?? _defaultCentre,
-              hasPin: _pin != null,
-              onTap: (latLng) => setState(() => _pin = latLng),
-            ),
+            Row(  
+  children: [  
+    Expanded(  
+      child: OutlinedButton.icon(  
+        onPressed: _useCurrentLocation,  
+        icon: const Icon(Icons.my_location),  
+        label: const Text('Use my current location'),  
+      ),  
+    ),  
+  ],  
+),  
+const SizedBox(height: 12),  
+_MapPicker(  
+  pin: _pin ?? _defaultCentre,  
+  hasPin: _pin != null,  
+  onTap: (latLng) => setState(() => _pin = latLng),  
+),
             if (_pin != null) ...[
               const SizedBox(height: 8),
               Text(
