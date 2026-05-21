@@ -30,6 +30,12 @@ enum SchoolLevel {
   SECONDARY   @map("secondary")
 }
 
+enum SchoolType {
+  PRIVATE    @map("private")
+  GOVERNMENT @map("government")
+  CHURCH     @map("church")
+}
+
 enum VerificationStatus {
   VERIFIED @map("verified")
   PENDING  @map("pending")
@@ -174,6 +180,9 @@ model School {
   contactPhone       String             @map("contact_phone") @db.VarChar(15)
   curriculum         Curriculum
   schoolLevel        SchoolLevel?       @map("school_level")
+  schoolType         SchoolType?        @map("school_type")
+  passingRate        Decimal?           @db.Decimal(5,2) @map("passing_rate")
+  nationalExamScore  Decimal?           @db.Decimal(5,2) @map("national_exam_score")
   tuitionFee         Decimal            @db.Decimal(10,2) @map("tuition_fee")
   facilities         String?            @db.Text
   verificationStatus VerificationStatus @default(PENDING) @map("verification_status")
