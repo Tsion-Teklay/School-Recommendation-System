@@ -295,46 +295,31 @@ class LandingScreen extends ConsumerWidget {
 
         const SizedBox(height: 40),
 
-        GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 2,
-          crossAxisSpacing: 20,
+        GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: 4, // Number of features
+        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: 500, // Maximum width of a single card
           mainAxisSpacing: 20,
-          childAspectRatio: 2.7,
-          children: [
-            _featureCard(
-              theme,
-              Icons.auto_awesome_outlined,
-              'School Recommendations',
-              'Tailored school suggestions based on your child’s academic and personal needs.',
-            ),
-
-            _featureCard(
-              theme,
-              Icons.location_searching_outlined,
-              'Smart Discovery',
-              'Compare schools by curriculum, facilities, tuition, and location.',
-            ),
-
-            _featureCard(
-              theme,
-              Icons.groups_outlined,
-              'Parent Engagement',
-              'Strengthening communication between schools and families.',
-            ),
-
-            _featureCard(
-              theme,
-              Icons.trending_up_outlined,
-              'Educational Insights',
-              'Helping schools and parents make more informed decisions.',
-            ),
-          ],
+          crossAxisSpacing: 20,
+          mainAxisExtent: 220, // Forces a healthy, static height instead of a shrinking ratio
         ),
-      ],
-    );
-  }
+        itemBuilder: (context, index) {
+          // Put your list of card data here and map it
+          final features = [
+            _featureCard(theme, Icons.auto_awesome_outlined, 'School Recommendations', 'Tailored school suggestions based on your child’s academic and personal needs.'),
+            _featureCard(theme, Icons.location_searching_outlined, 'Smart Discovery', 'Compare schools by curriculum, facilities, tuition, and location.'),
+            _featureCard(theme, Icons.groups_outlined, 'Parent Engagement', 'Strengthening communication between schools and families.'),
+            _featureCard(theme, Icons.trending_up_outlined, 'Educational Insights', 'Helping schools and parents make more informed decisions.'),
+          ];
+          return features[index];
+        },
+      ),
+    ],
+  );
+}
+     
 
   Widget _featureCard(
     ThemeData theme,

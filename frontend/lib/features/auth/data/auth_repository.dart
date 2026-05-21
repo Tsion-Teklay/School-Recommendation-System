@@ -136,6 +136,19 @@ class AuthRepository {
         (res.data as Map<String, dynamic>)['user'] as Map<String, dynamic>);
   }
 
+  Future<LoginResult> reactivate(String identifier, String password) async {  
+    final res = await _dio.post('/api/auth/reactivate', data: {  
+      'identifier': identifier,  
+      'password': password,  
+    });  
+    if (res.statusCode != 200) throw _toApiException(res);  
+    final body = res.data as Map<String, dynamic>;  
+    return LoginResult(  
+      token: body['token'] as String,  
+      user: AppUser.fromJson(body['user'] as Map<String, dynamic>),  
+    );  
+  }
+
   Future<void> deactivateMe() async {
     final res = await _dio.post('/api/users/me/deactivate');
     if (res.statusCode != 200) throw _toApiException(res);

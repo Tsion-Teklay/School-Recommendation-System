@@ -145,6 +145,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 keyboardType: TextInputType.emailAddress,
                 decoration: const InputDecoration(
                   labelText: 'Email',
+                  hintText: 'example@gmail.com',
                   helperText: "We'll send a verification link to this address.",
                 ),
                 validator: (v) => EmailValidator.validate((v ?? '').trim())

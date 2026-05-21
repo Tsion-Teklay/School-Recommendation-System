@@ -3,6 +3,8 @@
          manifests also declare INTERNET, but without this entry release APKs
          lack network permission and every Dio request would SocketException. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />  
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <application
         android:label="school_rec"
         android:name="${applicationName}"
