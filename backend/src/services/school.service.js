@@ -5,6 +5,9 @@ import {
   ValidationError,
 } from "../utils/errors.js";
 
+import {createNotification} from "./notification.service.js";
+import { logger } from "../config/logger.js";
+
 // ✅ Create School
 export async function createSchool(data, userId) {
   const {
@@ -58,21 +61,7 @@ export async function createSchool(data, userId) {
   return school;
 }
 
-/**
- * Phase 4 — Haversine helpers for proximity search.
- *
- * MariaDB has spatial types but the existing schema stores latitude/longitude
- * as DECIMAL(9,6). Adding a geometry column + spatial index just for one
- * filter would be overkill at this stage, so we:
- *
- *   1. Pre-filter at the DB with a bounding box (cheap, indexable on simple
- *      lat/lng range scans) so we don't pull every school into Node.
- *   2. Compute the exact great-circle distance in JS for the survivors and
- *      drop the ones outside `radiusKm`.
- *
- * For a ~few-thousand-row catalog this is fast enough; if the dataset grows
- * past that we'd revisit with a real spatial index.
- */
+
 const EARTH_RADIUS_KM = 6371;
 function toRad(deg) {
   return (deg * Math.PI) / 180;
@@ -303,6 +292,29 @@ export async function updateSchool(id, data, userId) {
     where: { id: Number(id) },
     data,
   });
+
+  try {  
+    const subs = await db.subscription.findMany({  
+      where: { schoolId: Number(id) },  
+      select: { parentId: true },  
+    });  
+    const recipientIds = subs.map((s) => s.parentId);  
+  
+    await Promise.all(  
+      recipientIds.map((id) =>  
+        createNotification({  
+          recipientId: id,  
+          recipientType: "PARENT",  
+          message: `${updated.schoolName} updated their school information`,  
+          sourceId: updated.id,  
+          sourceType: "SCHOOL",  
+        })  
+      )  
+    );  
+  } catch (error) {  
+    logger.warn({ err: error }, "School update notification fan-out failed");  
+    // Update succeeded — don't fail the request if notifications did.  
+  }  
 
   return updated;
 }
