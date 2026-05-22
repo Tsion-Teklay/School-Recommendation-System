@@ -34,109 +34,153 @@ class SchoolDetailScreen extends ConsumerStatefulWidget {
   ConsumerState<SchoolDetailScreen> createState() => _SchoolDetailScreenState();
 }
 
-class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
-  @override
-  void initState() {
-    super.initState();
-    
-    // 2. Telemetry Interaction Handshake: Run immediately after frame construction
-    if (widget.recommendationId != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) async {
-        try {
-          await ref.read(schoolRepositoryProvider).updateInteractionResult(
-                recommendationId: widget.recommendationId!,
-                schoolId: widget.schoolId,
-                result: 'OPENED',
-              );
-        } catch (e) {
-          // Silent catch: operational telemetry should never interrupt user UI presentation
-          debugPrint('Telemetry extraction error (OPENED): $e');
-        }
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final ctl = ref.watch(schoolDetailControllerProvider(widget.schoolId));
-    final state = ctl.state;
-    final auth = ref.watch(authControllerProvider);
-    final isParent = auth.user?.role == UserRole.parent;
-    final cart = ref.watch(compareCartProvider);
-
-    Widget body;
-    if (state.loading) {
-      body = const Padding(
-        padding: EdgeInsets.symmetric(vertical: 64),
-        child: Center(child: CircularProgressIndicator()),
-      );
-    } else if (state.error != null && state.school == null) {
-      body = _ErrorState(
-        message: state.error!,
-        onRetry: ctl.load,
-      );
-    } else {
-      body = _DetailBody(
-        school: state.school!,
-        isParent: isParent,
-        isFollowing: state.isFollowing,
-        followBusy: state.followBusy,
-        recommendationId: widget.recommendationId,
-        onToggleFollow: () async {
-          // If the user isn't currently following and navigated from a recommendation card,
-          // pass this through our orchestrated pipeline method to update the DB mapping state to 'FOLLOWED'
-          if (!state.isFollowing && widget.recommendationId != null) {
-            try {
-              await ref.read(schoolRepositoryProvider).followWithInteraction(
-                    schoolId: widget.schoolId,
-                    recommendationId: widget.recommendationId,
-                  );
-              ctl.load(); // Refresh detail tracking stats
-            } catch (e) {
-              ctl.load();
-            }
-          } else {
-            // Standard fallback action route via local state controller
-            ctl.toggleFollow();
-          }
-        },
-        cart: cart,
-        latestError: state.error,
-      );
-    }
-
-    return ResponsiveShell(
-      title: state.school?.schoolName ?? 'School',
-      leading: BackButton(onPressed: () {
-        if (context.canPop()) {
-          context.pop();
-        } else {
-          context.go('/schools');
-        }
-      }),
-      child: body,
-    );
-  }
+class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {  
+  @override  
+  void initState() {  
+    super.initState();  
+      
+    if (widget.recommendationId != null) {  
+      WidgetsBinding.instance.addPostFrameCallback((_) async {  
+        try {  
+          await ref.read(schoolRepositoryProvider).updateInteractionResult(  
+                recommendationId: widget.recommendationId!,  
+                schoolId: widget.schoolId,  
+                result: 'OPENED',  
+              );  
+        } catch (e) {  
+          debugPrint('Telemetry extraction error (OPENED): $e');  
+        }  
+      });  
+    }  
+  }  
+  
+  Future<void> _showRevokeConfirmationDialog() async {  
+  final confirmed = await showDialog<bool>(  
+    context: context,  
+    builder: (ctx) => AlertDialog(  
+      title: const Text('Revoke Verification'),  
+      content: const Text(  
+        'This will revoke the school\'s verification status. '  
+        'The school will not be able to make announcements. '  
+        'Are you sure?',  
+      ),  
+      actions: [  
+        TextButton(  
+          onPressed: () => Navigator.pop(ctx, false),  
+          child: const Text('Cancel'),  
+        ),  
+        TextButton(  
+          onPressed: () => Navigator.pop(ctx, true),  
+          child: const Text('Revoke'),  
+        ),  
+      ],  
+    ),  
+  );  
+  
+  if (confirmed == true) {  
+    try {  
+      await ref.read(schoolRepositoryProvider).revokeVerification(widget.schoolId);  
+      if (!mounted) return;  
+      ScaffoldMessenger.of(context).showSnackBar(  
+        const SnackBar(content: Text('Verification revoked successfully')),  
+      );  
+      // Get the controller here instead of using ctl  
+      ref.read(schoolDetailControllerProvider(widget.schoolId)).load();  
+    } catch (e) {  
+      if (!mounted) return;  
+      ScaffoldMessenger.of(context).showSnackBar(  
+        SnackBar(content: Text('Failed to revoke: $e')),  
+      );  
+    }  
+  }  
+}
+  
+  @override  
+  Widget build(BuildContext context) {  
+    final ctl = ref.watch(schoolDetailControllerProvider(widget.schoolId));  
+    final state = ctl.state;  
+    final auth = ref.watch(authControllerProvider);  
+    final isParent = auth.user?.role == UserRole.parent;  
+    final cart = ref.watch(compareCartProvider);  
+  
+    Widget body;  
+    if (state.loading) {  
+      body = const Padding(  
+        padding: EdgeInsets.symmetric(vertical: 64),  
+        child: Center(child: CircularProgressIndicator()),  
+      );  
+    } else if (state.error != null && state.school == null) {  
+      body = _ErrorState(  
+        message: state.error!,  
+        onRetry: ctl.load,  
+      );  
+    } else {  
+      body = _DetailBody(  
+        school: state.school!,  
+        isParent: isParent,  
+        userRole: auth.user?.role,  
+        isFollowing: state.isFollowing,  
+        followBusy: state.followBusy,  
+        recommendationId: widget.recommendationId,  
+        onToggleFollow: () async {  
+          if (!state.isFollowing && widget.recommendationId != null) {  
+            try {  
+              await ref.read(schoolRepositoryProvider).followWithInteraction(  
+                    schoolId: widget.schoolId,  
+                    recommendationId: widget.recommendationId,  
+                  );  
+              ctl.load();  
+            } catch (e) {  
+              ctl.load();  
+            }  
+          } else {  
+            ctl.toggleFollow();  
+          }  
+        },  
+        onRevokeVerification: auth.user?.role == UserRole.moeOfficer   
+            ? _showRevokeConfirmationDialog   
+            : null,  
+        cart: cart,  
+        latestError: state.error,  
+      );  
+    }  
+  
+    return ResponsiveShell(  
+      title: state.school?.schoolName ?? 'School',  
+      leading: BackButton(onPressed: () {  
+        if (context.canPop()) {  
+          context.pop();  
+        } else {  
+          context.go('/schools');  
+        }  
+      }),  
+      child: body,  
+    );  
+  }  
 }
 
 // Keep the rest of the existing implementations (_DetailBody, _FacilityImagesCarousel, etc.) intact below...
 class _DetailBody extends StatelessWidget {
   final School school;
   final bool isParent;
+  final UserRole? userRole;
   final bool isFollowing;
   final bool followBusy;
   final int? recommendationId;
   final VoidCallback onToggleFollow;
+  final VoidCallback? onRevokeVerification;
   final CompareCart cart;
   final String? latestError;
 
   const _DetailBody({
     required this.school,
     required this.isParent,
+    required this.userRole,
     required this.isFollowing,
     required this.followBusy,
     this.recommendationId,
     required this.onToggleFollow,
+    this.onRevokeVerification,
     required this.cart,
     required this.latestError,
   });
@@ -279,6 +323,17 @@ class _DetailBody extends StatelessWidget {
                         label:
                             Text(inCart ? 'In compare cart' : 'Add to compare'),
                       ),
+                    
+                    if (onRevokeVerification != null &&  
+                        school.verificationStatus == VerificationStatus.verified)  
+                      FilledButton.icon(  
+                        onPressed: onRevokeVerification,  
+                        icon: const Icon(Icons.block),  
+                        label: const Text('Revoke Verification'),  
+                        style: FilledButton.styleFrom(  
+                          backgroundColor: Theme.of(context).colorScheme.error,  
+                        ),  
+                      ),  
                   ],
                 ),
               ],

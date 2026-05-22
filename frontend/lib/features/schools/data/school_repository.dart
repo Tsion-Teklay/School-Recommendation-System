@@ -259,6 +259,11 @@ class SchoolRepository {
       Pagination.fromJson(body['meta'] as Map<String, dynamic>),
     );
   }
+
+  Future<void> revokeVerification(int schoolId) async {  
+  final res = await _dio.post('/api/schools/$schoolId/revoke');  
+  if (res.statusCode != 200) throw _toApiException(res);  
+}
 }
 
 ApiException _toApiException(Response<dynamic> r) {

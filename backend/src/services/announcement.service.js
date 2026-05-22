@@ -23,12 +23,15 @@ export async function createAnnouncement(data, user) {
     }
     const school = await db.school.findUnique({
       where: { id: schoolId },
-      select: { id: true, adminId: true },
+      select: { id: true, adminId: true, verificationStatus: true },
     });
     if (!school) throw new NotFoundError("School not found");
     if (school.adminId !== user.id) {
       throw new ForbiddenError("You can only post announcements for your own school");
     }
+    if (school.verificationStatus === "REVOKED") {  
+    throw new ForbiddenError("Schools with revoked verification cannot post announcements");  
+  } 
   } else {
     // MoE-level posts are platform-wide; ignore any client-supplied schoolId.
     schoolId = null;

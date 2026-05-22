@@ -326,3 +326,22 @@ export async function deleteSchool(id, userId) {
 
   return { message: "School deleted successfully" };
 }
+
+
+export async function revokeVerification(schoolId) {  
+  const school = await db.school.findUnique({  
+    where: { id: schoolId },  
+  });  
+    
+  if (!school) throw new NotFoundError("School not found");  
+  if (school.verificationStatus !== "VERIFIED") {  
+    throw new ValidationError("Only verified schools can be revoked");  
+  }  
+  
+  const updated = await db.school.update({  
+    where: { id: schoolId },  
+    data: { verificationStatus: "REVOKED" },  
+  });  
+  
+  return updated;  
+}

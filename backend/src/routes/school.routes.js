@@ -5,6 +5,7 @@ import {
   getOne,
   update,
   remove,
+    revoke,
 } from "../controllers/school.controller.js";
 import {
   list as listImages,
@@ -177,6 +178,14 @@ router.delete(
   authorizeRoles("SCHOOL_ADMIN"),
   validate({ params: imageParamsSchema }),
   removeImage
+);
+
+router.post(  
+  "/:id/revoke",  // Change to :id  
+  authenticate,  
+  authorizeRoles("MOE_OFFICER"),  
+  validate({ params: idParamsSchema }),  
+  revoke  
 );
 
 export default router;
