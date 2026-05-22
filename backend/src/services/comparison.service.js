@@ -19,6 +19,10 @@ const DEFAULT_METRICS = [
   "tuitionFee",
   "rating",
   "facilities",
+  "schoolLevel",
+  "schoolType",
+  "passingRate",
+  "nationalExamScore",
 ];
 
 const SCHOOL_SELECT = {
@@ -32,6 +36,10 @@ const SCHOOL_SELECT = {
   longitude: true,
   verificationStatus: true,
   facilities: true,
+  schoolLevel: true,      
+  schoolType: true,        
+  passingRate: true,       
+  nationalExamScore: true, 
 };
 
 function decodeMetrics(raw) {

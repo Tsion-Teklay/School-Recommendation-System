@@ -10,6 +10,7 @@ import '../../../shared/widgets/responsive_shell.dart';
 import '../../../core/location_helper.dart';
 import '../data/preference_dtos.dart';
 import '../data/preference_repository.dart';
+import '../../schools/data/school_dtos.dart';
 
 /// PARENT-only recommendation preferences screen. Mirrors the backend POST
 /// /api/preferences body shape: budget min/max, curriculum, distance radius,
@@ -32,6 +33,8 @@ class _PreferencesScreenState extends ConsumerState<PreferencesScreen> {
   final _address = TextEditingController();
 
   PreferredCurriculum? _curriculum;
+  SchoolLevel? _schoolLevel;   // Add  
+SchoolType? _schoolType;     // Add
   // The recommender treats home pin as a triple (address + lat + lng). The
   // map below lets the user drop a pin; we keep the lat/lng here. Address is
   // a free-text field (the parent types a label like "Bole, Addis Ababa").
@@ -93,6 +96,8 @@ class _PreferencesScreenState extends ConsumerState<PreferencesScreen> {
       _pin = LatLng(p.latitude!, p.longitude!);
     }
     _curriculum = p.curriculum;
+    _schoolLevel = p.schoolLevel;  // Add  
+  _schoolType = p.schoolType;    // Add  
   }
 
   // The backend stores tuition fees / budgets as Decimal(10,2). Render
@@ -180,9 +185,9 @@ Future<void> _useCurrentLocation() async {
         maxBudget: _parseDouble(_maxBudget.text),
         curriculum: _curriculum,
         distanceKm: _parseInt(_distance.text),
-        // Only send the home-pin fields when the user actually changed
-        // something (presence-detection by content). The backend treats
-        // omitted fields as "leave alone".
+        schoolLevel: _schoolLevel,    
+        schoolType: _schoolType,       
+        
         address: _address.text.trim().isEmpty ? null : _address.text.trim(),
         latitude: _pin?.latitude,
         longitude: _pin?.longitude,
@@ -314,6 +319,42 @@ Future<void> _useCurrentLocation() async {
               ],
               onChanged: (v) => setState(() => _curriculum = v),
             ),
+
+            const SizedBox(height: 24),  
+Text('Preferred school level',  
+    style: Theme.of(context).textTheme.titleMedium),  
+const SizedBox(height: 8),  
+DropdownButtonFormField<SchoolLevel?>(  
+  value: _schoolLevel,  
+  decoration: const InputDecoration(  
+    hintText: 'Any level',  
+  ),  
+  items: SchoolLevel.values.map((level) {  
+    return DropdownMenuItem(  
+      value: level,  
+      child: Text(level.label()),  
+    );  
+  }).toList(),  
+  onChanged: (value) => setState(() => _schoolLevel = value),  
+),  
+  
+const SizedBox(height: 24),  
+Text('Preferred school type',  
+    style: Theme.of(context).textTheme.titleMedium),  
+const SizedBox(height: 8),  
+DropdownButtonFormField<SchoolType?>(  
+  value: _schoolType,  
+  decoration: const InputDecoration(  
+    hintText: 'Any type',  
+  ),  
+  items: SchoolType.values.map((type) {  
+    return DropdownMenuItem(  
+      value: type,  
+      child: Text(type.label()),  
+    );  
+  }).toList(),  
+  onChanged: (value) => setState(() => _schoolType = value),  
+),
 
             const SizedBox(height: 24),
             Text('Distance radius',

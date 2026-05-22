@@ -129,7 +129,7 @@ class _ComparisonTable extends StatelessWidget {
   List<_Row> _buildRows(Comparison c) {
     final metrics = c.metrics.isNotEmpty
         ? c.metrics
-        : const ['curriculum', 'tuitionFee', 'rating', 'facilities'];
+        : const ['curriculum', 'tuitionFee', 'rating', 'facilities', 'schoolLevel', 'schoolType', 'passingRate', 'nationalExamScore'];
     final rows = <_Row>[];
     for (final metric in metrics) {
       rows.add(_Row(
@@ -154,6 +154,14 @@ class _ComparisonTable extends StatelessWidget {
         return 'Rating';
       case 'facilities':
         return 'Facilities';
+      case 'schoolLevel':
+        return 'School Level';
+      case 'schoolType':
+        return 'School Type';
+      case 'passingRate':
+        return 'Passing Rate';
+      case 'nationalExamScore':
+        return 'National Exam Score';
       case 'distance':
         return 'Distance';
       default:
@@ -161,31 +169,36 @@ class _ComparisonTable extends StatelessWidget {
     }
   }
 
-  String _value(School s, String metric) {
-    switch (metric) {
-      case 'curriculum':
-        return s.curriculum.label();
-      case 'tuitionFee':
-        return s.tuitionFee.toString();
-      case 'rating':
-        if ((s.rating ?? 0) == 0) return '—';
-        return '${(s.rating ?? 0).toStringAsFixed(1)} '
-            '(${s.reviewCount ?? 0})';
-      case 'facilities':
-        final f = s.facilities;
-        if (f == null || f.trim().isEmpty) return '—';
-        // Keep cells legible — long facilities lists wrap into the cell
-        // already, but on web the table renders them on a single line, so
-        // truncate at ~120 chars defensively.
-        return f.length > 120 ? '${f.substring(0, 117)}…' : f;
-      case 'distance':
-        return s.distanceKm == null
-            ? '—'
-            : '${s.distanceKm!.toStringAsFixed(1)} km';
-      default:
-        return '—';
-    }
-  }
+  String _value(School s, String metric) {  
+  switch (metric) {  
+    case 'curriculum':  
+      return s.curriculum.label();  
+    case 'tuitionFee':  
+      return s.tuitionFee.toString();  
+    case 'rating':  
+      if ((s.rating ?? 0) == 0) return '—';  
+      return '${(s.rating ?? 0).toStringAsFixed(1)} '  
+          '(${s.reviewCount ?? 0})';  
+    case 'facilities':  
+      final f = s.facilities;  
+      if (f == null || f.trim().isEmpty) return '—';  
+      return f.length > 120 ? '${f.substring(0, 117)}…' : f;  
+    case 'distance':  
+      return s.distanceKm == null  
+          ? '—'  
+          : '${s.distanceKm!.toStringAsFixed(1)} km';  
+    case 'schoolLevel':  
+      return s.schoolLevel?.label() ?? '—';  
+    case 'schoolType':  
+      return s.schoolType?.label() ?? '—';  
+    case 'passingRate':  
+      return s.passingRate != null ? '${s.passingRate}%' : '—';  
+    case 'nationalExamScore':  
+      return s.nationalExamScore != null ? '${s.nationalExamScore}%' : '—';  
+    default:  
+      return '—';  
+  }  
+}
 }
 
 @immutable

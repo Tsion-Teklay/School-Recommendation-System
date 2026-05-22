@@ -1,14 +1,4 @@
-// DTOs for `/api/analytics/dashboard`. Mirrors `analytics.service.js`'s
-// `getDashboard()` shape:
-//   {
-//     summary: { totalUsers, totalSchools, ..., averageRating },
-//     usersByRole: { PARENT: n, SCHOOL_ADMIN: n, ... },
-//     schoolsByVerification: { PENDING: n, VERIFIED: n, REJECTED: n },
-//     reportsByStatus: { PENDING: n, REVIEWED: n, RESOLVED: n },
-//     topSchools: [{ id, schoolName, rating, reviewCount, verificationStatus }],
-//     mostFollowed: [{ schoolId, schoolName, followers }],
-//     signupsLast30Days: [{ date, count }],
-//   }
+
 
 class DashboardSummary {
   final int totalUsers;
@@ -178,6 +168,10 @@ class MoeRankedSchool {
   final String verificationStatus;  
   final String? facilities;  
   final double moeScore;  
+  final String? schoolLevel;      // Add  
+  final String? schoolType;       // Add  
+  final num? passingRate;        // Add  
+  final num? nationalExamScore;  
   
   const MoeRankedSchool({  
     required this.id,  
@@ -187,9 +181,21 @@ class MoeRankedSchool {
     required this.verificationStatus,  
     required this.facilities,  
     required this.moeScore,  
+    this.schoolLevel,             // Add  
+    this.schoolType,              // Add  
+    this.passingRate,             // Add  
+    this.nationalExamScore, 
   });  
   
   factory MoeRankedSchool.fromJson(Map<String, dynamic> json) {  
+
+    num? coerceNum(dynamic v) {
+    if (v == null) return null;
+    if (v is num) return v;
+    return num.tryParse(v.toString());
+  }
+
+
     return MoeRankedSchool(  
       id: json['id'] as int,  
       schoolName: json['schoolName'] as String,  
@@ -197,7 +203,11 @@ class MoeRankedSchool {
       reviewCount: json['reviewCount'] as int? ?? 0,  
       verificationStatus: json['verificationStatus'] as String? ?? 'PENDING',  
       facilities: json['facilities'] as String?,  
-      moeScore: (json['moeScore'] as num).toDouble(),  
+      moeScore: (json['moeScore'] as num).toDouble(), 
+      schoolLevel: json['schoolLevel'] as String?,          // Add  
+      schoolType: json['schoolType'] as String?,           // Add  
+      passingRate: coerceNum(json['passingRate']),         // Add  
+      nationalExamScore: coerceNum(json['nationalExamScore']), // Add  
     );  
   }  
 }

@@ -15,6 +15,10 @@ export const MOE_RANKING_WEIGHTS = Object.freeze({
   rating: 30,  
   facilities: 25,  
   verification: 30,  
+  schoolLevel: 5,      // New  
+  schoolType: 5,       // New  
+  passingRate: 5,      // New  
+  nationalExamScore: 0,
 });  
   
 const EARTH_RADIUS_KM = 6371;  
@@ -97,23 +101,48 @@ function scoreVerification(school) {
       return 0;  
   }  
 }  
+
+export function scoreSchoolLevel(school, criteria) {  
+  // Binary match: if parent has a level preference, match it  
+  if (!criteria.schoolLevel) return 0.5; // Neutral if no preference  
+  return school.schoolLevel === criteria.schoolLevel ? 1 : 0;  
+}  
+  
+export function scoreSchoolType(school, criteria) {  
+  // Binary match: if parent has a type preference, match it  
+  if (!criteria.schoolType) return 0.5; // Neutral if no preference  
+  return school.schoolType === criteria.schoolType ? 1 : 0;  
+}  
+  
+export function scorePassingRate(school) {  
+  // Linear scaling: 0-100% maps to 0-1  
+  if (!school.passingRate) return 0;  
+  return Number(school.passingRate) / 100;  
+}  
+  
+export function scoreNationalExamScore(school) {  
+  // Linear scaling: 0-100% maps to 0-1  
+  if (!school.nationalExamScore) return 0;  
+  return Number(school.nationalExamScore) / 100;  
+}
   
 /**  
  * Score a single school against resolved criteria.  
  * Returns a number in [0..100] and a per-signal breakdown.  
  */  
-export function scoreSchool(school, criteria, weights = RECOMMENDATION_WEIGHTS) {  
-  const components = {  
+export function scoreSchool(school, criteria, weights) {  
+  const signals = {  
     curriculum: scoreCurriculum(school, criteria),  
     budget: scoreBudget(school, criteria),  
     distance: scoreDistance(school, criteria),  
     rating: scoreRating(school),  
     facilities: scoreFacilities(school),  
-    verification: scoreVerification(school),  
+    verification: scoreVerification(school),   
   };  
-  const score = Object.entries(components).reduce(  
-    (acc, [k, v]) => acc + v * (weights[k] ?? 0),  
-    0  
-  );  
-  return { score: Number(score.toFixed(2)), components };  
+  
+  const score = Object.entries(weights).reduce((sum, [key, weight]) => {  
+    return sum + (signals[key] || 0) * weight;  
+  }, 0);  
+  
+  return { score, signals };  
 }

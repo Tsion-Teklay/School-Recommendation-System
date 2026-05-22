@@ -122,6 +122,10 @@ export async function getDashboard() {
     tuitionFee: true,  
     latitude: true,  
     longitude: true,  
+    schoolLevel: true,       
+    schoolType: true,         
+    passingRate: true,        
+    nationalExamScore: true,   
   },  
 });  
   

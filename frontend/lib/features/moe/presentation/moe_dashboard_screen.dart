@@ -567,10 +567,14 @@ class _MoeRankingLeaderboard extends StatelessWidget {
                 ),  
                 title: Text(school.schoolName),  
                 subtitle: Text(  
-                  'Score: ${school.moeScore.toStringAsFixed(2)} · '  
-                  'Rating: ${school.rating.toStringAsFixed(1)} · '  
-                  '${school.verificationStatus}',  
-                ),  
+  'Score: ${school.moeScore.toStringAsFixed(2)} · '  
+  'Rating: ${school.rating.toStringAsFixed(1)} · '  
+  '${school.verificationStatus}'  
+  '${school.schoolLevel != null ? ' · Level: ${school.schoolLevel}' : ''}'  
+  '${school.schoolType != null ? ' · Type: ${school.schoolType}' : ''}'  
+  '${school.passingRate != null ? ' · Pass: ${school.passingRate}%' : ''}'  
+  '${school.nationalExamScore != null ? ' · Exam: ${school.nationalExamScore}%' : ''}',  
+),  
                 trailing: IconButton(  
                   icon: const Icon(Icons.open_in_new),  
                   onPressed: () => context.go('/schools/${school.id}'),  
