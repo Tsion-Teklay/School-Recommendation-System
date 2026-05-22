@@ -5,9 +5,7 @@ export async function getTrainingData(req, res) {
     // STEP 1
     // Fetch recommendation histories
     const histories = await prisma.recommendationHistory.findMany({
-      where: {
-        
-      },
+      where: {},
 
       include: {
         recommendedSchools: true,
@@ -41,6 +39,9 @@ export async function getTrainingData(req, res) {
           facilities_score: features.facilities_score ?? 0,
 
           verification_score: features.verification_score ?? 0,
+          school_type_score: features.school_type_score ?? 0,
+          passing_rate_score: features.passing_rate_score ?? 0,
+          national_exam_score: features.national_exam_score ?? 0,
 
           outcome,
         });
