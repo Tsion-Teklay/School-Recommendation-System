@@ -324,6 +324,8 @@ model DiscussionForum {
   isEdited  Boolean           @default(false) @map("is_edited")
   targetType ForumTargetType  @default(FORUM_POST) @map("target_type") 
   targetId   Int?             @map("target_id") 
+  moderationStatus  String    @default("approved")  
+  toxicityScore     Float?  
 
   author  User              @relation(fields: [authorId], references: [id])
   thread  DiscussionForum?  @relation("ForumThread", fields: [threadId], references: [id])

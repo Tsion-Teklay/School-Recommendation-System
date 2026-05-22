@@ -1,11 +1,31 @@
-const { PrismaClient } = require("@prisma/client");
-const fs = require("fs");
-const path = require("path");
-const { parse } = require("csv-parse/sync");
+import { PrismaClient } from "@prisma/client/index.js";
+import { PrismaMariaDb } from "@prisma/adapter-mariadb";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import { parse } from "csv-parse/sync";
 
-const prisma = new PrismaClient();
+// 1. Safely break down your environment connection URL
+const dbUrl = new URL(process.env.DATABASE_URL);
+const dbName = dbUrl.pathname.replace(/^\//, "");
 
-// Helper function to safely match schema enum values (uppercase string formatting)
+// 2. Instantiate the PrismaMariaDb driver adapter natively with a configuration object
+// The adapter manages its own internal pool using the properties provided below.
+const adapter = new PrismaMariaDb({
+  host: dbUrl.hostname,
+  port: parseInt(dbUrl.port, 10) || 3306,
+  user: dbUrl.username,
+  password: decodeURIComponent(dbUrl.password),
+  database: dbName,
+  connectionLimit: 10
+});
+
+// 3. Supply the native adapter to your Prisma Client instance
+const prisma = new PrismaClient({ adapter });
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const toEnumFormat = (val) => (val ? val.trim().toUpperCase() : undefined);
 
 async function main() {
@@ -22,30 +42,27 @@ async function main() {
   for (const row of records) {
     try {
       await prisma.$transaction(async (tx) => {
-        // Step A: Create the Admin under the generic 'user' model
         const newAdmin = await tx.user.create({
           data: {
             fullName: row.admin_name || "School Admin",
             email: row.contact_email,
-            password: "temporary_secure_password", // Replace with a real hash in production
-            role: "SCHOOL_ADMIN", // Matches your UserRole enum definition
+            password: "temporary_secure_password",
+            role: "SCHOOL_ADMIN",
             accountStatus: "ACTIVE",
           },
         });
 
-        // Step B: Create the School and inject the dynamic admin user ID
         await tx.school.create({
           data: {
-            adminId: newAdmin.id, // Primary key reference from your User model
+            adminId: newAdmin.id,
             schoolName: row.school_name,
             address: row.address,
             contactEmail: row.contact_email,
             contactPhone: row.contact_phone,
-            curriculum: toEnumFormat(row.curriculum) || "LOCAL", // Fallback defaults if blank
+            curriculum: toEnumFormat(row.curriculum) || "LOCAL",
             tuitionFee: parseFloat(row.tuition_fee) || 0.0,
             facilities: row.facilities || null,
-            verificationStatus:
-              toEnumFormat(row.verification_status) || "PENDING",
+            verificationStatus: toEnumFormat(row.verification_status) || "PENDING",
             latitude: parseFloat(row.latitude),
             longitude: parseFloat(row.longitude),
             rating: parseFloat(row.rating) || 0.0,
@@ -60,7 +77,7 @@ async function main() {
     } catch (error) {
       console.error(
         `❌ Error seeding row for ${row.school_name}:`,
-        error.message,
+        error.message
       );
     }
   }
