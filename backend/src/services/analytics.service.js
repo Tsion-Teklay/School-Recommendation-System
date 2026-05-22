@@ -1,4 +1,16 @@
 import { db } from "../config/db.js";
+import { scoreSchool, MOE_RANKING_WEIGHTS } from "./scoring.service.js"; 
+  
+
+// Neutral criteria for system-wide ranking (no parent preferences)  
+const NEUTRAL_CRITERIA = {  
+  curriculum: null,  
+  minBudget: null,  
+  maxBudget: null,  
+  lat: null,  
+  lng: null,  
+  preferredRadiusKm: 25,  
+};  
 
 // ✅ Add analytics data
 export async function createAnalytics(data) {
@@ -40,17 +52,6 @@ export async function getSchoolAnalytics(schoolId) {
   };
 }
 
-/**
- * Phase 6 — real MoE dashboard.
- *
- * Replaces the Phase 0 mock (which returned `topSchools` with raw `reviews`
- * + `favorites` arrays — useless for a dashboard) with structured aggregates
- * computed from the actual tables.
- *
- * All counts are computed in parallel against the live tables. The shape is
- * stable and CSV-flattenable (see `getDashboardCsv`) so MoE officers can
- * pull the same numbers into Excel without an extra reporting endpoint.
- */
 export async function getDashboard() {
   const [
     totalUsers,
@@ -107,6 +108,35 @@ export async function getDashboard() {
       select: { createdAt: true },
     }),
   ]);
+
+  const allSchoolsRaw = await db.school.findMany({  
+  take: 100,  
+  select: {  
+    id: true,  
+    schoolName: true,  
+    rating: true,  
+    reviewCount: true,  
+    verificationStatus: true,  
+    facilities: true,  
+    curriculum: true,  
+    tuitionFee: true,  
+    latitude: true,  
+    longitude: true,  
+  },  
+});  
+  
+// Score and rank schools  
+const moeRanking = allSchoolsRaw  
+  .map((s) => {  
+    const { score } = scoreSchool(s, NEUTRAL_CRITERIA, MOE_RANKING_WEIGHTS);  
+    return {  
+      ...s,  
+      moeScore: score,  
+      rating: Number(s.rating),  
+    };  
+  })  
+  .sort((a, b) => b.moeScore - a.moeScore)  
+  .slice(0, 10);  
 
   // groupBy returns rows like `[{ role: "PARENT", _count: { _all: 5 } }]`;
   // flatten to a `{ PARENT: 5, MODERATOR: 1, ... }` shape that's friendly
@@ -172,20 +202,11 @@ export async function getDashboard() {
     })),
     mostFollowed,
     signupsLast30Days,
+    moeRanking,
   };
 }
 
-/**
- * CSV-flatten the dashboard for Excel/Sheets export.
- *
- * Produces a multi-section CSV (Summary, Users by role, Schools by status,
- * Top schools, Most followed). Each section gets its own header row so
- * Excel renders them as distinct tables when copy-pasted.
- *
- * No external CSV library — values are simple integers/strings, and the
- * tiny escaper below handles the only edge case (school names containing
- * commas, quotes, or newlines).
- */
+
 function csvEscape(value) {
   if (value == null) return "";
   const s = String(value);

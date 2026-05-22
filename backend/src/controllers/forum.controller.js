@@ -2,7 +2,7 @@ import { asyncHandler } from "../middlewares/async.middleware.js";
 import * as forum from "../services/forum.service.js";
 
 export const createPost = asyncHandler(async (req, res) => {
-  const post = await forum.createPost(req.user.id, req.body);
+  const post = await forum.createPost(req.body, req.user.id);
   res.status(201).json({ message: "Post created", post });
 });
 
@@ -30,3 +30,21 @@ export const deletePost = asyncHandler(async (req, res) => {
   const result = await forum.deletePost(req.user, req.params.id);
   res.json(result);
 });
+
+export const getAnnouncementCommentsHandler = asyncHandler(async (req, res) => {
+  const { announcementId } = req.params;
+  const comments = await forum.getAnnouncementComments(announcementId);
+  res.status(200).json({ data: comments });
+});
+
+export const createAnnouncementCommentHandler = asyncHandler(async (req, res) => {
+  const { announcementId } = req.params;
+  const { content } = req.body;
+  const comment = await forum.createAnnouncementComment(
+    announcementId,
+    content,
+    req.user.id
+  );
+  res.status(201).json({ message: "Comment posted", comment });
+});
+

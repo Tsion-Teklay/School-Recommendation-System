@@ -89,7 +89,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         title: const Text('Deactivate account?'),
         content: const Text(
           'Your account will be marked DEACTIVATED and you will be signed out. '
-          'Future logins will fail until an admin reactivates the account.',
+          'You can reactivate it later by logging in with your credentials.',
         ),
         actions: [
           TextButton(
@@ -196,6 +196,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 icon: const Icon(Icons.tune),
                 label: const Text('Recommendation preferences'),
               ),
+            if (user.role == UserRole.parent)  
+              OutlinedButton.icon(  
+                onPressed: () => context.go('/followed-schools'),  
+                icon: const Icon(Icons.school),  
+                label: const Text('Manage followed schools'),  
+              ),  
             if (user.role == UserRole.parent) const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: _changePassword,

@@ -2,6 +2,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import '../../../core/location_helper.dart';
 
 import '../../../core/config.dart';
 import '../../../shared/utils/image_picker.dart';
@@ -36,6 +40,27 @@ class _AdminSchoolManageScreenState
   final _notesCtrl = TextEditingController();
   final List<PickedFile> _picked = [];
 
+  bool _editing = false;  
+  bool _saving = false;  
+  String? _saveError;  
+
+  // Add controllers for edit form  
+  final _editSchoolName = TextEditingController();  
+  final _editAddress = TextEditingController();  
+  final _editContactEmail = TextEditingController();  
+  final _editContactPhone = TextEditingController();  
+  final _editTuitionFee = TextEditingController();  
+  final _editFacilities = TextEditingController();  
+  final _editLatitude = TextEditingController();  
+  final _editLongitude = TextEditingController();  
+  
+  Curriculum? _editCurriculum;  
+  SchoolLevel? _editSchoolLevel; 
+
+  bool _fetchingLocation = false;
+  LatLng? _pin;
+  static const _defaultCentre = LatLng(9.0331, 38.7501);
+
   // Phase 11 — facility image upload state.
   bool _uploadingImage = false;
   String? _imageError;
@@ -49,8 +74,18 @@ class _AdminSchoolManageScreenState
   @override
   void dispose() {
     _notesCtrl.dispose();
+    _editSchoolName.dispose();  
+    _editAddress.dispose();  
+    _editContactEmail.dispose();  
+    _editContactPhone.dispose();  
+    _editTuitionFee.dispose();  
+    _editFacilities.dispose();  
+    _editLatitude.dispose();  
+    _editLongitude.dispose();  
     super.dispose();
   }
+
+
 
   Future<void> _load() async {
     setState(() {
@@ -64,9 +99,8 @@ class _AdminSchoolManageScreenState
           await ref.read(verificationRepositoryProvider).list(limit: 50);
       setState(() {
         _school = school;
-        _requests = reqs.items
-            .where((r) => r.schoolId == widget.schoolId)
-            .toList();
+        _requests =
+            reqs.items.where((r) => r.schoolId == widget.schoolId).toList();
       });
     } on ApiException catch (e) {
       setState(() => _error = e.message);
@@ -77,52 +111,66 @@ class _AdminSchoolManageScreenState
     }
   }
 
-  Future<void> _addStubFile() async {
-    // We don't pull in `file_picker` for the MVP; we let the admin describe
-    // a single placeholder note and build a tiny in-memory stub file for
-    // submission. End-to-end testing on web can swap this for a real file
-    // picker in a follow-up. For now, prompt the admin to type a filename
-    // and we'll send a minimal text payload as the document.
-    final controller = TextEditingController();
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Attach a placeholder document'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'File picker integration ships separately. Until then, submit '
-              'a placeholder describing the document name; the MoE reviewer '
-              'will follow up offline if needed.',
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: controller,
-              decoration: const InputDecoration(
-                labelText: 'Filename (e.g. license.pdf)',
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text('Cancel')),
-          FilledButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text('Attach')),
-        ],
-      ),
-    );
-    if (ok != true || controller.text.trim().isEmpty) return;
-    final name = controller.text.trim();
-    final bytes =
-        Uint8List.fromList('Placeholder content for $name'.codeUnits);
-    setState(() {
-      _picked.add(PickedFile(filename: name, bytes: bytes));
-    });
-  }
+  Future<void> _addStubFile() async {  
+  try {  
+    final result = await FilePicker.platform.pickFiles(  
+      type: FileType.custom,  
+      allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],  
+      withData: true,  
+    );  
+  
+    if (result == null || result.files.isEmpty) return;  
+  
+    final file = result.files.first;  
+      
+    // Validate file size (10MB limit)  
+    if (file.size > 10 * 1024 * 1024){  
+      if (!mounted) return;  
+      ScaffoldMessenger.of(context).showSnackBar(  
+        const SnackBar(content: Text('File size exceeds 10MB limit')),  
+      );  
+      return;  
+    }  
+  
+    // Get MIME type  
+    String? contentType;  
+    if (file.extension != null) {  
+      switch (file.extension!.toLowerCase()) {  
+        case 'pdf':  
+          contentType = 'application/pdf';  
+          break;  
+        case 'png':  
+          contentType = 'image/png';  
+          break;  
+        case 'jpg':  
+        case 'jpeg':  
+          contentType = 'image/jpeg';  
+          break;  
+      }  
+    }  
+  
+    if (file.bytes == null) {  
+      if (!mounted) return;  
+      ScaffoldMessenger.of(context).showSnackBar(  
+        const SnackBar(content: Text('Failed to read file')),  
+      );  
+      return;  
+    }  
+  
+    setState(() {  
+      _picked.add(PickedFile(  
+        filename: file.name,  
+        bytes: file.bytes!,  
+        contentType: contentType,  
+      ));  
+    });  
+  } catch (e) {  
+    if (!mounted) return;  
+    ScaffoldMessenger.of(context).showSnackBar(  
+      SnackBar(content: Text('Error picking file: ${e.toString()}')),  
+    );  
+  }  
+}
 
   Future<void> _pickAndUploadFacilityImage() async {
     setState(() {
@@ -199,9 +247,8 @@ class _AdminSchoolManageScreenState
       await ref.read(verificationRepositoryProvider).submit(
             schoolId: widget.schoolId,
             documents: _picked,
-            notes: _notesCtrl.text.trim().isEmpty
-                ? null
-                : _notesCtrl.text.trim(),
+            notes:
+                _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
           );
       if (!mounted) return;
       _picked.clear();
@@ -219,6 +266,121 @@ class _AdminSchoolManageScreenState
       if (mounted) setState(() => _submitting = false);
     }
   }
+
+void _startEdit() {  
+  if (_school == null) return;  
+  setState(() {  
+    _editing = true;  
+    _saveError = null;  
+    _editSchoolName.text = _school!.schoolName;  
+    _editAddress.text = _school!.address;  
+    _editContactEmail.text = _school!.contactEmail;  
+    _editContactPhone.text = _school!.contactPhone ?? '';  
+    _editTuitionFee.text = _school!.tuitionFee.toString();  
+    _editFacilities.text = _school!.facilities ?? '';  
+    _editLatitude.text = _school!.latitude?.toString() ?? '';  
+    _editLongitude.text = _school!.longitude?.toString() ?? '';  
+    if (_school!.latitude != null &&
+    _school!.longitude != null) {
+  _pin = LatLng(
+    _school!.latitude!,
+    _school!.longitude!,
+  );
+}
+    _editCurriculum = _school!.curriculum;  
+    _editSchoolLevel = _school!.schoolLevel;  
+  });  
+}  
+  
+// Add this method to cancel edit  
+void _cancelEdit() {  
+  setState(() {  
+    _editing = false;  
+    _saveError = null;  
+  });  
+}  
+  
+// Add this method to save changes  
+Future<void> _saveEdit() async {  
+  if (_school == null) return;  
+  setState(() {  
+    _saving = true;  
+    _saveError = null;  
+  });  
+  try {  
+    final updated = await ref.read(schoolRepositoryProvider).update(  
+          id: _school!.id,  
+          schoolName: _editSchoolName.text.trim().isEmpty  
+              ? null  
+              : _editSchoolName.text.trim(),  
+          address: _editAddress.text.trim().isEmpty  
+              ? null  
+              : _editAddress.text.trim(),  
+          contactEmail: _editContactEmail.text.trim().isEmpty  
+              ? null  
+              : _editContactEmail.text.trim(),  
+          contactPhone: _editContactPhone.text.trim().isEmpty  
+              ? null  
+              : _editContactPhone.text.trim(),  
+          curriculum: _editCurriculum,  
+          schoolLevel: _editSchoolLevel,  
+          tuitionFee: _editTuitionFee.text.trim().isEmpty  
+              ? null  
+              : num.tryParse(_editTuitionFee.text.trim()),  
+          facilities: _editFacilities.text.trim().isEmpty  
+              ? null  
+              : _editFacilities.text.trim(),  
+          latitude: _editLatitude.text.trim().isEmpty  
+              ? null  
+              : double.tryParse(_editLatitude.text.trim()),  
+          longitude: _editLongitude.text.trim().isEmpty  
+              ? null  
+              : double.tryParse(_editLongitude.text.trim()),  
+        );  
+    if (!mounted) return;  
+    setState(() {  
+      _school = updated;  
+      _editing = false;  
+    });  
+    ScaffoldMessenger.of(context).showSnackBar(  
+      const SnackBar(content: Text('School updated successfully')),  
+    );  
+  } on ApiException catch (e) {  
+    setState(() => _saveError = e.message);  
+  } catch (e) {  
+    setState(() => _saveError = e.toString());  
+  } finally {  
+    if (mounted) setState(() => _saving = false);  
+  }  
+}
+
+Future<void> _fetchLocation() async {
+  setState(() => _fetchingLocation = true);
+
+  try {
+    final loc = await LocationHelper.getCurrentPosition();
+
+    if (loc != null) {
+      final point = LatLng(loc.latitude, loc.longitude);
+
+      setState(() {
+        _pin = point;
+
+        _editLatitude.text =
+            point.latitude.toStringAsFixed(6);
+
+        _editLongitude.text =
+            point.longitude.toStringAsFixed(6);
+      });
+    }
+  } catch (e) {
+    setState(() => _saveError = e.toString());
+  } finally {
+    if (mounted) {
+      setState(() => _fetchingLocation = false);
+    }
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -238,13 +400,49 @@ class _AdminSchoolManageScreenState
               ? Card(
                   color: theme.colorScheme.errorContainer,
                   child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Text(_error!)),
+                      padding: const EdgeInsets.all(16), child: Text(_error!)),
                 )
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (_school != null) _SchoolSummary(school: _school!),
+                    if (_school != null)  
+                    _SchoolSummary(  
+                      school: _school!,  
+                      editing: _editing,  
+                      saving: _saving,  
+                      saveError: _saveError,  
+                      onEdit: _startEdit,  
+                      onCancel: _cancelEdit,  
+                      onSave: _saveEdit,  
+                      controllers: [  
+                        _editSchoolName,  
+                        _editAddress,  
+                        _editContactEmail,  
+                        _editContactPhone,  
+                        _editTuitionFee,  
+                        _editFacilities,  
+                        _editLatitude,  
+                        _editLongitude,  
+                      ],  
+                      editCurriculum: _editCurriculum,  
+                      editSchoolLevel: _editSchoolLevel,  
+                      onCurriculumChanged: (v) => setState(() => _editCurriculum = v),  
+                      onSchoolLevelChanged: (v) => setState(() => _editSchoolLevel = v), 
+                      fetchingLocation: _fetchingLocation,
+onFetchLocation: _fetchLocation,
+pin: _pin,
+onPinChanged: (latLng) {
+  setState(() {
+    _pin = latLng;
+
+    _editLatitude.text =
+        latLng.latitude.toStringAsFixed(6);
+
+    _editLongitude.text =
+        latLng.longitude.toStringAsFixed(6);
+  });
+}, 
+                    ),
                     const SizedBox(height: 16),
                     if (_school != null)
                       _FacilityImagesCard(
@@ -255,6 +453,7 @@ class _AdminSchoolManageScreenState
                         onDelete: _deleteFacilityImage,
                       ),
                     const SizedBox(height: 16),
+                    if (_school != null && _school!.verificationStatus != VerificationStatus.verified)  
                     Card(
                       child: Padding(
                         padding: const EdgeInsets.all(16),
@@ -278,8 +477,8 @@ class _AdminSchoolManageScreenState
                                   for (final f in _picked)
                                     InputChip(
                                       label: Text(f.filename),
-                                      onDeleted: () => setState(
-                                          () => _picked.remove(f)),
+                                      onDeleted: () =>
+                                          setState(() => _picked.remove(f)),
                                     ),
                                 ],
                               ),
@@ -311,15 +510,13 @@ class _AdminSchoolManageScreenState
                               crossAxisAlignment: WrapCrossAlignment.center,
                               children: [
                                 OutlinedButton.icon(
-                                  onPressed:
-                                      _submitting ? null : _addStubFile,
+                                  onPressed: _submitting ? null : _addStubFile,
                                   icon: const Icon(Icons.attach_file),
                                   label: const Text('Attach document'),
                                 ),
                                 FilledButton.icon(
-                                  onPressed: _submitting
-                                      ? null
-                                      : _submitVerification,
+                                  onPressed:
+                                      _submitting ? null : _submitVerification,
                                   icon: _submitting
                                       ? const SizedBox(
                                           width: 16,
@@ -396,8 +593,7 @@ class _FacilityImagesCard extends StatelessWidget {
               children: [
                 Text('Facility photos', style: theme.textTheme.titleLarge),
                 const Spacer(),
-                Text('${images.length}',
-                    style: theme.textTheme.titleMedium),
+                Text('${images.length}', style: theme.textTheme.titleMedium),
               ],
             ),
             const SizedBox(height: 4),
@@ -417,8 +613,7 @@ class _FacilityImagesCard extends StatelessWidget {
                 child: Row(
                   children: [
                     Icon(Icons.error_outline,
-                        color: theme.colorScheme.onErrorContainer,
-                        size: 18),
+                        color: theme.colorScheme.onErrorContainer, size: 18),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -458,11 +653,10 @@ class _FacilityImagesCard extends StatelessWidget {
                             errorBuilder: (_, __, ___) => Container(
                               width: 180,
                               height: 140,
-                              color: theme
-                                  .colorScheme.surfaceContainerHighest,
+                              color: theme.colorScheme.surfaceContainerHighest,
                               alignment: Alignment.center,
-                              child: const Icon(Icons
-                                  .image_not_supported_outlined),
+                              child: const Icon(
+                                  Icons.image_not_supported_outlined),
                             ),
                           ),
                         ),
@@ -492,8 +686,7 @@ class _FacilityImagesCard extends StatelessWidget {
                   ? const SizedBox(
                       width: 16,
                       height: 16,
-                      child:
-                          CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.add_a_photo),
               label: Text(uploading ? 'Uploading…' : 'Add photo'),
@@ -513,53 +706,323 @@ String _absoluteImage(String url) {
 
 class _SchoolSummary extends StatelessWidget {
   final School school;
-  const _SchoolSummary({required this.school});
+  final bool editing;
+  final bool saving;
+  final String? saveError;
+  final VoidCallback onEdit;
+  final VoidCallback onCancel;
+  final VoidCallback onSave;
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(school.schoolName, style: theme.textTheme.headlineSmall),
-            const SizedBox(height: 4),
-            Text(school.address, style: theme.textTheme.bodyMedium),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                Chip(label: Text(school.curriculum.label())),
-                Chip(label: Text(school.verificationStatus.label())),
-                if (school.tuitionFee > 0)
-                  Chip(
-                    avatar: const Icon(Icons.payments_outlined, size: 18),
-                    label: Text('${school.tuitionFee} / year'),
-                  ),
-                if ((school.followerCount ?? 0) > 0)
-                  Chip(
-                    avatar:
-                        const Icon(Icons.favorite_outline, size: 18),
-                    label: Text('${school.followerCount} follower(s)'),
-                  ),
-                if ((school.rating ?? 0) > 0)
-                  Chip(
-                    avatar: const Icon(Icons.star_outline, size: 18),
-                    label: Text(
-                      '${(school.rating!).toStringAsFixed(1)} '
-                      '(${school.reviewCount ?? 0})',
-                    ),
-                  ),
-              ],
-            ),
-          ],
+  final List<TextEditingController> controllers;
+
+  final Curriculum? editCurriculum;
+  final SchoolLevel? editSchoolLevel;
+
+  final ValueChanged<Curriculum?> onCurriculumChanged;
+  final ValueChanged<SchoolLevel?> onSchoolLevelChanged;
+
+  final bool fetchingLocation;
+  final VoidCallback onFetchLocation;
+
+  final LatLng? pin;
+  final ValueChanged<LatLng> onPinChanged; 
+  
+  const _SchoolSummary({
+  required this.school,
+  required this.editing,
+  required this.saving,
+  this.saveError,
+  required this.onEdit,
+  required this.onCancel,
+  required this.onSave,
+  required this.controllers,
+  this.editCurriculum,
+  this.editSchoolLevel,
+  required this.onCurriculumChanged,
+  required this.onSchoolLevelChanged,
+  required this.fetchingLocation,
+  required this.onFetchLocation,
+  required this.pin,
+  required this.onPinChanged,
+}); 
+  
+  @override  
+  Widget build(BuildContext context) {  
+    final theme = Theme.of(context);  
+    return Card(  
+      child: Padding(  
+        padding: const EdgeInsets.all(16),  
+        child: Column(  
+          crossAxisAlignment: CrossAxisAlignment.start,  
+          children: [  
+            Row(  
+              children: [  
+                Expanded(  
+                  child: Text(  
+                    editing ? 'Edit school' : school.schoolName,  
+                    style: theme.textTheme.headlineSmall,  
+                  ),  
+                ),  
+                if (!editing)  
+                  IconButton(  
+                    tooltip: 'Edit',  
+                    onPressed: onEdit,  
+                    icon: const Icon(Icons.edit_outlined),  
+                  ),  
+              ],  
+            ),  
+            if (!editing) ...[  
+              const SizedBox(height: 4),  
+              Text(school.address, style: theme.textTheme.bodyMedium),  
+              const SizedBox(height: 12),  
+              Wrap(  
+                spacing: 8,  
+                runSpacing: 8,  
+                children: [  
+                  Chip(label: Text(school.curriculum.label())),  
+                  Chip(label: Text(school.verificationStatus.label())),  
+                  if (school.tuitionFee > 0)  
+                    Chip(  
+                      avatar: const Icon(Icons.payments_outlined, size: 18),  
+                      label: Text('${school.tuitionFee} / year'),  
+                    ),  
+                  if ((school.followerCount ?? 0) > 0)  
+                    Chip(  
+                      avatar: const Icon(Icons.favorite_outline, size: 18),  
+                      label: Text('${school.followerCount} follower(s)'),  
+                    ),  
+                  if ((school.rating ?? 0) > 0)  
+                    Chip(  
+                      avatar: const Icon(Icons.star_outline, size: 18),  
+                      label: Text(  
+                        '${(school.rating!).toStringAsFixed(1)} '  
+                        '(${school.reviewCount ?? 0})',  
+                      ),  
+                    ),  
+                ],  
+              ),  
+            ],  
+            if (editing) ...[  
+              const SizedBox(height: 16),  
+              if (saveError != null) ...[  
+                Container(  
+                  padding: const EdgeInsets.all(12),  
+                  decoration: BoxDecoration(  
+                    color: theme.colorScheme.errorContainer,  
+                    borderRadius: BorderRadius.circular(8),  
+                  ),  
+                  child: Text(  
+                    saveError!,  
+                    style: TextStyle(color: theme.colorScheme.onErrorContainer),  
+                  ),  
+                ),  
+                const SizedBox(height: 16),  
+              ],  
+              TextFormField(  
+                controller: controllers[0],  
+                decoration: const InputDecoration(  
+                  labelText: 'School name',  
+                  border: OutlineInputBorder(),  
+                ),  
+              ),  
+              const SizedBox(height: 12),  
+              TextFormField(  
+                controller: controllers[1],  
+                decoration: const InputDecoration(  
+                  labelText: 'Address',  
+                  border: OutlineInputBorder(),  
+                ),  
+              ),  
+              const SizedBox(height: 12),  
+              TextFormField(  
+                controller: controllers[2],  
+                decoration: const InputDecoration(  
+                  labelText: 'Contact email',  
+                  border: OutlineInputBorder(),  
+                ),  
+                keyboardType: TextInputType.emailAddress,  
+              ),  
+              const SizedBox(height: 12),  
+              TextFormField(  
+                controller: controllers[3],  
+                decoration: const InputDecoration(  
+                  labelText: 'Contact phone',  
+                  border: OutlineInputBorder(),  
+                ),  
+                keyboardType: TextInputType.phone,  
+              ),  
+              const SizedBox(height: 12),  
+              DropdownButtonFormField<Curriculum>(  
+                decoration: const InputDecoration(  
+                  labelText: 'Curriculum',  
+                  border: OutlineInputBorder(),  
+                ),  
+                value: editCurriculum,  
+                items: Curriculum.values  
+                    .map((c) => DropdownMenuItem(  
+                          value: c,  
+                          child: Text(c.label()),  
+                        ))  
+                    .toList(),  
+                onChanged: onCurriculumChanged,  
+              ),  
+              const SizedBox(height: 12),  
+              DropdownButtonFormField<SchoolLevel>(  
+                decoration: const InputDecoration(  
+                  labelText: 'School level',  
+                  border: OutlineInputBorder(),  
+                ),  
+                value: editSchoolLevel,  
+                items: SchoolLevel.values  
+                    .map((l) => DropdownMenuItem(  
+                          value: l,  
+                          child: Text(l.label()),  
+                        ))  
+                    .toList(),  
+                onChanged: onSchoolLevelChanged,  
+              ),  
+              const SizedBox(height: 12),  
+              TextFormField(  
+                controller: controllers[4],  
+                decoration: const InputDecoration(  
+                  labelText: 'Tuition fee',  
+                  border: OutlineInputBorder(),  
+                  prefixText: 'ETB ',  
+                ),  
+                keyboardType: TextInputType.number,  
+              ),  
+              const SizedBox(height: 12),  
+              TextFormField(  
+                controller: controllers[5],  
+                decoration: const InputDecoration(  
+                  labelText: 'Facilities',  
+                  border: OutlineInputBorder(),  
+                ),  
+                maxLines: 3,  
+              ),  
+              const SizedBox(height: 12),  
+              Column(
+  crossAxisAlignment: CrossAxisAlignment.start,
+  children: [
+    Row(
+      children: [
+        Expanded(
+          child: Text(
+            'Location',
+            style: theme.textTheme.titleSmall,
+          ),
         ),
-      ),
-    );
-  }
+        TextButton.icon(
+          onPressed: fetchingLocation
+              ? null
+              : onFetchLocation,
+          icon: fetchingLocation
+              ? const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                  ),
+                )
+              : const Icon(
+                  Icons.my_location,
+                  size: 18,
+                ),
+          label: const Text(
+            'Use current location',
+          ),
+        ),
+      ],
+    ),
+
+    const SizedBox(height: 12),
+
+    Row(
+      children: [
+        Expanded(
+          child: TextFormField(
+            controller: controllers[6],
+            decoration: const InputDecoration(
+              labelText: 'Latitude',
+              border: OutlineInputBorder(),
+            ),
+            keyboardType: TextInputType.number,
+            onChanged: (value) {
+              final lat = double.tryParse(value);
+              final lng = double.tryParse(
+                controllers[7].text,
+              );
+
+              if (lat != null && lng != null) {
+                onPinChanged(LatLng(lat, lng));
+              }
+            },
+          ),
+        ),
+
+        const SizedBox(width: 12),
+
+        Expanded(
+          child: TextFormField(
+            controller: controllers[7],
+            decoration: const InputDecoration(
+              labelText: 'Longitude',
+              border: OutlineInputBorder(),
+            ),
+            keyboardType: TextInputType.number,
+            onChanged: (value) {
+              final lat = double.tryParse(
+                controllers[6].text,
+              );
+
+              final lng = double.tryParse(value);
+
+              if (lat != null && lng != null) {
+                onPinChanged(LatLng(lat, lng));
+              }
+            },
+          ),
+        ),
+      ],
+    ),
+
+    const SizedBox(height: 16),
+
+    _MapPicker(
+      pin: pin ?? const LatLng(9.0331, 38.7501),
+      hasPin: pin != null,
+      onTap: (latLng) {
+        onPinChanged(latLng);
+      },
+    ),
+  ],
+),  
+              const SizedBox(height: 16),  
+              Row(  
+                children: [  
+                  FilledButton(  
+                    onPressed: saving ? null : onSave,  
+                    child: saving  
+                        ? const SizedBox(  
+                            height: 20,  
+                            width: 20,  
+                            child: CircularProgressIndicator(strokeWidth: 2),  
+                          )  
+                        : const Text('Save'),  
+                  ),  
+                  const SizedBox(width: 12),  
+                  OutlinedButton(  
+                    onPressed: saving ? null : onCancel,  
+                    child: const Text('Cancel'),  
+                  ),  
+                ],  
+              ),  
+            ],  
+          ],  
+        ),  
+      ),  
+    );  
+  }  
 }
 
 class _VerificationRequestTile extends StatelessWidget {
@@ -590,15 +1053,13 @@ class _VerificationRequestTile extends StatelessWidget {
             Row(
               children: [
                 Chip(
-                  backgroundColor: color.withOpacity(0.15),
-                  label: Text(req.status.label(),
-                      style: TextStyle(color: color)),
+                  backgroundColor: color.withValues(alpha: 0.15),
+                  label:
+                      Text(req.status.label(), style: TextStyle(color: color)),
                 ),
                 const Spacer(),
                 Text(
-                  req.submittedAt
-                      .toIso8601String()
-                      .substring(0, 10),
+                  req.submittedAt.toIso8601String().substring(0, 10),
                   style: theme.textTheme.bodySmall,
                 ),
               ],
@@ -621,6 +1082,68 @@ class _VerificationRequestTile extends StatelessWidget {
                       style: theme.textTheme.bodySmall),
                 ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MapPicker extends StatelessWidget {
+  final LatLng pin;
+  final bool hasPin;
+  final ValueChanged<LatLng> onTap;
+
+  const _MapPicker({
+    required this.pin,
+    required this.hasPin,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: SizedBox(
+        height: 280,
+        child: FlutterMap(
+          options: MapOptions(
+            initialCenter: pin,
+            initialZoom: 12,
+            onTap: (_, latLng) => onTap(latLng),
+            interactionOptions: const InteractionOptions(
+              flags:
+                  InteractiveFlag.all &
+                  ~InteractiveFlag.rotate,
+            ),
+          ),
+          children: [
+            TileLayer(
+              urlTemplate:
+                  'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+              userAgentPackageName:
+                  'com.school_rec.app',
+            ),
+
+            if (hasPin)
+              MarkerLayer(
+                markers: [
+                  Marker(
+                    point: pin,
+                    width: 40,
+                    height: 40,
+                    alignment: Alignment.topCenter,
+                    child: Icon(
+                      Icons.location_on,
+                      size: 40,
+                      color:
+                          Theme.of(context)
+                              .colorScheme
+                              .primary,
+                    ),
+                  ),
+                ],
+              ),
           ],
         ),
       ),

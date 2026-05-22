@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api_client.dart';
 import '../../auth/data/auth_repository.dart';
 import 'announcement_dtos.dart';
+import 'comment_dtos.dart';
 
 class AnnouncementRepository {
   final Dio _dio;
@@ -43,6 +44,7 @@ class AnnouncementRepository {
       if (v is String) return int.tryParse(v) ?? fallback;
       return fallback;
     }
+
     return (
       items: items,
       total: parseInt(meta['total'], 0),
@@ -130,6 +132,24 @@ class AnnouncementRepository {
       throw _toApiException(res);
     }
   }
+
+  Future<List<Comment>> getAnnouncementComments(int id) async {
+    final res = await _dio.get('/api/forum/announcement/$id');
+    if (res.statusCode != 200) throw _toApiException(res);
+    final body = res.data as Map<String, dynamic>;
+    return (body['data'] as List)
+        .cast<Map<String, dynamic>>()
+        .map((c) => Comment.fromJson(c))
+        .toList();
+  }
+
+  Future<void> postAnnouncementComment(int announcementId, String content) async {
+    final res = await _dio.post(
+      '/api/forum/announcement/$announcementId',
+      data: {'content': content},
+    );
+    if (res.statusCode != 201) throw _toApiException(res);
+  }
 }
 
 ApiException _toApiException(Response<dynamic> r) {
@@ -144,7 +164,6 @@ ApiException _toApiException(Response<dynamic> r) {
       statusCode: r.statusCode);
 }
 
-final announcementRepositoryProvider =
-    Provider<AnnouncementRepository>((ref) {
+final announcementRepositoryProvider = Provider<AnnouncementRepository>((ref) {
   return AnnouncementRepository(ref.watch(apiClientProvider).dio);
 });

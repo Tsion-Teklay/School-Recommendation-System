@@ -37,6 +37,12 @@ const _allDestinations = <NavDestination>[
   NavDestination(label: 'Home', icon: Icons.home_outlined, path: '/'),
   NavDestination(
       label: 'Browse', icon: Icons.search_outlined, path: '/schools'),
+  NavDestination(  
+    label: 'Announcements',  
+    icon: Icons.campaign_outlined,  
+    path: '/announcements',  
+    visibleTo: {UserRole.parent}, // Restrict to parents as requested  
+  ),  
   NavDestination(
     label: 'Compare',
     icon: Icons.compare_arrows_outlined,
@@ -166,7 +172,14 @@ class ResponsiveShell extends ConsumerWidget {
                     ? 1100.0
                     : (isMedium ? constraints.maxWidth - 48 : double.infinity),
               ),
-              child: child,
+              child: Column( // Add Column here  
+        mainAxisSize: MainAxisSize.min,  
+        children: [  
+          child, // Existing page content  
+          const Divider(height: 64), // Optional separator  
+          const _AppFooter(),   
+        ],  
+      ),  
             ),
           ),
         );
@@ -187,7 +200,13 @@ class ResponsiveShell extends ConsumerWidget {
 
         return Scaffold(
           appBar: AppBar(
-            title: Text(title),
+            title: Row(  
+  children: [  
+    Image.asset('assets/logo.png', height: 32), // Ensure asset is in pubspec.yaml  
+    const SizedBox(width: 12),  
+    Text(title),  
+  ],  
+),
             actions: [...?actions, ...defaultActions],
             leading: leading,
           ),
@@ -228,4 +247,35 @@ class ResponsiveShell extends ConsumerWidget {
       },
     );
   }
+}
+
+class _AppFooter extends StatelessWidget {  
+  const _AppFooter();  
+  
+  @override  
+  Widget build(BuildContext context) {  
+    final theme = Theme.of(context);  
+    return Padding(  
+      padding: const EdgeInsets.only(top: 32.0),  
+      child: Column(  
+        children: [  
+          const Divider(),  
+          const SizedBox(height: 16),  
+          Text(  
+            '© ${DateTime.now().year} School Recommendation System',  
+            style: theme.textTheme.bodySmall?.copyWith(  
+              color: theme.colorScheme.onSurface.withOpacity(0.6),  
+            ),  
+          ),  
+          const SizedBox(height: 8),  
+          Text(  
+            'Ministry of Education',  
+            style: theme.textTheme.bodySmall?.copyWith(  
+              color: theme.colorScheme.onSurface.withOpacity(0.6),  
+            ),  
+          ),  
+        ],  
+      ),  
+    );  
+  }  
 }

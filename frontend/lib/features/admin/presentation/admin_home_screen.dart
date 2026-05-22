@@ -38,7 +38,9 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
       final repo = ref.read(schoolRepositoryProvider);
       // Pull a generous page (100) and filter client-side. School admins
       // typically own a handful of schools; cheap enough.
-      final page = await repo.list(const SchoolListFilters(limit: 100));
+      final user = ref.read(authControllerProvider).user;
+      final page =
+          await repo.list(SchoolListFilters(adminId: user?.id, limit: 100));
       setState(() {
         _schools = page.items;
       });
@@ -93,13 +95,19 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
               ),
             )
           else if (_schools.isEmpty)
-            const Card(
+            Card(
               child: Padding(
                 padding: EdgeInsets.all(16),
-                child: Text(
-                  "You don't manage any schools yet. Schools are linked to your "
-                  "account via their adminId — contact the MoE if you don't see "
-                  "yours listed here.",
+                child: Column(
+                  children: [
+                    const Text('You haven\'t registered a school yet.'),
+                    const SizedBox(height: 12),
+                    FilledButton.icon(
+                      onPressed: () => context.go('/admin/schools/create'),
+                      icon: const Icon(Icons.add),
+                      label: const Text('Register your school'),
+                    ),
+                  ],
                 ),
               ),
             )

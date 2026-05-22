@@ -5,6 +5,7 @@ export const cleanDatabase = async () => {
   await db.analytics.deleteMany();
   await db.notification.deleteMany();
   await db.moderatorAction.deleteMany();
+  await db.user.deleteMany();
   await db.report.deleteMany();
   await db.review.deleteMany();
   await db.announcement.deleteMany();

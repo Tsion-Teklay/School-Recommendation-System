@@ -1,3 +1,4 @@
+import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -58,7 +59,8 @@ class _ModerationReportsScreenState
       await ref.read(reportRepositoryProvider).takeAction(r.id, result);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Action recorded: ${result.actionType.label()}')),
+        SnackBar(
+            content: Text('Action recorded: ${result.actionType.label()}')),
       );
       await _load();
     } on ApiException catch (e) {
@@ -85,11 +87,9 @@ class _ModerationReportsScreenState
                     ButtonSegment(
                         value: ReportStatus.pending, label: Text('Pending')),
                     ButtonSegment(
-                        value: ReportStatus.reviewed,
-                        label: Text('Reviewed')),
+                        value: ReportStatus.reviewed, label: Text('Reviewed')),
                     ButtonSegment(
-                        value: ReportStatus.resolved,
-                        label: Text('Resolved')),
+                        value: ReportStatus.resolved, label: Text('Resolved')),
                   ],
                   selected: {_status},
                   onSelectionChanged: (s) {
@@ -107,6 +107,17 @@ class _ModerationReportsScreenState
             ],
           ),
           const SizedBox(height: 16),
+          Card(  
+            child: Padding(  
+              padding: const EdgeInsets.all(16),  
+              child: FilledButton.icon(  
+                onPressed: () => context.go('/moderation/create-user'),  
+                icon: const Icon(Icons.person_add),  
+                label: const Text('Create admin user'),  
+              ),  
+            ),  
+          ),
+          
           if (_error != null)
             Card(
               color: theme.colorScheme.errorContainer,
@@ -206,7 +217,7 @@ class _ActionDialogState extends State<_ActionDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             DropdownButtonFormField<ModeratorActionType>(
-              value: _action,
+              initialValue: _action,
               decoration: const InputDecoration(labelText: 'Action'),
               items: [
                 for (final a in ModeratorActionType.values)

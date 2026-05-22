@@ -139,10 +139,12 @@ class Report {
       if (v is String) return int.tryParse(v) ?? 0;
       return 0;
     }
+
     DateTime parseDate(dynamic v) {
       if (v is String) return DateTime.tryParse(v) ?? DateTime.now();
       return DateTime.now();
     }
+
     final reporter = (json['reporter'] as Map?)?.cast<String, dynamic>();
     return Report(
       id: parseInt(json['id']),
@@ -182,5 +184,23 @@ class ModeratorActionInput {
   Map<String, dynamic> toJson() => {
         'actionType': actionType.toWire(),
         if (notes != null && notes!.isNotEmpty) 'notes': notes,
+      };
+}
+
+class ReportRequest {
+  final ReportTargetType targetType;
+  final int targetId;
+  final String reason;
+
+  const ReportRequest({
+    required this.targetType,
+    required this.targetId,
+    required this.reason,
+  });
+
+  Map<String, dynamic> toJson() => {
+        'targetType': targetType.toWire(),
+        'targetId': targetId,
+        'reason': reason,
       };
 }

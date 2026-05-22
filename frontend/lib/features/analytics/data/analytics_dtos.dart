@@ -122,6 +122,7 @@ class Dashboard {
   final Map<String, int> reportsByStatus;
   final List<TopSchool> topSchools;
   final List<MostFollowed> mostFollowed;
+  final List<MoeRankedSchool> moeRanking;
 
   const Dashboard({
     required this.summary,
@@ -130,6 +131,7 @@ class Dashboard {
     required this.reportsByStatus,
     required this.topSchools,
     required this.mostFollowed,
+    required this.moeRanking,  
   });
 
   factory Dashboard.fromJson(Map<String, dynamic> json) {
@@ -160,6 +162,42 @@ class Dashboard {
           .cast<Map<String, dynamic>>()
           .map(MostFollowed.fromJson)
           .toList(),
+      moeRanking: (json['moeRanking'] as List?)  
+              ?.map((e) => MoeRankedSchool.fromJson(e as Map<String, dynamic>))  
+              .toList() ??  
+          [],
     );
   }
+}
+
+class MoeRankedSchool {  
+  final int id;  
+  final String schoolName;  
+  final double rating;  
+  final int reviewCount;  
+  final String verificationStatus;  
+  final String? facilities;  
+  final double moeScore;  
+  
+  const MoeRankedSchool({  
+    required this.id,  
+    required this.schoolName,  
+    required this.rating,  
+    required this.reviewCount,  
+    required this.verificationStatus,  
+    required this.facilities,  
+    required this.moeScore,  
+  });  
+  
+  factory MoeRankedSchool.fromJson(Map<String, dynamic> json) {  
+    return MoeRankedSchool(  
+      id: json['id'] as int,  
+      schoolName: json['schoolName'] as String,  
+      rating: (json['rating'] as num).toDouble(),  
+      reviewCount: json['reviewCount'] as int? ?? 0,  
+      verificationStatus: json['verificationStatus'] as String? ?? 'PENDING',  
+      facilities: json['facilities'] as String?,  
+      moeScore: (json['moeScore'] as num).toDouble(),  
+    );  
+  }  
 }

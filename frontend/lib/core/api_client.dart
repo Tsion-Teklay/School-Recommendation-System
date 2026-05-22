@@ -63,6 +63,19 @@ class ApiClient {
       ),
     );
   }
+
+  /// HTTP POST method
+  Future<Response<dynamic>> post(String path,
+      {dynamic data, Map<String, dynamic>? queryParameters, Options? options}) {
+    return dio.post(path,
+        data: data, queryParameters: queryParameters, options: options);
+  }
+
+  /// HTTP GET method
+  Future<Response<dynamic>> get(String path,
+      {Map<String, dynamic>? queryParameters, Options? options}) {
+    return dio.get(path, queryParameters: queryParameters, options: options);
+  }
 }
 
 /// Auth endpoints whose 401s mean "wrong credentials / wrong current password"

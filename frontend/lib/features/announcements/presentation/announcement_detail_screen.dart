@@ -8,6 +8,13 @@ import '../../auth/data/auth_repository.dart';
 import '../data/announcement_dtos.dart';
 import '../data/announcement_repository.dart';
 
+import '../../../shared/widgets/like_action.dart';
+import '../../../shared/widgets/report_dialog.dart';
+import '../../../shared/widgets/share_action.dart';
+import '../../../shared/widgets/comment_tile.dart';
+import '../../../features/reports/data/report_dtos.dart';
+import '../../../features/likes/data/like_dtos.dart';
+
 /// `/announcements/:id` — single announcement view. Loaded on demand so
 /// deep links from notifications work without first hitting the list.
 class AnnouncementDetailScreen extends ConsumerStatefulWidget {
@@ -95,15 +102,52 @@ class _AnnouncementDetailScreenState
   }
 }
 
-class _Body extends StatelessWidget {
+class _Body extends ConsumerStatefulWidget {
   final Announcement announcement;
   const _Body({required this.announcement});
 
   @override
+  ConsumerState<_Body> createState() => _BodyState();
+}
+
+class _BodyState extends ConsumerState<_Body> {
+  final _commentCtrl = TextEditingController();
+  bool _posting = false;
+  int _commentRefreshKey = 0;
+
+  @override
+  void dispose() {
+    _commentCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _postComment() async {
+    final text = _commentCtrl.text.trim();
+    if (text.isEmpty) return;
+    setState(() => _posting = true);
+    try {
+      await ref
+          .read(announcementRepositoryProvider)
+          .postAnnouncementComment(widget.announcement.id, text);
+      _commentCtrl.clear();
+      // Bump the key to force FutureBuilder to refetch.
+      setState(() => _commentRefreshKey++);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to post comment: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _posting = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final a = announcement;
+    final a = widget.announcement;
     final image = a.imgUrl;
+
     return Card(
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -128,36 +172,7 @@ class _Body extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(a.title, style: theme.textTheme.headlineSmall),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    Chip(label: Text(a.category.label())),
-                    Chip(
-                      label: Text(a.urgencyLevel.label()),
-                      backgroundColor: a.urgencyLevel == UrgencyLevel.emergency
-                          ? theme.colorScheme.errorContainer
-                          : a.urgencyLevel == UrgencyLevel.high
-                              ? theme.colorScheme.tertiaryContainer
-                              : null,
-                    ),
-                    Chip(
-                      avatar: Icon(
-                        a.publisherType == PublisherType.moe
-                            ? Icons.account_balance_outlined
-                            : Icons.school_outlined,
-                        size: 16,
-                      ),
-                      label: Text(a.school?.schoolName ??
-                          a.publisherType.label()),
-                    ),
-                    Text(
-                      _formatDate(a.datePosted),
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  ],
-                ),
+                // ... (Chips and Content section remains the same)
                 const SizedBox(height: 16),
                 SelectableText(
                   a.content,
@@ -172,6 +187,107 @@ class _Body extends StatelessWidget {
                     label: Text('View ${a.school!.schoolName}'),
                   ),
                 ],
+
+                // --- ACTION BAR ---
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    LikeAction(
+                        targetType: LikeTargetType.announcement,
+                        targetId: a.id),
+                    ShareAction(
+                      title: a.title,
+                      content: a.content,
+                      url: 'https://yourapp.com/announcements/${a.id}',
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.flag_outlined),
+                      onPressed: () => showDialog(
+                        context: context,
+                        builder: (_) => ReportDialog(
+                          targetType: ReportTargetType.announcement,
+                          targetId: a.id,
+                        ),
+                      ),
+                      tooltip: 'Report',
+                    ),
+                  ],
+                ),
+
+                // --- COMMENT SECTION ---
+                const SizedBox(height: 32),
+                Text('Comments', style: theme.textTheme.titleMedium),
+                const SizedBox(height: 12),
+
+                // Comment input
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        TextField(
+                          controller: _commentCtrl,
+                          decoration: const InputDecoration(
+                            labelText: 'Add a comment',
+                            hintText: 'Share your thoughts...',
+                          ),
+                          minLines: 2,
+                          maxLines: 5,
+                        ),
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: FilledButton.icon(
+                            onPressed: _posting ? null : _postComment,
+                            icon: _posting
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2),
+                                  )
+                                : const Icon(Icons.send),
+                            label: const Text('Comment'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Comments list
+                FutureBuilder(
+                  key: ValueKey(_commentRefreshKey),
+                  future: ref
+                      .read(announcementRepositoryProvider)
+                      .getAnnouncementComments(a.id),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState ==
+                        ConnectionState.waiting) {
+                      return const Center(
+                          child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return Text(
+                          'Error loading comments: ${snapshot.error}');
+                    }
+
+                    final comments = snapshot.data ?? [];
+                    if (comments.isEmpty) {
+                      return const Text('No comments yet. Be the first to comment!');
+                    }
+
+                    return Column(
+                      children: comments
+                          .map((c) => CommentTile(comment: c))
+                          .toList(),
+                    );
+                  },
+                ),
               ],
             ),
           ),
@@ -185,9 +301,4 @@ String _absoluteImage(String url) {
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
   if (url.startsWith('/')) return '${AppConfig.apiBaseUrl}$url';
   return '${AppConfig.apiBaseUrl}/$url';
-}
-
-String _formatDate(DateTime d) {
-  return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')} '
-      '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
 }

@@ -1,5 +1,10 @@
 import express from "express";
-import { recommend } from "../controllers/recommendation.controller.js";
+import { z } from "zod"; // Ensure z is imported for validation schemas
+import {
+  recommend,
+  feedback,
+  updateInteractionResult,
+} from "../controllers/recommendation.controller.js";
 import { authenticate } from "../middlewares/auth.middleware.js";
 import { authorizeRoles } from "../middlewares/role.middleware.js";
 import { validate } from "../middlewares/validate.middleware.js";
@@ -35,7 +40,25 @@ router.get(
   authenticate,
   authorizeRoles("PARENT"),
   validate({ query: recommendationsQuerySchema }),
-  recommend
+  recommend,
+);
+
+router.post("/:id/feedback", authenticate, authorizeRoles("PARENT"), feedback);
+
+router.put(
+  "/:recommendationId/schools/:schoolId/interaction",
+  authenticate,
+  authorizeRoles("PARENT"),
+  validate({
+    params: z.object({
+      recommendationId: z.string().transform(Number),
+      schoolId: z.string().transform(Number),
+    }),
+    body: z.object({
+      result: z.enum(["OPENED", "FOLLOWED", "IGNORED"]),
+    }),
+  }),
+  updateInteractionResult,
 );
 
 export default router;

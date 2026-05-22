@@ -13,19 +13,52 @@ import '../../auth/data/auth_dtos.dart';
 import '../../auth/state/auth_controller.dart';
 import '../../reviews/presentation/reviews_section.dart';
 import '../data/school_dtos.dart';
+import '../data/school_repository.dart'; // Added to ensure access to schoolRepositoryProvider
 import '../state/compare_cart.dart';
 import '../state/school_detail_controller.dart';
 
 /// `/schools/:id` — full info card, map (when lat/lng present), follower
 /// count + follow toggle, facility image carousel, recent announcements,
 /// and the embedded reviews section (Phase 11).
-class SchoolDetailScreen extends ConsumerWidget {
+class SchoolDetailScreen extends ConsumerStatefulWidget {
   final int schoolId;
-  const SchoolDetailScreen({super.key, required this.schoolId});
+  final int? recommendationId; // 1. Accept the telemetry context tracker identifier
+
+  const SchoolDetailScreen({
+    super.key, 
+    required this.schoolId,
+    this.recommendationId,
+  });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final ctl = ref.watch(schoolDetailControllerProvider(schoolId));
+  ConsumerState<SchoolDetailScreen> createState() => _SchoolDetailScreenState();
+}
+
+class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
+  @override
+  void initState() {
+    super.initState();
+    
+    // 2. Telemetry Interaction Handshake: Run immediately after frame construction
+    if (widget.recommendationId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        try {
+          await ref.read(schoolRepositoryProvider).updateInteractionResult(
+                recommendationId: widget.recommendationId!,
+                schoolId: widget.schoolId,
+                result: 'OPENED',
+              );
+        } catch (e) {
+          // Silent catch: operational telemetry should never interrupt user UI presentation
+          debugPrint('Telemetry extraction error (OPENED): $e');
+        }
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ctl = ref.watch(schoolDetailControllerProvider(widget.schoolId));
     final state = ctl.state;
     final auth = ref.watch(authControllerProvider);
     final isParent = auth.user?.role == UserRole.parent;
@@ -48,7 +81,25 @@ class SchoolDetailScreen extends ConsumerWidget {
         isParent: isParent,
         isFollowing: state.isFollowing,
         followBusy: state.followBusy,
-        onToggleFollow: ctl.toggleFollow,
+        recommendationId: widget.recommendationId,
+        onToggleFollow: () async {
+          // If the user isn't currently following and navigated from a recommendation card,
+          // pass this through our orchestrated pipeline method to update the DB mapping state to 'FOLLOWED'
+          if (!state.isFollowing && widget.recommendationId != null) {
+            try {
+              await ref.read(schoolRepositoryProvider).followWithInteraction(
+                    schoolId: widget.schoolId,
+                    recommendationId: widget.recommendationId,
+                  );
+              ctl.load(); // Refresh detail tracking stats
+            } catch (e) {
+              ctl.load();
+            }
+          } else {
+            // Standard fallback action route via local state controller
+            ctl.toggleFollow();
+          }
+        },
         cart: cart,
         latestError: state.error,
       );
@@ -68,11 +119,13 @@ class SchoolDetailScreen extends ConsumerWidget {
   }
 }
 
+// Keep the rest of the existing implementations (_DetailBody, _FacilityImagesCarousel, etc.) intact below...
 class _DetailBody extends StatelessWidget {
   final School school;
   final bool isParent;
   final bool isFollowing;
   final bool followBusy;
+  final int? recommendationId;
   final VoidCallback onToggleFollow;
   final CompareCart cart;
   final String? latestError;
@@ -82,6 +135,7 @@ class _DetailBody extends StatelessWidget {
     required this.isParent,
     required this.isFollowing,
     required this.followBusy,
+    this.recommendationId,
     required this.onToggleFollow,
     required this.cart,
     required this.latestError,
@@ -112,8 +166,8 @@ class _DetailBody extends StatelessWidget {
                   Expanded(
                     child: Text(
                       latestError!,
-                      style: TextStyle(
-                          color: theme.colorScheme.onErrorContainer),
+                      style:
+                          TextStyle(color: theme.colorScheme.onErrorContainer),
                     ),
                   ),
                 ],
@@ -126,8 +180,7 @@ class _DetailBody extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(school.schoolName,
-                    style: theme.textTheme.headlineSmall),
+                Text(school.schoolName, style: theme.textTheme.headlineSmall),
                 const SizedBox(height: 4),
                 Text(school.address, style: theme.textTheme.bodyMedium),
                 const SizedBox(height: 16),
@@ -188,8 +241,7 @@ class _DetailBody extends StatelessWidget {
                   const SizedBox(height: 16),
                   Text('Facilities', style: theme.textTheme.titleMedium),
                   const SizedBox(height: 4),
-                  Text(school.facilities!,
-                      style: theme.textTheme.bodyMedium),
+                  Text(school.facilities!, style: theme.textTheme.bodyMedium),
                 ],
                 const SizedBox(height: 20),
                 Wrap(
@@ -214,8 +266,8 @@ class _DetailBody extends StatelessWidget {
                             if (!added) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text(
-                                      'Compare cart is full (max 5).'),
+                                  content:
+                                      Text('Compare cart is full (max 5).'),
                                 ),
                               );
                             }
@@ -224,9 +276,8 @@ class _DetailBody extends StatelessWidget {
                         icon: Icon(inCart
                             ? Icons.check_box
                             : Icons.compare_arrows_outlined),
-                        label: Text(inCart
-                            ? 'In compare cart'
-                            : 'Add to compare'),
+                        label:
+                            Text(inCart ? 'In compare cart' : 'Add to compare'),
                       ),
                   ],
                 ),
@@ -235,8 +286,6 @@ class _DetailBody extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        // Phase 11 — facility image carousel. Only renders when the school
-        // has uploaded at least one image.
         if (school.facilityImages.isNotEmpty) ...[
           _FacilityImagesCarousel(images: school.facilityImages),
           const SizedBox(height: 16),
@@ -249,11 +298,8 @@ class _DetailBody extends StatelessWidget {
           ),
           const SizedBox(height: 16),
         ],
-        // Phase 11 — recent announcements published by this school.
         _SchoolAnnouncementsSection(schoolId: school.id),
         const SizedBox(height: 16),
-        // Phase 11 — wire reviews. The component was authored in Phase 9 but
-        // never rendered on the school detail page.
         ReviewsSection(schoolId: school.id),
       ],
     );
@@ -277,8 +323,7 @@ class _FacilityImagesCarousel extends StatelessWidget {
               children: [
                 Text('Facility photos', style: theme.textTheme.titleLarge),
                 const Spacer(),
-                Text('${images.length}',
-                    style: theme.textTheme.titleMedium),
+                Text('${images.length}', style: theme.textTheme.titleMedium),
               ],
             ),
             const SizedBox(height: 12),
@@ -302,8 +347,7 @@ class _FacilityImagesCarousel extends StatelessWidget {
                           width: 280,
                           color: theme.colorScheme.surfaceContainerHighest,
                           alignment: Alignment.center,
-                          child:
-                              const Icon(Icons.image_not_supported_outlined),
+                          child: const Icon(Icons.image_not_supported_outlined),
                         ),
                       ),
                     ),
@@ -360,11 +404,10 @@ class _SchoolAnnouncementsSectionState
       _error = null;
     });
     try {
-      final result =
-          await ref.read(announcementRepositoryProvider).list(
-                schoolId: widget.schoolId,
-                limit: 5,
-              );
+      final result = await ref.read(announcementRepositoryProvider).list(
+            schoolId: widget.schoolId,
+            limit: 5,
+          );
       if (!mounted) return;
       setState(() => _items = result.items);
     } catch (e) {
@@ -386,12 +429,11 @@ class _SchoolAnnouncementsSectionState
           children: [
             Row(
               children: [
-                Text('Recent announcements',
-                    style: theme.textTheme.titleLarge),
+                Text('Recent announcements', style: theme.textTheme.titleLarge),
                 const Spacer(),
                 TextButton(
-                  onPressed: () => context.go(
-                      '/announcements?schoolId=${widget.schoolId}'),
+                  onPressed: () =>
+                      context.go('/announcements?schoolId=${widget.schoolId}'),
                   child: const Text('See all'),
                 ),
               ],
@@ -407,8 +449,7 @@ class _SchoolAnnouncementsSectionState
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Row(
                   children: [
-                    Icon(Icons.error_outline,
-                        color: theme.colorScheme.error),
+                    Icon(Icons.error_outline, color: theme.colorScheme.error),
                     const SizedBox(width: 8),
                     Expanded(child: Text(_error!)),
                     TextButton(
@@ -545,7 +586,8 @@ class _ContactRow extends StatelessWidget {
       children: [
         Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
         const SizedBox(width: 8),
-        Flexible(child: Text(label, style: Theme.of(context).textTheme.bodyMedium)),
+        Flexible(
+            child: Text(label, style: Theme.of(context).textTheme.bodyMedium)),
       ],
     );
   }
