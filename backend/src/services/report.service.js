@@ -17,6 +17,26 @@ export async function createReport(data, userId) {
     },
   });
 
+  // Notify all moderators  
+  try {  
+    const moderators = await db.user.findMany({  
+      where: { role: "MODERATOR" },  
+      select: { id: true },  
+    });  
+  
+    for (const moderator of moderators) {  
+      await createNotification({  
+        recipientId: moderator.id,  
+        recipientType: "MOE",  
+        message: `New report: ${prettyTarget(targetType)} #${targetId} - ${reason}`,  
+        sourceId: report.id,  
+        sourceType: "REPORT",  
+      });  
+    }  
+  } catch (err) {  
+    logger.warn({ err }, "Failed to notify moderators of new report");  
+  }  
+
   return report;
 }
 
@@ -53,11 +73,7 @@ export async function getReportById(id) {
   return report;
 }
 
-/**
- * Phase 5 side effects for each typed action. Pure helper — wraps DB writes
- * + notifications and returns the affected user id (so the moderator
- * pipeline can also notify the offending content's author).
- */
+
 async function applyActionSideEffects(report, action) {
   const { actionType } = action;
   const targetType = report.targetType; // "REVIEW" | "ANNOUNCEMENT" | "FORUM_POST" | "SCHOOL"
@@ -221,18 +237,7 @@ async function resolveTargetAuthorId(targetType, targetId) {
   return null;
 }
 
-/**
- * ✅ Moderator Action — Phase 5
- *
- * actionType is now a typed enum. Each value has a concrete side effect:
- *   - DISMISS: just close the report (status -> RESOLVED).
- *   - REMOVE_CONTENT: delete the reported review/announcement/forum post,
- *     notify the author, and (for reviews) recompute the school rating.
- *   - WARN_USER: notify the offender; account stays active.
- *   - BAN_USER: deactivate the offender's account + notify.
- *
- * The reporter is always notified that their report was reviewed.
- */
+
 export async function takeAction(reportId, data, moderatorId) {
   const report = await db.report.findUnique({
     where: { id: Number(reportId) },
@@ -272,3 +277,34 @@ export async function takeAction(reportId, data, moderatorId) {
 
   return { ...action, sideEffects };
 }
+
+export async function getReportedContent(reportId) {  
+  const report = await db.report.findUnique({  
+    where: { id: Number(reportId) },  
+    select: { targetType: true, targetId: true },  
+  });  
+  
+  if (!report) throw new NotFoundError("Report not found");  
+  
+  const { targetType, targetId } = report;  
+  
+  if (targetType === "ANNOUNCEMENT") {  
+    return db.announcement.findUnique({  
+      where: { id: targetId },  
+      include: { publisher: { select: { fullName: true } } },  
+    });  
+  } else if (targetType === "FORUM_POST") {  
+    return db.discussionForum.findUnique({  
+      where: { id: targetId },  
+      include: { author: { select: { fullName: true } } },  
+    });  
+  } else if (targetType === "REVIEW") {  
+    return db.review.findUnique({  
+      where: { id: targetId },  
+      include: { parent: { select: { fullName: true } } },  
+    });  
+  }  
+  
+  throw new ValidationError("Unsupported target type for content viewing");  
+}
+

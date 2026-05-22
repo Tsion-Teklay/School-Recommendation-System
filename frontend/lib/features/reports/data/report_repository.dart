@@ -58,6 +58,13 @@ class ReportRepository {
       throw _toApiException(res);
     }
   }
+
+Future<Map<String, dynamic>> getReportedContent(int reportId) async {  
+  final res = await _dio.get('/api/reports/$reportId/content');  
+  if (res.statusCode != 200) throw _toApiException(res);  
+  return res.data['content'] as Map<String, dynamic>;  
+}
+
 }
 
 ApiException _toApiException(Response<dynamic> r) {
