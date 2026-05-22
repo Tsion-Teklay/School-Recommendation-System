@@ -86,7 +86,7 @@ class FacilityImage {
   }
 }
 
-enum VerificationStatus { pending, verified, rejected }
+enum VerificationStatus { pending, verified, rejected, revoked }
 
 extension VerificationStatusX on VerificationStatus {
   String label() {
@@ -97,6 +97,8 @@ extension VerificationStatusX on VerificationStatus {
         return 'Verified';
       case VerificationStatus.rejected:
         return 'Verification rejected';
+      case VerificationStatus.revoked:
+        return 'Verification revoked';
     }
   }
 
@@ -106,6 +108,8 @@ extension VerificationStatusX on VerificationStatus {
         return VerificationStatus.verified;
       case 'REJECTED':
         return VerificationStatus.rejected;
+      case 'REVOKED':
+        return VerificationStatus.revoked;
       case 'PENDING':
       default:
         return VerificationStatus.pending;

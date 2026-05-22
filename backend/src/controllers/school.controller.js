@@ -5,6 +5,7 @@ import {
   getSchoolById,
   updateSchool,
   deleteSchool,
+  revokeVerification,
 } from "../services/school.service.js";
 
 export const create = asyncHandler(async (req, res) => {
@@ -49,4 +50,11 @@ export const update = asyncHandler(async (req, res) => {
 export const remove = asyncHandler(async (req, res) => {
   const result = await deleteSchool(req.params.id, req.user.id);
   res.json(result);
+});
+
+
+export const revoke = asyncHandler(async (req, res) => {  
+  const { id } = req.params;  // Change from schoolId to id  
+  const school = await revokeVerification(Number(id));  
+  res.status(200).json({ school });  
 });
