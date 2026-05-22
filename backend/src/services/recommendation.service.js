@@ -76,11 +76,7 @@ function resolveCriteria(query, ctx) {
 // Main recommendation flow
 // ---------------------------------------------------------------------------
 
-export async function getRecommendations(
-  schools,
-  query = {},
-  userId = null,
-) {
+export async function getRecommendations(schools, query = {}, userId = null) {
   const ctx = await loadParentContext(userId);
 
   const criteria = resolveCriteria(query, ctx);
@@ -95,9 +91,7 @@ export async function getRecommendations(
 
     name: school.schoolName,
 
-    curriculum: school.curriculum
-      ? school.curriculum.toLowerCase()
-      : "local",
+    curriculum: school.curriculum ? school.curriculum.toLowerCase() : "local",
 
     tuition_fee: Number(school.tuitionFee),
 
@@ -116,6 +110,9 @@ export async function getRecommendations(
     school_level: school.schoolLevel
       ? school.schoolLevel.toLowerCase()
       : "primary",
+    school_type: school.schoolType ? school.schoolType.toLowerCase() : null,
+    passing_rate: Number(school.passingRate || 0),
+    national_exam_score: Number(school.nationalExamScore || 0),
   }));
 
   try {
@@ -153,9 +150,7 @@ export async function getRecommendations(
       throw new Error("Invalid ML response format");
     }
 
-    console.log(
-      `✅ ML service returned ${rankedFromAI.length} ranked schools`,
-    );
+    console.log(`✅ ML service returned ${rankedFromAI.length} ranked schools`);
 
     // Fast lookup map
     const schoolMap = new Map(
@@ -170,9 +165,7 @@ export async function getRecommendations(
         const originalSchool = schoolMap.get(aiId);
 
         if (!originalSchool) {
-          console.warn(
-            `⚠️ Could not find matching school for AI ID: ${aiId}`,
-          );
+          console.warn(`⚠️ Could not find matching school for AI ID: ${aiId}`);
 
           return null;
         }
@@ -204,8 +197,8 @@ export async function getRecommendations(
             recommendedSchools: {
               create: rankedFromAI.map((r) => ({
                 schoolId: r.school_id || r.id,
-                features: r.features, 
-                interactionResult: "IGNORED"
+                features: r.features,
+                interactionResult: "IGNORED",
               })),
             },
 
@@ -250,8 +243,6 @@ export async function getRecommendations(
       data: err.response?.data,
     });
 
-    throw new Error(
-      `Recommendation ML service unavailable: ${err.message}`,
-    );
+    throw new Error(`Recommendation ML service unavailable: ${err.message}`);
   }
 }
