@@ -70,6 +70,36 @@ class _ModerationReportsScreenState
     }
   }
 
+  Future<void> _viewContent(Report r) async {  
+    try {  
+      final content = await ref.read(reportRepositoryProvider)  
+          .getReportedContent(r.id);  
+        
+      if (!mounted) return;  
+        
+      // Navigate based on target type  
+      switch (r.targetType) {  
+        case ReportTargetType.review:  
+          context.go('/schools/${content['school']['id']}');  
+          break;  
+        case ReportTargetType.forumPost:  
+          context.go('/forum/${r.targetId}');  
+          break;  
+        case ReportTargetType.announcement:  
+          context.go('/announcements/${r.targetId}');  
+          break;  
+        case ReportTargetType.school:  
+          context.go('/schools/${r.targetId}');  
+          break;  
+      }  
+    } catch (e) {  
+      if (!mounted) return;  
+      ScaffoldMessenger.of(context).showSnackBar(  
+        SnackBar(content: Text('Failed to load content: $e')),  
+      );  
+    }  
+  }  
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -165,22 +195,28 @@ class _ModerationReportsScreenState
                       Text('Reason:', style: theme.textTheme.titleSmall),
                       Text(r.reason),
                       const SizedBox(height: 12),
-                      // Use Align (not Row+Spacer) so the trailing
-                      // FilledButton.icon actually renders on Flutter web
-                      // release builds.
-                      if (r.status == ReportStatus.pending)
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: FilledButton.icon(
-                            onPressed: () => _act(r),
-                            icon: const Icon(Icons.gavel),
-                            label: const Text('Take action'),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
+                      
+                      Wrap(  
+                          spacing: 8,  
+                          alignment: WrapAlignment.end,  
+                          children: [  
+                            OutlinedButton.icon(  
+                              onPressed: () => _viewContent(r),  
+                              icon: const Icon(Icons.visibility),  
+                              label: const Text('View content'),  
+                            ),  
+                            if (r.status == ReportStatus.pending)  
+                              FilledButton.icon(  
+                                onPressed: () => _act(r),  
+                                icon: const Icon(Icons.gavel),  
+                                label: const Text('Take action'),  
+                                ),
+            ],
+          ),
+        ],
+      ),
+    ),
+  ),
         ],
       ),
     );

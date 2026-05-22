@@ -10,6 +10,8 @@ import {
   listReportsQuerySchema,
 } from "../schemas/report.schema.js";
 
+import { getReportedContent } from "../controllers/report.controller.js";
+
 const router = express.Router();
 
 /**
@@ -75,6 +77,13 @@ router.post(
   authorizeRoles("MODERATOR"),
   validate({ params: idParamsSchema, body: reportActionBodySchema }),
   controller.action
+);
+
+router.get(  
+  "/:id/content",  
+  authenticate,  
+  authorizeRoles("MODERATOR"),  
+  getReportedContent  
 );
 
 export default router;

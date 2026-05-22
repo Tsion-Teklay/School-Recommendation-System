@@ -4,6 +4,7 @@ import {
   getAllReports,
   getReportById,
   takeAction,
+  getReportedContent as getReportedContentService,
 } from "../services/report.service.js";
 
 export const create = asyncHandler(async (req, res) => {
@@ -36,4 +37,9 @@ export const action = asyncHandler(async (req, res) => {
     message: "Action recorded successfully",
     action: result,
   });
+});
+
+export const getReportedContent = asyncHandler(async (req, res) => {  
+  const content = await getReportedContentService(req.params.id);  
+  res.json({ content });  
 });
