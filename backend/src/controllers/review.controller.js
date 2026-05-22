@@ -4,6 +4,7 @@ import {
   getReviewsBySchool,
   updateReview,
   deleteReview,
+  getRatingDistribution as getRatingDistributionService,
 } from "../services/review.service.js";
 
 export const create = asyncHandler(async (req, res) => {
@@ -37,4 +38,10 @@ export const update = asyncHandler(async (req, res) => {
 export const remove = asyncHandler(async (req, res) => {
   const result = await deleteReview(req.user.id, req.params.id);
   res.json(result);
+});
+
+export const getRatingDistribution = asyncHandler(async (req, res) => {  
+  const { schoolId } = req.params;  
+  const distribution = await getRatingDistributionService(schoolId);  
+  res.json({ distribution });  
 });

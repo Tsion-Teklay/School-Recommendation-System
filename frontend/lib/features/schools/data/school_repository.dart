@@ -264,6 +264,13 @@ class SchoolRepository {
   final res = await _dio.post('/api/schools/$schoolId/revoke');  
   if (res.statusCode != 200) throw _toApiException(res);  
 }
+Future<Map<int, int>> getRatingDistribution(int schoolId) async {  
+  final res = await _dio.get('/api/reviews/$schoolId/distribution');  
+  if (res.statusCode != 200) throw _toApiException(res);  
+  final body = res.data as Map<String, dynamic>;  
+  final distribution = body['distribution'] as Map<String, dynamic>;  
+  return distribution.map((key, value) => MapEntry(int.parse(key), value as int));  
+}
 }
 
 ApiException _toApiException(Response<dynamic> r) {

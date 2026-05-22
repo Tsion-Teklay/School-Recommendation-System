@@ -15,6 +15,7 @@ import {
   getBySchool,
   update,
   remove,
+  getRatingDistribution,
 } from "../controllers/review.controller.js";
 
 const router = express.Router();
@@ -78,6 +79,12 @@ router.delete(
   authorizeRoles("PARENT"),
   validate({ params: idParamsSchema }),
   remove
+);
+
+router.get(  
+  "/:schoolId/distribution",  
+  validate({ params: schoolIdParamsSchema }),  
+  getRatingDistribution  
 );
 
 export default router;
