@@ -1,9 +1,3 @@
-// Plain-Dart DTOs for the schools / recommendations / follows endpoints.
-//
-// We keep the same hand-rolled fromJson style as auth_dtos.dart for now —
-// the surface is still small and codegen would only obscure the mapping
-// from backend column to UI field.
-
 enum Curriculum { local, international }
 
 extension CurriculumX on Curriculum {
@@ -23,8 +17,45 @@ extension CurriculumX on Curriculum {
   }
 }
 
-/// Phase 11 — school level (pre-primary / primary / secondary). Stored on
-/// the School row and surfaced in filters + detail badges.
+enum SchoolType { private, government, church }  
+  
+extension SchoolTypeX on SchoolType {  
+  String toWire() {  
+    switch (this) {  
+      case SchoolType.private:  
+        return 'PRIVATE';  
+      case SchoolType.government:  
+        return 'GOVERNMENT';  
+      case SchoolType.church:  
+        return 'CHURCH';  
+    }  
+  }  
+  
+  String label() {  
+    switch (this) {  
+      case SchoolType.private:  
+        return 'Private';  
+      case SchoolType.government:  
+        return 'Government';  
+      case SchoolType.church:  
+        return 'Church';  
+    }  
+  }  
+  
+  static SchoolType? fromWire(String? s) {  
+    switch (s) {  
+      case 'PRIVATE':  
+        return SchoolType.private;  
+      case 'GOVERNMENT':  
+        return SchoolType.government;  
+      case 'CHURCH':  
+        return SchoolType.church;  
+      default:  
+        return null;  
+    }  
+  }  
+}
+
 enum SchoolLevel { prePrimary, primary, secondary }
 
 extension SchoolLevelX on SchoolLevel {
@@ -64,9 +95,6 @@ extension SchoolLevelX on SchoolLevel {
   }
 }
 
-/// One entry from `school.facilityImages` (Phase 11). The URL is relative
-/// to the API base (e.g. `/uploads/facility-images/abc.png`) — callers
-/// concatenate `AppConfig.apiBaseUrl` themselves so this DTO stays plain.
 class FacilityImage {
   final int id;
   final String imageUrl;
@@ -116,10 +144,6 @@ extension VerificationStatusX on VerificationStatus {
     }
   }
 }
-
-/// Fields common to both list and detail responses. Detail adds `admin` and
-/// `followerCount`; list adds the optional `distanceKm` when proximity search
-/// is in play. Everything else is the same shape.
 class School {
   final int id;
   final String schoolName;
@@ -137,6 +161,10 @@ class School {
 
   /// Phase 11 — null when the school hasn't been categorised yet.
   final SchoolLevel? schoolLevel;
+
+  final SchoolType? schoolType;      
+  final num? passingRate;            
+  final num? nationalExamScore;      
 
   /// Phase 11 — facility images attached to this school. Only populated on
   /// the detail response (`GET /api/schools/:id`); the list endpoint
@@ -164,6 +192,9 @@ class School {
     required this.reviewCount,
     required this.verificationStatus,
     required this.schoolLevel,
+    required this.schoolType,
+    required this.passingRate,
+    required this.nationalExamScore,
     required this.facilityImages,
     required this.followerCount,
     required this.distanceKm,
@@ -208,6 +239,9 @@ class School {
       verificationStatus:
           VerificationStatusX.fromWire(json['verificationStatus'] as String?),
       schoolLevel: SchoolLevelX.fromWire(json['schoolLevel'] as String?),
+      schoolType: SchoolTypeX.fromWire(json['schoolType'] as String?),  // Add  
+      passingRate: coerceDouble(json['passingRate']),                  // Add  
+      nationalExamScore: coerceDouble(json['nationalExamScore']),
       facilityImages: imgs
           .whereType<Map>()
           .map((m) => FacilityImage.fromJson(m.cast<String, dynamic>()))

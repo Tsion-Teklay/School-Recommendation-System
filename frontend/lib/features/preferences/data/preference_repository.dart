@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api_client.dart';
 import '../../auth/data/auth_repository.dart' show ApiException;
 import 'preference_dtos.dart';
+import '../../schools/data/school_dtos.dart';
 
 /// Thin wrapper around the Phase 10 preferences endpoints. Mirrors the
 /// pattern in AuthRepository — one method per route, no caching, surfaces
@@ -32,6 +33,8 @@ class PreferenceRepository {
     double? maxBudget,
     PreferredCurriculum? curriculum,
     int? distanceKm,
+    SchoolLevel? schoolLevel,
+    SchoolType? schoolType,
     String? address,
     double? latitude,
     double? longitude,
@@ -41,6 +44,8 @@ class PreferenceRepository {
       if (maxBudget != null) 'maxBudget': maxBudget,
       if (curriculum != null) 'curriculum': curriculum.toWire(),
       if (distanceKm != null) 'distance': distanceKm,
+      if (schoolLevel != null) 'schoolLevel': schoolLevel.toWire(),
+      if (schoolType != null) 'schoolType': schoolType.toWire(),
       if (address != null && address.isNotEmpty) 'address': address,
       if (latitude != null) 'latitude': latitude,
       if (longitude != null) 'longitude': longitude,

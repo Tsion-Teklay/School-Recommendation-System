@@ -437,6 +437,8 @@ model Preference {
   maxBudget  Decimal    @db.Decimal(10,2) @map("max_budget")
   curriculum Curriculum
   distance   Int
+  schoolLevel SchoolLevel?  @map("school_level")    
+  schoolType  SchoolType?   @map("school_type")   
 
   parent Parent @relation(fields: [parentId], references: [userId])
 
