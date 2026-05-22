@@ -10,7 +10,8 @@ import '../state/reviews_controller.dart';
 /// school detail body so it inherits the outer ResponsiveShell scroll.
 class ReviewsSection extends ConsumerStatefulWidget {
   final int schoolId;
-  const ReviewsSection({super.key, required this.schoolId});
+  final VoidCallback? onReviewSubmitted;
+  const ReviewsSection({super.key, required this.schoolId, this.onReviewSubmitted});
 
   @override
   ConsumerState<ReviewsSection> createState() => _ReviewsSectionState();
@@ -120,6 +121,11 @@ class _ReviewsSectionState extends ConsumerState<ReviewsSection> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(controller.error ?? 'Failed to save review')),
       );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Review saved')),
+      );
+      widget.onReviewSubmitted?.call();
     }
   }
 

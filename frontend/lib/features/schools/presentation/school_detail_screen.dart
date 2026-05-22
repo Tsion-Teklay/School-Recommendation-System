@@ -16,16 +16,18 @@ import '../data/school_dtos.dart';
 import '../data/school_repository.dart'; // Added to ensure access to schoolRepositoryProvider
 import '../state/compare_cart.dart';
 import '../state/school_detail_controller.dart';
+import 'school_analytics_section.dart';
 
 /// `/schools/:id` — full info card, map (when lat/lng present), follower
 /// count + follow toggle, facility image carousel, recent announcements,
 /// and the embedded reviews section (Phase 11).
 class SchoolDetailScreen extends ConsumerStatefulWidget {
   final int schoolId;
-  final int? recommendationId; // 1. Accept the telemetry context tracker identifier
+  final int?
+      recommendationId; // 1. Accept the telemetry context tracker identifier
 
   const SchoolDetailScreen({
-    super.key, 
+    super.key,
     required this.schoolId,
     this.recommendationId,
   });
@@ -34,129 +36,175 @@ class SchoolDetailScreen extends ConsumerStatefulWidget {
   ConsumerState<SchoolDetailScreen> createState() => _SchoolDetailScreenState();
 }
 
-class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {  
-  @override  
-  void initState() {  
-    super.initState();  
-      
-    if (widget.recommendationId != null) {  
-      WidgetsBinding.instance.addPostFrameCallback((_) async {  
-        try {  
-          await ref.read(schoolRepositoryProvider).updateInteractionResult(  
-                recommendationId: widget.recommendationId!,  
-                schoolId: widget.schoolId,  
-                result: 'OPENED',  
-              );  
-        } catch (e) {  
-          debugPrint('Telemetry extraction error (OPENED): $e');  
-        }  
+class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
+  Map<int, int> _ratingDistribution = {};
+  bool _ratingLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRatingDistribution();  
+
+    if (widget.recommendationId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        try {
+          await ref.read(schoolRepositoryProvider).updateInteractionResult(
+                recommendationId: widget.recommendationId!,
+                schoolId: widget.schoolId,
+                result: 'OPENED',
+              );
+        } catch (e) {
+          debugPrint('Telemetry extraction error (OPENED): $e');
+        }
+      });
+    }
+  }
+
+  Future<void> _loadRatingDistribution() async {
+    setState(() => _ratingLoading = true);
+    try {
+      final distribution = await ref
+          .read(schoolRepositoryProvider)
+          .getRatingDistribution(widget.schoolId);
+      if (mounted) {
+        setState(() => _ratingDistribution = distribution);
+      }
+    } catch (e) {
+      debugPrint('Failed to load rating distribution: $e');
+    } finally {
+      if (mounted) setState(() => _ratingLoading = false);
+    }
+  }
+
+  void _refreshRatingDistribution() async {  
+  setState(() {  
+    _ratingLoading = true;  
+  });  
+  try {  
+    final distribution = await ref.read(schoolRepositoryProvider)  
+        .getRatingDistribution(widget.schoolId);  
+    if (mounted) {  
+      setState(() {  
+        _ratingDistribution = distribution;  
+        _ratingLoading = false;  
+      });  
+    }  
+  } catch (e) {  
+    if (mounted) {  
+      setState(() {  
+        _ratingLoading = false;  
       });  
     }  
   }  
-  
-  Future<void> _showRevokeConfirmationDialog() async {  
-  final confirmed = await showDialog<bool>(  
-    context: context,  
-    builder: (ctx) => AlertDialog(  
-      title: const Text('Revoke Verification'),  
-      content: const Text(  
-        'This will revoke the school\'s verification status. '  
-        'The school will not be able to make announcements. '  
-        'Are you sure?',  
-      ),  
-      actions: [  
-        TextButton(  
-          onPressed: () => Navigator.pop(ctx, false),  
-          child: const Text('Cancel'),  
-        ),  
-        TextButton(  
-          onPressed: () => Navigator.pop(ctx, true),  
-          child: const Text('Revoke'),  
-        ),  
-      ],  
-    ),  
-  );  
-  
-  if (confirmed == true) {  
-    try {  
-      await ref.read(schoolRepositoryProvider).revokeVerification(widget.schoolId);  
-      if (!mounted) return;  
-      ScaffoldMessenger.of(context).showSnackBar(  
-        const SnackBar(content: Text('Verification revoked successfully')),  
-      );  
-      // Get the controller here instead of using ctl  
-      ref.read(schoolDetailControllerProvider(widget.schoolId)).load();  
-    } catch (e) {  
-      if (!mounted) return;  
-      ScaffoldMessenger.of(context).showSnackBar(  
-        SnackBar(content: Text('Failed to revoke: $e')),  
-      );  
-    }  
-  }  
 }
-  
-  @override  
-  Widget build(BuildContext context) {  
-    final ctl = ref.watch(schoolDetailControllerProvider(widget.schoolId));  
-    final state = ctl.state;  
-    final auth = ref.watch(authControllerProvider);  
-    final isParent = auth.user?.role == UserRole.parent;  
-    final cart = ref.watch(compareCartProvider);  
-  
-    Widget body;  
-    if (state.loading) {  
-      body = const Padding(  
-        padding: EdgeInsets.symmetric(vertical: 64),  
-        child: Center(child: CircularProgressIndicator()),  
-      );  
-    } else if (state.error != null && state.school == null) {  
-      body = _ErrorState(  
-        message: state.error!,  
-        onRetry: ctl.load,  
-      );  
-    } else {  
-      body = _DetailBody(  
-        school: state.school!,  
-        isParent: isParent,  
-        userRole: auth.user?.role,  
-        isFollowing: state.isFollowing,  
-        followBusy: state.followBusy,  
-        recommendationId: widget.recommendationId,  
-        onToggleFollow: () async {  
-          if (!state.isFollowing && widget.recommendationId != null) {  
-            try {  
-              await ref.read(schoolRepositoryProvider).followWithInteraction(  
-                    schoolId: widget.schoolId,  
-                    recommendationId: widget.recommendationId,  
-                  );  
-              ctl.load();  
-            } catch (e) {  
-              ctl.load();  
-            }  
-          } else {  
-            ctl.toggleFollow();  
-          }  
-        },  
-        onRevokeVerification: auth.user?.role == UserRole.moeOfficer   
-            ? _showRevokeConfirmationDialog   
-            : null,  
-        cart: cart,  
-        latestError: state.error,  
-      );  
-    }  
-  
-    return ResponsiveShell(  
-      title: state.school?.schoolName ?? 'School',  
-      leading: BackButton(onPressed: () {  
-        if (context.canPop()) {  
-          context.pop();  
-        } else {  
-          context.go('/schools');  
-        }  
-      }),  
-      child: body,  
-    );  
-  }  
+
+  Future<void> _showRevokeConfirmationDialog() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Revoke Verification'),
+        content: const Text(
+          'This will revoke the school\'s verification status. '
+          'The school will not be able to make announcements. '
+          'Are you sure?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Revoke'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await ref
+            .read(schoolRepositoryProvider)
+            .revokeVerification(widget.schoolId);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Verification revoked successfully')),
+        );
+        // Get the controller here instead of using ctl
+        ref.read(schoolDetailControllerProvider(widget.schoolId)).load();
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to revoke: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ctl = ref.watch(schoolDetailControllerProvider(widget.schoolId));
+    final state = ctl.state;
+    final auth = ref.watch(authControllerProvider);
+    final isParent = auth.user?.role == UserRole.parent;
+    final cart = ref.watch(compareCartProvider);
+
+    Widget body;
+    if (state.loading) {
+      body = const Padding(
+        padding: EdgeInsets.symmetric(vertical: 64),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    } else if (state.error != null && state.school == null) {
+      body = _ErrorState(
+        message: state.error!,
+        onRetry: ctl.load,
+      );
+    } else {
+      body = _DetailBody(
+        school: state.school!,
+        isParent: isParent,
+        userRole: auth.user?.role,
+        isFollowing: state.isFollowing,
+        followBusy: state.followBusy,
+        recommendationId: widget.recommendationId,
+        onToggleFollow: () async {
+          if (!state.isFollowing && widget.recommendationId != null) {
+            try {
+              await ref.read(schoolRepositoryProvider).followWithInteraction(
+                    schoolId: widget.schoolId,
+                    recommendationId: widget.recommendationId,
+                  );
+              ctl.load();
+            } catch (e) {
+              ctl.load();
+            }
+          } else {
+            ctl.toggleFollow();
+          }
+        },
+        onRevokeVerification: auth.user?.role == UserRole.moeOfficer
+            ? _showRevokeConfirmationDialog
+            : null,
+        cart: cart,
+        latestError: state.error,
+        ratingDistribution: _ratingDistribution,
+        onReviewSubmitted: _refreshRatingDistribution,
+      );
+    }
+
+    return ResponsiveShell(
+      title: state.school?.schoolName ?? 'School',
+      leading: BackButton(onPressed: () {
+        if (context.canPop()) {
+          context.pop();
+        } else {
+          context.go('/schools');
+        }
+      }),
+      child: body,
+    );
+  }
 }
 
 // Keep the rest of the existing implementations (_DetailBody, _FacilityImagesCarousel, etc.) intact below...
@@ -171,6 +219,8 @@ class _DetailBody extends StatelessWidget {
   final VoidCallback? onRevokeVerification;
   final CompareCart cart;
   final String? latestError;
+  final Map<int, int> ratingDistribution;
+   final VoidCallback? onReviewSubmitted;
 
   const _DetailBody({
     required this.school,
@@ -183,6 +233,8 @@ class _DetailBody extends StatelessWidget {
     this.onRevokeVerification,
     required this.cart,
     required this.latestError,
+    required this.ratingDistribution,
+      this.onReviewSubmitted,
   });
 
   @override
@@ -323,17 +375,17 @@ class _DetailBody extends StatelessWidget {
                         label:
                             Text(inCart ? 'In compare cart' : 'Add to compare'),
                       ),
-                    
-                    if (onRevokeVerification != null &&  
-                        school.verificationStatus == VerificationStatus.verified)  
-                      FilledButton.icon(  
-                        onPressed: onRevokeVerification,  
-                        icon: const Icon(Icons.block),  
-                        label: const Text('Revoke Verification'),  
-                        style: FilledButton.styleFrom(  
-                          backgroundColor: Theme.of(context).colorScheme.error,  
-                        ),  
-                      ),  
+                    if (onRevokeVerification != null &&
+                        school.verificationStatus ==
+                            VerificationStatus.verified)
+                      FilledButton.icon(
+                        onPressed: onRevokeVerification,
+                        icon: const Icon(Icons.block),
+                        label: const Text('Revoke Verification'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
                   ],
                 ),
               ],
@@ -353,9 +405,14 @@ class _DetailBody extends StatelessWidget {
           ),
           const SizedBox(height: 16),
         ],
+        if (school.passingRate != null || school.nationalExamScore != null)
+          SchoolAnalyticsSection(
+            school: school,
+            ratingDistribution: ratingDistribution,
+          ),
         _SchoolAnnouncementsSection(schoolId: school.id),
         const SizedBox(height: 16),
-        ReviewsSection(schoolId: school.id),
+        ReviewsSection(schoolId: school.id, onReviewSubmitted: onReviewSubmitted),
       ],
     );
   }

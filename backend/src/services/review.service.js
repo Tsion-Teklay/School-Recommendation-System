@@ -2,14 +2,7 @@ import { db } from "../config/db.js";
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from "../utils/errors.js";
 import { validateContent } from "./moderation.service.js";
 
-/**
- * Recompute the cached `School.rating` + `reviewCount` aggregate fields from
- * the live `review` rows. Phase 2 introduces these as denormalized columns so
- * the recommender (Phase 6) and the school list/detail endpoints don't have to
- * SUM/AVG on every read. Called from every review CRUD path below.
- *
- * Schools with zero reviews fall back to `rating = 0`. Stored as Decimal(3,2).
- */
+
 async function recomputeSchoolRating(schoolId) {
   const id = Number(schoolId);
   const agg = await db.review.aggregate({
@@ -130,4 +123,27 @@ export async function deleteReview(userId, reviewId) {
   await recomputeSchoolRating(review.schoolId);
 
   return { message: "Review deleted" };
+}
+
+export async function getRatingDistribution(schoolId) {  
+  const id = Number(schoolId);  
+    
+  const distribution = await db.review.groupBy({  
+    by: ['rating'],  
+    where: { schoolId: id },  
+    _count: { rating: true },  
+  });  
+  
+  // Initialize all ratings 1-5 with 0 count  
+  const result = {};  
+  for (let i = 1; i <= 5; i++) {  
+    result[i] = 0;  
+  }  
+    
+  // Fill in actual counts  
+  distribution.forEach(item => {  
+    result[item.rating] = item._count.rating;  
+  });  
+  
+  return result;  
 }
