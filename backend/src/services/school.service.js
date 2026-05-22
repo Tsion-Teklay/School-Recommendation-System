@@ -14,6 +14,9 @@ export async function createSchool(data, userId) {
     contactPhone,
     curriculum,
     schoolLevel,
+    schoolType,
+    passingRate,
+    nationalExamScore,
     tuitionFee,
     facilities,
     latitude,
@@ -40,6 +43,9 @@ export async function createSchool(data, userId) {
       curriculum,
       // Phase 11 — optional education level; omitted keeps the column null.
       ...(schoolLevel ? { schoolLevel } : {}),
+      ...(schoolType ? { schoolType } : {}),
+      ...(passingRate !== undefined ? { passingRate } : {}),
+      ...(nationalExamScore !== undefined ? { nationalExamScore } : {}),
       tuitionFee,
       facilities,
       latitude,
@@ -87,11 +93,14 @@ export async function getAllSchools(query) {
     search,
     curriculum,
     schoolLevel,
+    schoolType,
     minFee,
     maxFee,
     minRating,
     near,
     radiusKm,
+    passingRate,
+    nationalExamScore,
     page = 1,
     limit = 10,
   } = query;
@@ -120,6 +129,11 @@ export async function getAllSchools(query) {
   // filter is on; the matching enum equality also rejects nulls.
   if (schoolLevel) {
     filters.schoolLevel = schoolLevel;
+  }
+
+  // 🏫 Filter by school type if provided
+  if (schoolType) {
+    filters.schoolType = schoolType;
   }
 
   // 💰 Filter by fee range
