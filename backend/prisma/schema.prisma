@@ -354,6 +354,7 @@ model RecommendationHistory {
   parentId          Int               @map("parent_id")
   generatedOn       DateTime          @default(now()) @map("generated_on")
   interactionResult InteractionResult @map("interaction_result")
+  features  Json?
 
   parent             User                            @relation(fields: [parentId], references: [id])
   recommendedSchools RecommendedSchool[]
