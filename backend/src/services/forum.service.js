@@ -1,6 +1,7 @@
 import { db } from "../config/db.js";
 import { ForbiddenError, NotFoundError } from "../utils/errors.js";
 import { validateContent } from "./moderation.service.js";
+import { moderateText } from "./moderation.service.js";
 
 /**
  * Phase 5 — discussion forum.
@@ -21,24 +22,42 @@ import { validateContent } from "./moderation.service.js";
 
 const AUTHOR_SELECT = { id: true, fullName: true, role: true };
 
-export async function createPost(data, userId) {  
-  const { content, threadId, targetType = "FORUM_POST", targetId = null } = data;  
-  
-  return db.discussionForum.create({  
-    data: {  
-      authorId: userId,  
-      content,  
-      threadId: threadId ? Number(threadId) : null,  
-      targetType,  
-      targetId: targetId ? Number(targetId) : null,  
-    },  
-    include: {  
-      author: { select: { id: true, fullName: true, email: true } },  
-      thread: true,  
-    },  
-  });  
-}  
-  
+export async function createPost(data, userId) {
+  const {
+    content,
+    threadId,
+    targetType = "FORUM_POST",
+    targetId = null,
+  } = data;
+
+  validateContent(content, { field: "content" });
+
+  // NEW: AI moderation
+  const aiModeration = await moderateText(content);
+  let moderationStatus = "approved";
+  if (aiModeration.toxicity >= 0.6 && aiModeration.toxicity < 0.8) {
+    moderationStatus = "flagged";
+  } else if (aiModeration.toxicity >= 0.8) {
+    moderationStatus = "rejected";
+  }
+
+  return db.discussionForum.create({
+    data: {
+      authorId: userId,
+      content,
+      threadId: threadId ? Number(threadId) : null,
+      targetType,
+      targetId: targetId ? Number(targetId) : null,
+      moderationStatus,
+      toxicityScore: aiModeration.toxicity,
+    },
+    include: {
+      author: { select: { id: true, fullName: true, email: true } },
+      thread: true,
+    },
+  });
+}
+
 export async function getAnnouncementComments(announcementId) {
   return db.discussionForum.findMany({
     where: {
@@ -64,8 +83,21 @@ export async function getAnnouncementComments(announcementId) {
  * DiscussionForum table but with targetType = ANNOUNCEMENT and
  * targetId = the announcement PK.
  */
-export async function createAnnouncementComment(announcementId, content, userId) {
+export async function createAnnouncementComment(
+  announcementId,
+  content,
+  userId,
+) {
   validateContent(content, { field: "content" });
+
+  // NEW: AI moderation
+  const aiModeration = await moderateText(content);
+  let moderationStatus = "approved";
+  if (aiModeration.toxicity >= 0.6 && aiModeration.toxicity < 0.8) {
+    moderationStatus = "flagged";
+  } else if (aiModeration.toxicity >= 0.8) {
+    moderationStatus = "rejected";
+  }
 
   return db.discussionForum.create({
     data: {
@@ -73,6 +105,8 @@ export async function createAnnouncementComment(announcementId, content, userId)
       content,
       targetType: "ANNOUNCEMENT",
       targetId: Number(announcementId),
+      moderationStatus,
+      toxicityScore: aiModeration.toxicity,
     },
     include: {
       author: { select: { id: true, fullName: true, role: true } },
@@ -83,17 +117,30 @@ export async function createAnnouncementComment(announcementId, content, userId)
 export async function replyToPost(authorId, parentId, { content }) {
   validateContent(content, { field: "content" });
 
+  // NEW: AI moderation
+  const aiModeration = await moderateText(content);
+  let moderationStatus = "approved";
+  if (aiModeration.toxicity >= 0.6 && aiModeration.toxicity < 0.8) {
+    moderationStatus = "flagged";
+  } else if (aiModeration.toxicity >= 0.8) {
+    moderationStatus = "rejected";
+  }
+
   const parent = await db.discussionForum.findUnique({
     where: { id: Number(parentId) },
     select: { id: true, threadId: true },
   });
   if (!parent) throw new NotFoundError("Forum post not found");
-  // Flatten: replying to a reply still threads under the original top-level
-  // post. Keeps the tree exactly two levels deep.
   const threadId = parent.threadId ?? parent.id;
 
   return db.discussionForum.create({
-    data: { authorId, content, threadId },
+    data: {
+      authorId,
+      content,
+      threadId,
+      moderationStatus,
+      toxicityScore: aiModeration.toxicity,
+    },
     include: { author: { select: AUTHOR_SELECT } },
   });
 }
@@ -146,6 +193,16 @@ export async function getPostWithReplies(postId) {
 
 export async function updatePost(authorId, postId, { content }) {
   validateContent(content, { field: "content" });
+
+  // NEW: AI moderation
+  const aiModeration = await moderateText(content);
+  let moderationStatus = "approved";
+  if (aiModeration.toxicity >= 0.6 && aiModeration.toxicity < 0.8) {
+    moderationStatus = "flagged";
+  } else if (aiModeration.toxicity >= 0.8) {
+    moderationStatus = "rejected";
+  }
+
   const post = await db.discussionForum.findUnique({
     where: { id: Number(postId) },
     select: { id: true, authorId: true },
@@ -156,7 +213,12 @@ export async function updatePost(authorId, postId, { content }) {
   }
   return db.discussionForum.update({
     where: { id: post.id },
-    data: { content, isEdited: true },
+    data: {
+      content,
+      isEdited: true,
+      moderationStatus,
+      toxicityScore: aiModeration.toxicity,
+    },
     include: { author: { select: AUTHOR_SELECT } },
   });
 }

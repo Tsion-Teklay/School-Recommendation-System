@@ -1,5 +1,8 @@
 import { ValidationError } from "../utils/errors.js";
 import { logger } from "../config/logger.js";
+import axios from "axios";  
+  
+const HF_TOKEN = process.env.HF_TOKEN; 
 
 /**
  * Phase 5 — pluggable content moderation.
@@ -106,3 +109,24 @@ export function validateContent(text, { field = "content" } = {}) {
     throw err;
   }
 }
+
+export const moderateText = async (text) => {  
+  try {  
+    const response = await axios.post(  
+      "https://api-inference.huggingface.co/models/unitary/toxic-bert",  
+      { inputs: text },  
+      {  
+        headers: { Authorization: `Bearer ${HF_TOKEN}` },  
+      }  
+    );  
+    const result = response.data;  
+    const scores = Array.isArray(result[0]) ? result[0] : result;  
+    const toxic = scores.find(  
+      (item) => item.label.toLowerCase() === "toxic"  
+    );  
+    return { approved: toxic.score < 0.8, toxicity: toxic.score };  
+  } catch (error) {  
+    console.log(error.response?.data || error.message);  
+    return { approved: true, toxicity: 0 };  
+  }  
+};
