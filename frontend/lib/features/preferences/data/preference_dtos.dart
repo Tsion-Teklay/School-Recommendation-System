@@ -34,6 +34,22 @@ extension PreferredCurriculumX on PreferredCurriculum {
   }
 }
 
+enum PreferredSchoolType { private, government, church }
+extension PreferredSchoolTypeX on PreferredSchoolType {
+  String toWire() => toString().split('.').last.toUpperCase();
+  String label() {
+    final name = toString().split('.').last;
+    return name[0].toUpperCase() + name.substring(1);
+  }
+  static PreferredSchoolType? tryFromWire(String? s) {
+    if (s == null) return null;
+    return PreferredSchoolType.values.firstWhere(
+      (e) => e.toWire() == s.toUpperCase(),
+      orElse: () => PreferredSchoolType.private,
+    );
+  }
+}
+
 
 class ParentPreferences {
   final double? minBudget;

@@ -15,6 +15,7 @@ export const upsertPreferenceBodySchema = z
     address: z.string().trim().min(1).max(255).optional(),
     latitude: z.coerce.number().min(-90).max(90).optional(),
     longitude: z.coerce.number().min(-180).max(180).optional(),
+    schoolType: z.enum(["PRIVATE", "GOVERNMENT", "CHURCH"]).optional(),
   })
   .refine((val) => Object.keys(val).length > 0, {
     message: "At least one field is required",

@@ -59,15 +59,11 @@ function resolveCriteria(query, ctx) {
 
   return {
     curriculum: query.curriculum || pref?.curriculum || "LOCAL",
-
     minBudget: Number(query.minFee ?? pref?.minBudget ?? 0),
-
     maxBudget: Number(query.maxFee ?? pref?.maxBudget ?? 100000),
-
     distance: Number(query.radiusKm ?? pref?.distance ?? 25),
-
+    schoolType: query.schoolType || pref?.schoolType || null,
     lat: Number(nearLat ?? parent?.latitude ?? 9.02),
-
     lng: Number(nearLng ?? parent?.longitude ?? 38.75),
   };
 }
@@ -76,11 +72,7 @@ function resolveCriteria(query, ctx) {
 // Main recommendation flow
 // ---------------------------------------------------------------------------
 
-export async function getRecommendations(
-  schools,
-  query = {},
-  userId = null,
-) {
+export async function getRecommendations(schools, query = {}, userId = null) {
   const ctx = await loadParentContext(userId);
 
   const criteria = resolveCriteria(query, ctx);
@@ -95,9 +87,7 @@ export async function getRecommendations(
 
     name: school.schoolName,
 
-    curriculum: school.curriculum
-      ? school.curriculum.toLowerCase()
-      : "local",
+    curriculum: school.curriculum ? school.curriculum.toLowerCase() : "local",
 
     tuition_fee: Number(school.tuitionFee),
 
@@ -116,6 +106,9 @@ export async function getRecommendations(
     school_level: school.schoolLevel
       ? school.schoolLevel.toLowerCase()
       : "primary",
+    school_type: school.schoolType ? school.schoolType.toLowerCase() : null,
+    passing_rate: Number(school.passingRate || 0),
+    national_exam_score: Number(school.nationalExamScore || 0),
   }));
 
   try {
@@ -128,15 +121,13 @@ export async function getRecommendations(
 
         preferences: {
           curriculum: criteria.curriculum.toLowerCase(),
-
           min_budget: criteria.minBudget,
-
           max_budget: criteria.maxBudget,
-
           distance_km: criteria.distance,
-
+          school_type: criteria.schoolType
+            ? criteria.schoolType.toLowerCase()
+            : null,
           lat: criteria.lat,
-
           lng: criteria.lng,
         },
 
@@ -153,9 +144,7 @@ export async function getRecommendations(
       throw new Error("Invalid ML response format");
     }
 
-    console.log(
-      `✅ ML service returned ${rankedFromAI.length} ranked schools`,
-    );
+    console.log(`✅ ML service returned ${rankedFromAI.length} ranked schools`);
 
     // Fast lookup map
     const schoolMap = new Map(
@@ -170,9 +159,7 @@ export async function getRecommendations(
         const originalSchool = schoolMap.get(aiId);
 
         if (!originalSchool) {
-          console.warn(
-            `⚠️ Could not find matching school for AI ID: ${aiId}`,
-          );
+          console.warn(`⚠️ Could not find matching school for AI ID: ${aiId}`);
 
           return null;
         }
@@ -204,8 +191,8 @@ export async function getRecommendations(
             recommendedSchools: {
               create: rankedFromAI.map((r) => ({
                 schoolId: r.school_id || r.id,
-                features: r.features, 
-                interactionResult: "IGNORED"
+                features: r.features,
+                interactionResult: "IGNORED",
               })),
             },
 
@@ -213,12 +200,10 @@ export async function getRecommendations(
               create: [
                 {
                   minBudget: criteria.minBudget,
-
                   maxBudget: criteria.maxBudget,
-
                   curriculum: criteria.curriculum,
-
                   distance: criteria.distance,
+                  schoolType: criteria.schoolType || null,
                 },
               ],
             },
@@ -250,8 +235,6 @@ export async function getRecommendations(
       data: err.response?.data,
     });
 
-    throw new Error(
-      `Recommendation ML service unavailable: ${err.message}`,
-    );
+    throw new Error(`Recommendation ML service unavailable: ${err.message}`);
   }
 }
