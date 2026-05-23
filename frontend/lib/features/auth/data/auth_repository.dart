@@ -25,11 +25,13 @@ class ApiException implements Exception {
 ApiException _toApiException(Response<dynamic> r) {
   final data = r.data;
   if (data is Map) {
-    final msg = (data['error'] ?? data['message'])?.toString() ?? 'Request failed';
+    final msg =
+        (data['error'] ?? data['message'])?.toString() ?? 'Request failed';
     final code = data['code']?.toString();
     return ApiException(msg, statusCode: r.statusCode, code: code);
   }
-  return ApiException('Request failed (${r.statusCode})', statusCode: r.statusCode);
+  return ApiException('Request failed (${r.statusCode})',
+      statusCode: r.statusCode);
 }
 
 /// Thin wrapper around the Phase 0–1 auth + user-profile endpoints. One method
@@ -87,6 +89,19 @@ class AuthRepository {
     if (res.statusCode != 200) throw _toApiException(res);
   }
 
+  Future<void> verifyPhone(String token) async {
+    final response = await _dio.post(
+      '/api/auth/verify-phone',
+      data: {
+        'token': token,
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw _toApiException(response);
+    }
+  }
+
   Future<void> resendVerification(String email) async {
     final res = await _dio
         .post('/api/auth/resend-verification', data: {'email': email});
@@ -136,17 +151,17 @@ class AuthRepository {
         (res.data as Map<String, dynamic>)['user'] as Map<String, dynamic>);
   }
 
-  Future<LoginResult> reactivate(String identifier, String password) async {  
-    final res = await _dio.post('/api/auth/reactivate', data: {  
-      'identifier': identifier,  
-      'password': password,  
-    });  
-    if (res.statusCode != 200) throw _toApiException(res);  
-    final body = res.data as Map<String, dynamic>;  
-    return LoginResult(  
-      token: body['token'] as String,  
-      user: AppUser.fromJson(body['user'] as Map<String, dynamic>),  
-    );  
+  Future<LoginResult> reactivate(String identifier, String password) async {
+    final res = await _dio.post('/api/auth/reactivate', data: {
+      'identifier': identifier,
+      'password': password,
+    });
+    if (res.statusCode != 200) throw _toApiException(res);
+    final body = res.data as Map<String, dynamic>;
+    return LoginResult(
+      token: body['token'] as String,
+      user: AppUser.fromJson(body['user'] as Map<String, dynamic>),
+    );
   }
 
   Future<void> deactivateMe() async {

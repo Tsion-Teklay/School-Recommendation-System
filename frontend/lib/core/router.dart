@@ -33,6 +33,7 @@ import '../features/notifications/presentation/notifications_screen.dart';
 import '../features/preferences/presentation/preferences_screen.dart';
 import '../features/schools/presentation/school_detail_screen.dart';
 import '../features/schools/presentation/schools_list_screen.dart';
+import '../features/auth/presentation/phone_verify_screen.dart';
 
 /// Lists routes that anyone (logged in or not) is allowed to hit. Email-verify
 /// + reset-password are public because they're entered from email deep links;
@@ -44,6 +45,7 @@ const _publicRoutes = <String>{
   '/forgot-password',
   '/reset-password',
   '/verify-email',
+  '/verify-phone',
 };
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -99,6 +101,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           token: state.uri.queryParameters['token'],
         ),
       ),
+      GoRoute(
+        path: '/verify-phone',
+        builder: (context, state) {
+          final token = state.uri.queryParameters['token'] ?? '';
+
+          return PhoneVerifyScreen(token: token);
+        },
+      ),
       GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
       GoRoute(
         path: '/followed-schools',
@@ -117,17 +127,20 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, state) {
           final raw = state.pathParameters['id'];
           final id = int.tryParse(raw ?? '');
-          
+
           // Extract the query parameter from the URI context
-          final recommendationIdRaw = state.uri.queryParameters['recommendationId'];
-          final recommendationId = recommendationIdRaw != null ? int.tryParse(recommendationIdRaw) : null;
-          
+          final recommendationIdRaw =
+              state.uri.queryParameters['recommendationId'];
+          final recommendationId = recommendationIdRaw != null
+              ? int.tryParse(recommendationIdRaw)
+              : null;
+
           if (id == null) {
             return Scaffold(
               body: Center(child: Text('Invalid school id: $raw')),
             );
           }
-          
+
           return SchoolDetailScreen(
             schoolId: id,
             recommendationId: recommendationId,

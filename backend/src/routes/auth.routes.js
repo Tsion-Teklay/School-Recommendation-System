@@ -8,6 +8,7 @@ import {
   resetPasswordHandler,
   changePasswordHandler,
   reactivate,
+  verifyPhone,
 } from "../controllers/auth.controller.js";
 import { authenticate } from "../middlewares/auth.middleware.js";
 import { validate } from "../middlewares/validate.middleware.js";
@@ -15,6 +16,7 @@ import {
   registerBodySchema,
   loginBodySchema,
   verifyEmailBodySchema,
+  verifyPhoneBodySchema,
   resendVerificationBodySchema,
   forgotPasswordBodySchema,
   resetPasswordBodySchema,
@@ -84,30 +86,30 @@ router.post("/register", validate({ body: registerBodySchema }), register);
  */
 router.post("/login", validate({ body: loginBodySchema }), login);
 
-/**  
- * @openapi  
- * /api/auth/reactivate:  
- *   post:  
- *     tags: [Auth]  
- *     summary: Reactivate a self-deactivated account  
- *     requestBody:  
- *       required: true  
- *       content:  
- *         application/json:  
- *           schema:  
- *             type: object  
- *             required: [identifier, password]  
- *             properties:  
- *               identifier: { type: string }  
- *               password: { type: string }  
- *     responses:  
- *       200: { description: Account reactivated, JWT issued }  
- *       401: { description: Invalid credentials or account not self-deactivated }  
- */  
-router.post(  
-  "/reactivate",  
-  validate({ body: reactivateAccountBodySchema }),  
-  reactivate  
+/**
+ * @openapi
+ * /api/auth/reactivate:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Reactivate a self-deactivated account
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [identifier, password]
+ *             properties:
+ *               identifier: { type: string }
+ *               password: { type: string }
+ *     responses:
+ *       200: { description: Account reactivated, JWT issued }
+ *       401: { description: Invalid credentials or account not self-deactivated }
+ */
+router.post(
+  "/reactivate",
+  validate({ body: reactivateAccountBodySchema }),
+  reactivate,
 );
 
 /**
@@ -129,10 +131,12 @@ router.post(
  *       200: { description: Email verified }
  *       400: { description: Invalid or expired token }
  */
+router.post("/verify-email", validate({ body: verifyEmailBodySchema }), verify);
+
 router.post(
-  "/verify-email",
-  validate({ body: verifyEmailBodySchema }),
-  verify
+  "/verify-phone",
+  validate({ body: verifyPhoneBodySchema }),
+  verifyPhone,
 );
 
 /**
@@ -157,7 +161,7 @@ router.post(
 router.post(
   "/resend-verification",
   validate({ body: resendVerificationBodySchema }),
-  resend
+  resend,
 );
 
 /**
@@ -182,7 +186,7 @@ router.post(
 router.post(
   "/forgot-password",
   validate({ body: forgotPasswordBodySchema }),
-  forgotPassword
+  forgotPassword,
 );
 
 /**
@@ -208,7 +212,7 @@ router.post(
 router.post(
   "/reset-password",
   validate({ body: resetPasswordBodySchema }),
-  resetPasswordHandler
+  resetPasswordHandler,
 );
 
 /**
@@ -237,7 +241,7 @@ router.post(
   "/change-password",
   authenticate,
   validate({ body: changePasswordBodySchema }),
-  changePasswordHandler
+  changePasswordHandler,
 );
 
 export default router;
