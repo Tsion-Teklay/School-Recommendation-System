@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../shared/widgets/responsive_shell.dart';
+import '../../auth/state/auth_controller.dart';
+import '../../auth/data/auth_dtos.dart';
 import '../data/notification_dtos.dart';
 import '../state/notifications_controller.dart';
 
@@ -128,7 +130,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     if (!n.isRead) {
       controller.markRead(n.id);
     }
-    final dest = _routeFor(n);
+    final user = ref.read(authControllerProvider).user;
+    final dest = _routeFor(n, user?.role);
     if (dest != null) {
       context.push(dest);
     }
@@ -191,7 +194,7 @@ IconData _iconFor(NotificationSourceType t) {
 /// Map a notification to its in-app destination. We pick conservative routes
 /// here — anything we can't resolve (e.g. report notifications for parents,
 /// who can't see the moderation queue) just no-ops back to the inbox.
-String? _routeFor(AppNotification n) {
+String? _routeFor(AppNotification n, UserRole? role) {
   final id = n.sourceId;
   if (id == null) return null;
   switch (n.sourceType) {
@@ -203,7 +206,10 @@ String? _routeFor(AppNotification n) {
       // Phase 11 — deep-link parents into the announcement detail screen.
       return '/announcements/$id';
     case NotificationSourceType.report:
-      return '/moderation';
+      if (role == UserRole.moderator) {
+        return '/moderation';
+      }
+      return null;
     case NotificationSourceType.review:
     case NotificationSourceType.moderation:
     case NotificationSourceType.system:
