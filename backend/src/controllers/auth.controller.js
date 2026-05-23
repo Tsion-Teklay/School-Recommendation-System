@@ -3,6 +3,7 @@ import {
   registerUser,
   loginUser,
   verifyEmail,
+  verifyPhone as verifyPhoneService,
   resendVerificationEmail,
   requestPasswordReset,
   resetPassword,
@@ -33,6 +34,14 @@ export const verify = asyncHandler(async (req, res) => {
   });
 });
 
+export const verifyPhone = asyncHandler(async (req, res) => {
+  await verifyPhoneService(req.body);
+
+  res.json({
+    message: "Phone verified successfully",
+  });
+});
+
 export const resend = asyncHandler(async (req, res) => {
   await resendVerificationEmail(req.body);
   // Always 200 — do not leak whether the email exists.
@@ -60,7 +69,7 @@ export const changePasswordHandler = asyncHandler(async (req, res) => {
   res.json({ message: "Password changed successfully" });
 });
 
-export const reactivate = asyncHandler(async (req, res) => {  
-  const result = await reactivateAccount(req.body);  
-  res.json(result);  
-});  
+export const reactivate = asyncHandler(async (req, res) => {
+  const result = await reactivateAccount(req.body);
+  res.json(result);
+});

@@ -137,10 +137,14 @@ model User {
   deactivatedAt DateTime?     @map("deactivated_at") 
   role          UserRole
 
-  // --- Phase 1 auth completeness ---------------------------------------
   emailVerified            Boolean   @default(false) @map("email_verified")
   emailVerificationToken   String?   @unique @map("email_verification_token") @db.VarChar(128)
   emailVerificationExpires DateTime? @map("email_verification_expires")
+
+  phoneVerified            Boolean   @default(false) @map("phone_verified")
+  phoneVerificationToken   String?   @unique @map("phone_verification_token") @db.VarChar(128)
+  phoneVerificationExpires DateTime? @map("phone_verification_expires")
+
   passwordResetToken       String?   @unique @map("password_reset_token") @db.VarChar(128)
   passwordResetExpires     DateTime? @map("password_reset_expires")
 
