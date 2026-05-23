@@ -166,6 +166,7 @@ class _CriteriaSummary extends StatelessWidget {
     add('curriculum', 'curriculum');
     add('max_budget', 'max budget');
     add('min_budget', 'min budget');
+    add('schoolType', 'school type');
     add('lat', 'lat');
     add('lng', 'lng');
 

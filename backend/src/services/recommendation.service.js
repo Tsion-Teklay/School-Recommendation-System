@@ -59,15 +59,11 @@ function resolveCriteria(query, ctx) {
 
   return {
     curriculum: query.curriculum || pref?.curriculum || "LOCAL",
-
     minBudget: Number(query.minFee ?? pref?.minBudget ?? 0),
-
     maxBudget: Number(query.maxFee ?? pref?.maxBudget ?? 100000),
-
     distance: Number(query.radiusKm ?? pref?.distance ?? 25),
-
+    schoolType: query.schoolType || pref?.schoolType || null,
     lat: Number(nearLat ?? parent?.latitude ?? 9.02),
-
     lng: Number(nearLng ?? parent?.longitude ?? 38.75),
   };
 }
@@ -125,15 +121,13 @@ export async function getRecommendations(schools, query = {}, userId = null) {
 
         preferences: {
           curriculum: criteria.curriculum.toLowerCase(),
-
           min_budget: criteria.minBudget,
-
           max_budget: criteria.maxBudget,
-
           distance_km: criteria.distance,
-
+          school_type: criteria.schoolType
+            ? criteria.schoolType.toLowerCase()
+            : null,
           lat: criteria.lat,
-
           lng: criteria.lng,
         },
 
@@ -206,12 +200,10 @@ export async function getRecommendations(schools, query = {}, userId = null) {
               create: [
                 {
                   minBudget: criteria.minBudget,
-
                   maxBudget: criteria.maxBudget,
-
                   curriculum: criteria.curriculum,
-
                   distance: criteria.distance,
+                  schoolType: criteria.schoolType || null,
                 },
               ],
             },
