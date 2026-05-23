@@ -468,6 +468,8 @@ model RecommendationPreferenceCriteria {
   maxBudget        Decimal    @db.Decimal(10,2) @map("max_budget")
   curriculum       Curriculum
   distance         Int
+  schoolType       SchoolType? @map("school_type")
+  schoolLevel      SchoolLevel? @map("school_level")
 
   recommendation RecommendationHistory @relation(fields: [recommendationId], references: [id])
 

@@ -34,7 +34,7 @@ class _PreferencesScreenState extends ConsumerState<PreferencesScreen> {
 
   PreferredCurriculum? _curriculum;
   SchoolLevel? _schoolLevel;   // Add  
-SchoolType? _schoolType;     // Add
+  SchoolType? _schoolType;     // Add
   // The recommender treats home pin as a triple (address + lat + lng). The
   // map below lets the user drop a pin; we keep the lat/lng here. Address is
   // a free-text field (the parent types a label like "Bole, Addis Ababa").
@@ -97,7 +97,7 @@ SchoolType? _schoolType;     // Add
     }
     _curriculum = p.curriculum;
     _schoolLevel = p.schoolLevel;  // Add  
-  _schoolType = p.schoolType;    // Add  
+    _schoolType = p.schoolType;    // Add  
   }
 
   // The backend stores tuition fees / budgets as Decimal(10,2). Render
