@@ -324,6 +324,8 @@ model DiscussionForum {
   isEdited  Boolean           @default(false) @map("is_edited")
   targetType ForumTargetType  @default(FORUM_POST) @map("target_type") 
   targetId   Int?             @map("target_id") 
+  moderationStatus  String    @default("approved")  
+  toxicityScore     Float?  
 
   author  User              @relation(fields: [authorId], references: [id])
   thread  DiscussionForum?  @relation("ForumThread", fields: [threadId], references: [id])
@@ -352,6 +354,7 @@ model RecommendationHistory {
   parentId          Int               @map("parent_id")
   generatedOn       DateTime          @default(now()) @map("generated_on")
   interactionResult InteractionResult @map("interaction_result")
+  features  Json?
 
   parent             User                            @relation(fields: [parentId], references: [id])
   recommendedSchools RecommendedSchool[]
@@ -465,6 +468,8 @@ model RecommendationPreferenceCriteria {
   maxBudget        Decimal    @db.Decimal(10,2) @map("max_budget")
   curriculum       Curriculum
   distance         Int
+  schoolType       SchoolType? @map("school_type")
+  schoolLevel      SchoolLevel? @map("school_level")
 
   recommendation RecommendationHistory @relation(fields: [recommendationId], references: [id])
 
