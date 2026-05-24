@@ -20,8 +20,8 @@ export const createSchoolBodySchema = z.object({
   schoolType: schoolTypeEnum.optional(),
   tuitionFee: z.coerce.number().nonnegative(),
   facilities: z.string().optional(),
-  latitude: z.coerce.number().min(-90).max(90).optional(),
-  longitude: z.coerce.number().min(-180).max(180).optional(),
+  latitude: z.coerce.number().min(-90).max(90),
+  longitude: z.coerce.number().min(-180).max(180),
 });
 
 export const updateSchoolBodySchema = createSchoolBodySchema

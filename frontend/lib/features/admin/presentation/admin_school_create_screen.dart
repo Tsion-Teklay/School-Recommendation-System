@@ -37,6 +37,7 @@ final _streetName = TextEditingController();
 
   Curriculum? _curriculum;
   SchoolLevel? _schoolLevel;
+  SchoolType? _schoolType;
 
   bool _fetchingLocation = false;
   bool _loading = false;
@@ -110,24 +111,15 @@ final _streetName = TextEditingController();
                         : _contactPhone.text.trim(),
                 curriculum: _curriculum!,
                 schoolLevel: _schoolLevel,
+                schoolType: _schoolType, 
                 tuitionFee:
                     num.parse(_tuitionFee.text.trim()),
                 facilities:
                     _facilities.text.trim().isEmpty
                         ? null
                         : _facilities.text.trim(),
-                latitude:
-                    _latitude.text.trim().isEmpty
-                        ? null
-                        : double.tryParse(
-                            _latitude.text.trim(),
-                          ),
-                longitude:
-                    _longitude.text.trim().isEmpty
-                        ? null
-                        : double.tryParse(
-                            _longitude.text.trim(),
-                          ),
+                latitude: double.parse(_latitude.text.trim()),  
+longitude: double.parse(_longitude.text.trim()),
               );
 
       if (!mounted) return;
@@ -341,7 +333,32 @@ TextFormField(
                       ),
                     ),
 
-                    const SizedBox(height: 12),
+
+                    const SizedBox(height: 12),  
+  
+DropdownButtonFormField<SchoolType>(  
+  decoration: const InputDecoration(  
+    labelText: 'School type (optional)',  
+    border: OutlineInputBorder(),  
+  ),  
+  value: _schoolType,  
+  items: SchoolType.values  
+      .map(  
+        (t) =>  
+            DropdownMenuItem(  
+          value: t,  
+          child:  
+              Text(t.label()),  
+        ),  
+      )  
+      .toList(),  
+  onChanged: (v) =>  
+      setState(  
+    () => _schoolType = v,  
+  ),  
+),  
+  
+const SizedBox(height: 12),
 
                     TextFormField(
                       controller: _tuitionFee,
@@ -393,7 +410,7 @@ TextFormField(
                           children: [
                             Expanded(
                               child: Text(
-                                'Location (optional)',
+                                'Location *',
                                 style: theme
                                     .textTheme
                                     .titleSmall,
@@ -435,7 +452,7 @@ TextFormField(
                                 decoration:
                                     const InputDecoration(
                                   labelText:
-                                      'Latitude',
+                                      'Latitude *',
                                   border:
                                       OutlineInputBorder(),
                                 ),
@@ -448,7 +465,7 @@ TextFormField(
                                   if (v == null ||
                                       v.trim()
                                           .isEmpty) {
-                                    return null;
+                                    return 'Required';
                                   }
 
                                   final lat =
@@ -481,7 +498,7 @@ TextFormField(
                                 decoration:
                                     const InputDecoration(
                                   labelText:
-                                      'Longitude',
+                                      'Longitude *',
                                   border:
                                       OutlineInputBorder(),
                                 ),
@@ -494,7 +511,7 @@ TextFormField(
                                   if (v == null ||
                                       v.trim()
                                           .isEmpty) {
-                                    return null;
+                                    return 'Required';
                                   }
 
                                   final lng =
