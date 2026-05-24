@@ -1,4 +1,5 @@
-
+import '../../demographics/data/demographics_dtos.dart';  
+import '../../achievements/data/achievement_dtos.dart';
 
 class DashboardSummary {
   final int totalUsers;
@@ -186,14 +187,14 @@ class MoeRankedSchool {
     this.passingRate,             // Add  
     this.nationalExamScore, 
   });  
+
+  static num? coerceNum(dynamic v) {  
+    if (v == null) return null;  
+    if (v is num) return v;  
+    return num.tryParse(v.toString());  
+  }
   
   factory MoeRankedSchool.fromJson(Map<String, dynamic> json) {  
-
-    num? coerceNum(dynamic v) {
-    if (v == null) return null;
-    if (v is num) return v;
-    return num.tryParse(v.toString());
-  }
 
 
     return MoeRankedSchool(  
@@ -208,6 +209,72 @@ class MoeRankedSchool {
       schoolType: json['schoolType'] as String?,           // Add  
       passingRate: coerceNum(json['passingRate']),         // Add  
       nationalExamScore: coerceNum(json['nationalExamScore']), // Add  
+    );  
+  }  
+}
+
+class SchoolAnalytics {  
+  final int currentYear;  
+  final SchoolDemographics? demographics;  
+  final List<SchoolDemographics> historicalDemographics;  
+  final SchoolMetrics metrics;  
+  final List<Achievement> achievements;  
+  
+  SchoolAnalytics({  
+    required this.currentYear,  
+    this.demographics,  
+    required this.historicalDemographics,  
+    required this.metrics,  
+    required this.achievements,  
+  });  
+  
+  factory SchoolAnalytics.fromJson(Map<String, dynamic> json) {  
+    return SchoolAnalytics(  
+      currentYear: json['currentYear'] as int,  
+      demographics: json['demographics'] != null   
+          ? SchoolDemographics.fromJson(json['demographics'] as Map<String, dynamic>)  
+          : null,  
+      historicalDemographics: (json['historicalDemographics'] as List? ?? const [])  
+          .map((e) => SchoolDemographics.fromJson(e as Map<String, dynamic>))  
+          .toList(),  
+      metrics: SchoolMetrics.fromJson(json['metrics'] as Map<String, dynamic>),  
+      achievements: (json['achievements'] as List? ?? const [])  
+          .map((e) => Achievement.fromJson(e as Map<String, dynamic>))  
+          .toList(),  
+    );  
+  }  
+}  
+  
+class SchoolMetrics {  
+  final double achievementScore;  
+  final double genderBalanceIndex;  
+  final double yearOverYearGrowth;  
+  final double percentileRanking;  
+  final double parentEngagementScore;  
+  final double communityTrustScore;  
+  
+  SchoolMetrics({  
+    required this.achievementScore,  
+    required this.genderBalanceIndex,  
+    required this.yearOverYearGrowth,  
+    required this.percentileRanking,  
+    required this.parentEngagementScore,  
+    required this.communityTrustScore,  
+  });  
+  
+  factory SchoolMetrics.fromJson(Map<String, dynamic> json) {  
+    double parseDouble(dynamic v) {  
+      if (v is num) return v.toDouble();  
+      if (v is String) return double.tryParse(v) ?? 0;  
+      return 0;  
+    }  
+    return SchoolMetrics(  
+      achievementScore: parseDouble(json['achievementScore']),  
+      genderBalanceIndex: parseDouble(json['genderBalanceIndex']),  
+      yearOverYearGrowth: parseDouble(json['yearOverYearGrowth']),  
+      percentileRanking: parseDouble(json['percentileRanking']),  
+      parentEngagementScore: parseDouble(json['parentEngagementScore']),  
+      communityTrustScore: parseDouble(json['communityTrustScore']),  
     );  
   }  
 }
