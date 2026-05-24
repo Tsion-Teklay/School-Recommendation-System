@@ -89,16 +89,17 @@ class AuthRepository {
     if (res.statusCode != 200) throw _toApiException(res);
   }
 
-  Future<void> verifyPhone(String token) async {
+// Inside your AuthRepository class structure:
+// Inside auth_repository.dart
+
+  Future<void> verifyPhone({required String token}) async {
     final response = await _dio.post(
       '/api/auth/verify-phone',
-      data: {
-        'token': token,
-      },
+      data: {'token': token},
     );
 
     if (response.statusCode != 200) {
-      throw _toApiException(response);
+      throw Exception('Verification failed');
     }
   }
 

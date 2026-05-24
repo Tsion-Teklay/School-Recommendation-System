@@ -18,3 +18,4 @@ export const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000; // 1h
 export function expiresAt(ttlMs) {
   return new Date(Date.now() + ttlMs);
 }
+export const PHONE_VERIFICATION_TTL_MS = 10 * 60 * 1000; // 10 minutes
