@@ -3,7 +3,7 @@ import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from ".
 import { validateContent } from "./moderation.service.js";
 
 
-async function recomputeSchoolRating(schoolId) {
+export async function recomputeSchoolRating(schoolId) {
   const id = Number(schoolId);
   const agg = await db.review.aggregate({
     where: { schoolId: id },

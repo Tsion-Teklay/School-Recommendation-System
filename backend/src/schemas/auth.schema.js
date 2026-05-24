@@ -61,3 +61,7 @@ export const reactivateAccountBodySchema = z.object({
   identifier: z.string().trim().min(1),  
   password: z.string().min(1),  
 });
+
+export const deleteAccountSchema = z.object({  
+  password: z.string().min(1),  
+});
