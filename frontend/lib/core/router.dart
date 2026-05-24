@@ -102,12 +102,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
-        path: '/verify-phone',
-        builder: (context, state) {
-          final token = state.uri.queryParameters['token'] ?? '';
+  path: '/verify-phone',
+  builder: (context, state) {
+    final phone = state.uri.queryParameters['phone'] ?? '';
 
-          return PhoneVerifyScreen(token: token);
-        },
+    return PhoneVerifyScreen(phone: phone);
+  },
       ),
       GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
       GoRoute(

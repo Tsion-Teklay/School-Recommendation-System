@@ -72,22 +72,21 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Widget build(BuildContext context) {
     if (_success) {
       final isEmail = _identifierKind == _IdentifierKind.email;
-      // Two different success states: email-path users have something to do
-      // (open the verification link), phone-path users can sign in directly.
+
       return ResponsiveShell(
-        title: isEmail ? 'Check your email' : 'Account created',
+        title: isEmail ? 'Check your email' : 'Verify your phone',
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Icon(
-              isEmail ? Icons.mark_email_read : Icons.check_circle_outline,
+              isEmail ? Icons.mark_email_read : Icons.sms_outlined,
               size: 64,
             ),
             const SizedBox(height: 16),
             Text(
               isEmail
                   ? "We sent a verification link to ${_email.text.trim()}."
-                  : "You can now sign in with phone ${_phone.text.trim()}.",
+                  : "We sent a verification code to ${_phone.text.trim()}.",
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleMedium,
             ),
@@ -95,13 +94,23 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             Text(
               isEmail
                   ? "Click the link to activate your account, then come back here to sign in."
-                  : "Use your phone number and password to sign in.",
+                  : "Enter the SMS verification code to activate your account.",
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
             FilledButton(
-              onPressed: () => context.go('/login'),
-              child: const Text('Back to sign in'),
+              onPressed: () {
+                if (isEmail) {
+                  context.go('/login');
+                } else {
+                  context.go(
+                    '/verify-phone?phone=${Uri.encodeComponent(_phone.text.trim())}',
+                  );
+                }
+              },
+              child: Text(
+                isEmail ? 'Back to sign in' : 'Verify phone',
+              ),
             ),
           ],
         ),

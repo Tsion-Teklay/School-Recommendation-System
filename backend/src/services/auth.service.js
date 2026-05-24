@@ -13,6 +13,7 @@ import {
 import {
   EMAIL_VERIFICATION_TTL_MS,
   PASSWORD_RESET_TTL_MS,
+  PHONE_VERIFICATION_TTL_MS,
   expiresAt,
   generateToken,
 } from "../utils/tokens.js";
@@ -27,8 +28,11 @@ function sanitizeUser(user) {
     emailVerificationExpires,
     passwordResetToken,
     passwordResetExpires,
+    phoneVerificationToken,
+    phoneVerificationExpires,
     ...safeUser
   } = user;
+
   return safeUser;
 }
 
@@ -54,16 +58,18 @@ function appBaseUrl() {
   return process.env.APP_URL || "http://localhost:5050";
 }
 
-function normalizePhone(phone) {
-  if (phone.startsWith("09")) {
-    return "+251" + phone.substring(1);
+export function normalizePhone(phone) {
+  const cleaned = phone.replace(/\s+/g, "");
+
+  if (cleaned.startsWith("+251")) {
+    return "0" + cleaned.substring(4);
   }
 
-  if (phone.startsWith("9")) {
-    return "+251" + phone;
+  if (cleaned.startsWith("251")) {
+    return "0" + cleaned.substring(3);
   }
 
-  return phone;
+  return cleaned;
 }
 
 // -----------------------------------------------------------------------------
@@ -74,79 +80,144 @@ export async function registerUser({ fullName, email, phone, password, role }) {
   if (!fullName || !password || !role) {
     throw new ValidationError("Missing required fields");
   }
+
   if (!email && !phone) {
     throw new ValidationError("Either email or phone is required");
   }
 
-  // Email is unique + serves as the verifiable-handle. Phone is unique +
-  // bypasses the email-verification gate (there is no out-of-band channel for
-  // it yet). Both can coexist on the same account.
   const normalizedEmail = email ? email.toLowerCase() : null;
+
   const normalizedPhone = phone ? normalizePhone(phone) : null;
 
   if (normalizedEmail) {
     const existingByEmail = await db.user.findUnique({
-      where: { email: normalizedEmail },
+      where: {
+        email: normalizedEmail,
+      },
     });
-    if (existingByEmail) throw new ConflictError("Email already registered");
+
+    if (existingByEmail) {
+      throw new ConflictError("Email already registered");
+    }
   }
+
+  // Prevent duplicate phone
   if (normalizedPhone) {
     const existingByPhone = await db.user.findUnique({
-      where: { phone: normalizedPhone },
+      where: {
+        phone: normalizedPhone,
+      },
     });
-    if (existingByPhone) throw new ConflictError("Phone already registered");
+
+    if (existingByPhone) {
+      throw new ConflictError("Phone already registered");
+    }
   }
 
   const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+
   const emailVerificationToken = normalizedEmail ? generateToken() : null;
 
-  const phoneVerificationToken = normalizedPhone ? generateToken() : null;
+  const isPhoneSignup = !!normalizedPhone;
+
+  let phoneVerificationToken = null;
+  let phoneVerificationExpires = null;
+
+  if (isPhoneSignup) {
+    phoneVerificationToken = Math.floor(
+      100000 + Math.random() * 900000,
+    ).toString();
+
+    phoneVerificationExpires = expiresAt(PHONE_VERIFICATION_TTL_MS);
+  }
+
+  /*
+   |--------------------------------------------------------------------------
+   | Create user
+   |--------------------------------------------------------------------------
+   */
 
   const user = await db.user.create({
     data: {
       fullName,
+
+      // Prisma requires email unique.
+      // Phone-only accounts get placeholder email.
       email: normalizedEmail ?? `phone-${normalizedPhone}@placeholder.invalid`,
+
       phone: normalizedPhone,
+
       password: hashedPassword,
+
       accountStatus: "ACTIVE",
+
       role,
-      // Phone-only signups have no email channel to verify against, so the
-      // account starts already-verified. If an email is later added via
-      // profile update (out of scope), it would re-trigger the verify flow.
+
+      /*
+       |--------------------------------------------------------------------------
+       | Email verification
+       |--------------------------------------------------------------------------
+       */
+
       emailVerified: !normalizedEmail,
-      emailVerificationToken: emailVerificationToken,
+
+      emailVerificationToken,
+
       emailVerificationExpires: emailVerificationToken
         ? expiresAt(EMAIL_VERIFICATION_TTL_MS)
         : null,
+
+      /*
+       |--------------------------------------------------------------------------
+       | Phone verification
+       |--------------------------------------------------------------------------
+       */
+
+      phoneVerified: !isPhoneSignup ? true : false,
+
       phoneVerificationToken,
-      phoneVerificationExpires: phoneVerificationToken
-        ? expiresAt(EMAIL_VERIFICATION_TTL_MS)
-        : null,
+
+      phoneVerificationExpires,
     },
   });
 
-  if (normalizedEmail && verificationToken) {
+  /*
+   |--------------------------------------------------------------------------
+   | Send email verification
+   |--------------------------------------------------------------------------
+   */
+
+  if (normalizedEmail && emailVerificationToken) {
     await sendMailSafe(
       {
         to: normalizedEmail,
+
         subject: "Verify your School Recommendation account",
+
         text:
           `Hi ${fullName},\n\n` +
-          `Welcome! Please verify your email by visiting:\n` +
-          `${appBaseUrl()}/verify-email?token=${verificationToken}\n\n` +
-          `Or POST the token to /api/auth/verify-email. The link expires in 24 hours.`,
+          `Welcome! Please verify your email by visiting:\n\n` +
+          `${appBaseUrl()}/verify-email?token=${emailVerificationToken}\n\n` +
+          `The link expires in 24 hours.`,
       },
-      { event: "register", userId: user.id },
+      {
+        event: "register",
+        userId: user.id,
+      },
     );
   }
 
   if (normalizedPhone && phoneVerificationToken) {
-    const verificationLink = `${appBaseUrl()}/verify-phone?token=${phoneVerificationToken}`;
+    try {
+      await sendSMS({
+        to: normalizedPhone,
+        message: `Your School Recommendation verification code is ${phoneVerificationToken}`,
+      });
 
-    await sendSMS({
-      to: normalizedPhone,
-      message: `Verify your School Recommendation account:\n${verificationLink}`,
-    });
+      console.log("SMS verification sent to", normalizedPhone);
+    } catch (e) {
+      console.error("SMS failed:", e.message);
+    }
   }
 
   return sanitizeUser(user);
@@ -293,6 +364,13 @@ export async function loginUser({ identifier, email, password }) {
 
   const match = await bcrypt.compare(password, user.password);
   if (!match) throw new UnauthorizedError("Invalid credentials");
+  if (user.phone && !user.phoneVerified) {
+    const err = new UnauthorizedError("Phone not verified");
+
+    err.code = "PHONE_NOT_VERIFIED";
+
+    throw err;
+  }
 
   const verified = user.emailVerified || user.phoneVerified;
 

@@ -41,24 +41,40 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _submit() async {
     if (!_form.currentState!.validate()) return;
+
     setState(() {
       _loading = true;
       _error = null;
     });
+
     try {
       await ref
           .read(authControllerProvider)
           .login(_identifier.text.trim(), _password.text);
-      // Router redirect bounces us to / on auth-state change.
+
+      // Router redirect handles navigation.
     } catch (e) {
+      if (e is ApiException && e.code == 'PHONE_NOT_VERIFIED') {
+        if (mounted) {
+          context.go(
+            '/verify-phone?phone=${Uri.encodeComponent(_identifier.text.trim())}',
+          );
+        }
+        return;
+      }
+
       if (mounted) {
         setState(() {
           _error = e.toString();
-          _isSelfDeactivated = (e is ApiException && e.code == 'ACCOUNT_SELF_DEACTIVATED');
+
+          _isSelfDeactivated =
+              (e is ApiException && e.code == 'ACCOUNT_SELF_DEACTIVATED');
         });
       }
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted && context.mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
 
@@ -110,12 +126,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               const SizedBox(height: 8),
               Text(_error!,
                   style: TextStyle(color: Theme.of(context).colorScheme.error)),
-              if (_isSelfDeactivated) ...[  
-                const SizedBox(height: 8),  
-                ElevatedButton(  
-                  onPressed: () => _showReactivateDialog(context),  
-                  child: const Text('Reactivate Account'),  
-                ),  
+              if (_isSelfDeactivated) ...[
+                const SizedBox(height: 8),
+                ElevatedButton(
+                  onPressed: () => _showReactivateDialog(context),
+                  child: const Text('Reactivate Account'),
+                ),
               ],
             ],
             const SizedBox(height: 16),

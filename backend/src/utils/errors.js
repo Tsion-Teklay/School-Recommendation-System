@@ -7,7 +7,10 @@
  * never need to set `res.status(...)` manually for domain errors.
  */
 export class AppError extends Error {
-  constructor(message, { statusCode = 500, code = "INTERNAL_ERROR", details } = {}) {
+  constructor(
+    message,
+    { statusCode = 500, code = "INTERNAL_ERROR", details } = {},
+  ) {
     super(message);
     this.name = this.constructor.name;
     this.statusCode = statusCode;
@@ -25,8 +28,11 @@ export class ValidationError extends AppError {
 }
 
 export class UnauthorizedError extends AppError {
-  constructor(message = "Unauthorized") {
-    super(message, { statusCode: 401, code: "UNAUTHORIZED" });
+  constructor(message = "Unauthorized", code = "UNAUTHORIZED") {
+    super(message, {
+      statusCode: 401,
+      code,
+    });
   }
 }
 
