@@ -112,6 +112,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       title: 'Create account',
       child: Form(
         key: _form,
+         autovalidateMode: AutovalidateMode.onUserInteraction,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -148,9 +149,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   hintText: 'example@gmail.com',
                   helperText: "We'll send a verification link to this address.",
                 ),
-                validator: (v) => EmailValidator.validate((v ?? '').trim())
-                    ? null
-                    : 'Invalid email',
+               validator: (v) {  
+  final t = (v ?? '').trim();  
+  if (t.isEmpty) return null; // Don't show error for empty  
+  return EmailValidator.validate(t) ? null : 'Invalid email';  
+},
+                    
               )
             else
               TextFormField(
@@ -161,13 +165,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   helperText:
                       '5–15 characters. No verification step — usable right away.',
                 ),
-                validator: (v) {
-                  final t = (v ?? '').trim();
-                  if (t.length < 5 || t.length > 15) {
-                    return '5–15 characters';
-                  }
-                  return null;
-                },
+                validator: (v) {  
+  final t = (v ?? '').trim();  
+  if (t.isEmpty) return null; // Don't show error for empty  
+  if (t.length < 5 || t.length > 15) {  
+    return '5–15 characters';  
+  }  
+  return null;  
+},
+                
               ),
             const SizedBox(height: 12),
             TextFormField(
@@ -177,8 +183,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 labelText: 'Password',
                 helperText: 'Minimum 6 characters',
               ),
-              validator: (v) =>
-                  (v ?? '').length >= 6 ? null : 'At least 6 characters',
+              validator: (v) {  
+  final t = (v ?? '').trim();  
+  if (t.isEmpty) return null; // Don't show error for empty  
+  return t.length >= 6 ? null : 'At least 6 characters';  
+},
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<UserRole>(

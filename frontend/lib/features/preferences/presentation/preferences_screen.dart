@@ -237,6 +237,7 @@ Future<void> _useCurrentLocation() async {
       ),
       child: Form(
         key: _form,
+         autovalidateMode: AutovalidateMode.onUserInteraction,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

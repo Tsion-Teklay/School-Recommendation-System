@@ -164,6 +164,7 @@ class _AdminSchoolCreateScreenState
               padding: const EdgeInsets.all(16),
               child: Form(
                 key: _form,
+                 autovalidateMode: AutovalidateMode.onUserInteraction,
                 child: Column(
                   crossAxisAlignment:
                       CrossAxisAlignment.stretch,

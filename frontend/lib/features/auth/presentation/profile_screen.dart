@@ -145,6 +145,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ),
       child: Form(
         key: _form,
+         autovalidateMode: AutovalidateMode.onUserInteraction,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
