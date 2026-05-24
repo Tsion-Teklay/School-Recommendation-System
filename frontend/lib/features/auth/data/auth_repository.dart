@@ -43,27 +43,31 @@ class AuthRepository {
   /// `phone`; the caller decides which path they're on. Phone-only signups
   /// skip the verification email entirely and the account is usable
   /// immediately.
-  Future<void> register({
-    required String fullName,
-    String? email,
-    String? phone,
-    required String password,
-    required UserRole role,
-  }) async {
-    assert(
-      (email != null && email.isNotEmpty) ||
-          (phone != null && phone.isNotEmpty),
-      'register: must provide email or phone',
-    );
-    final res = await _dio.post('/api/auth/register', data: {
-      'fullName': fullName,
-      if (email != null && email.isNotEmpty) 'email': email,
-      if (phone != null && phone.isNotEmpty) 'phone': phone,
-      'password': password,
-      'role': role.toWire(),
-    });
-    if (res.statusCode != 201) throw _toApiException(res);
-  }
+  Future<void> register({  
+  required String fullName,  
+  String? email,  
+  String? phone,  
+  required String password,  
+  required UserRole role,  
+  String? subCity,  
+  String? officerRole,  
+}) async {  
+  assert(  
+    (email != null && email.isNotEmpty) ||  
+        (phone != null && phone.isNotEmpty),  
+    'register: must provide email or phone',  
+  );  
+  final res = await _dio.post('/api/auth/register', data: {  
+    'fullName': fullName,  
+    if (email != null && email.isNotEmpty) 'email': email,  
+    if (phone != null && phone.isNotEmpty) 'phone': phone,  
+    'password': password,  
+    'role': role.toWire(),  
+    if (subCity != null) 'subCity': subCity,  
+    if (officerRole != null) 'officerRole': officerRole,  
+  });  
+  if (res.statusCode != 201) throw _toApiException(res);  
+}
 
   /// Log in by email or phone. The backend accepts a single `identifier`
   /// field — anything containing `@` is matched against the email column,

@@ -57,13 +57,17 @@ function appBaseUrl() {
 // Register + verify email
 // -----------------------------------------------------------------------------
 
-export async function registerUser({ fullName, email, phone, password, role }) {
+export async function registerUser({ fullName, email, phone, password, role, subCity, officerRole }) {
   if (!fullName || !password || !role) {
     throw new ValidationError("Missing required fields");
   }
   if (!email && !phone) {
     throw new ValidationError("Either email or phone is required");
   }
+  // Validate MOE_OFFICER specific fields  
+  if (role === "MOE_OFFICER" && (!subCity || !officerRole)) {  
+    throw new ValidationError("subCity and officerRole are required for MOE_OFFICER role");  
+  }  
 
   // Email is unique + serves as the verifiable-handle. Phone is unique +
   // bypasses the email-verification gate (there is no out-of-band channel for
@@ -105,6 +109,17 @@ export async function registerUser({ fullName, email, phone, password, role }) {
         : null,
     },
   });
+
+  // Create MoEOfficer profile if role is MOE_OFFICER  
+  if (role === "MOE_OFFICER") {  
+    await db.moeOfficer.create({  
+      data: {  
+        userId: user.id,  
+        officerRole: officerRole,  
+        subCity: subCity,  
+      },  
+    });  
+  }  
 
   if (normalizedEmail && verificationToken) {
     await sendMailSafe(

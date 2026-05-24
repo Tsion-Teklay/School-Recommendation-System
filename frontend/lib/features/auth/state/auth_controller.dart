@@ -76,24 +76,25 @@ class AuthController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> register({
-    required String fullName,
-    String? email,
-    String? phone,
-    required String password,
-    required UserRole role,
-  }) async {
-    await _repo.register(
-      fullName: fullName,
-      email: email,
-      phone: phone,
-      password: password,
-      role: role,
-    );
-    // Registration does NOT log the user in. Email-path users must verify
-    // first; phone-path users could in theory be logged in here, but we keep
-    // the flow uniform: both land on the login screen post-register.
-  }
+  Future<void> register({  
+  required String fullName,  
+  String? email,  
+  String? phone,  
+  required String password,  
+  required UserRole role,  
+  String? subCity,  
+  String? officerRole,  
+}) async {  
+  await _repo.register(  
+    fullName: fullName,  
+    email: email,  
+    phone: phone,  
+    password: password,  
+    role: role,  
+    subCity: subCity,  
+    officerRole: officerRole,  
+  );  
+}
 
   Future<void> logout() async {
     await _storage.clear();
