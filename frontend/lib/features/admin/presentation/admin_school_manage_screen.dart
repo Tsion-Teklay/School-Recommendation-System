@@ -273,7 +273,6 @@ void _startEdit() {
     _editing = true;  
     _saveError = null;  
     _editSchoolName.text = _school!.schoolName;  
-    _editAddress.text = _school!.address;  
     _editContactEmail.text = _school!.contactEmail;  
     _editContactPhone.text = _school!.contactPhone ?? '';  
     _editTuitionFee.text = _school!.tuitionFee.toString();  
@@ -313,9 +312,6 @@ Future<void> _saveEdit() async {
           schoolName: _editSchoolName.text.trim().isEmpty  
               ? null  
               : _editSchoolName.text.trim(),  
-          address: _editAddress.text.trim().isEmpty  
-              ? null  
-              : _editAddress.text.trim(),  
           contactEmail: _editContactEmail.text.trim().isEmpty  
               ? null  
               : _editContactEmail.text.trim(),  
@@ -452,6 +448,28 @@ onPinChanged: (latLng) {
                         onAdd: _pickAndUploadFacilityImage,
                         onDelete: _deleteFacilityImage,
                       ),
+                      const SizedBox(height: 16),  
+Card(  
+  child: Padding(  
+    padding: const EdgeInsets.all(16),  
+    child: Column(  
+      crossAxisAlignment: CrossAxisAlignment.start,  
+      children: [  
+        Text('School Demographics', style: theme.textTheme.titleLarge),  
+        const SizedBox(height: 8),  
+        const Text(  
+          'Manage yearly academic performance data including student counts, passing rates, and exam scores.',  
+        ),  
+        const SizedBox(height: 12),  
+        FilledButton.icon(  
+          onPressed: () => context.go('/admin/schools/${widget.schoolId}/demographics'),  
+          icon: const Icon(Icons.bar_chart_outlined),  
+          label: const Text('Manage Demographics'),  
+        ),  
+      ],  
+    ),  
+  ),  
+),
                     const SizedBox(height: 16),
                     if (_school != null && _school!.verificationStatus != VerificationStatus.verified)  
                     Card(
@@ -773,7 +791,7 @@ class _SchoolSummary extends StatelessWidget {
             ),  
             if (!editing) ...[  
               const SizedBox(height: 4),  
-              Text(school.address, style: theme.textTheme.bodyMedium),  
+                
               const SizedBox(height: 12),  
               Wrap(  
                 spacing: 8,  

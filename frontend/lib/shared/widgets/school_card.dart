@@ -42,7 +42,9 @@ class SchoolCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      school.address,
+                      school.subCity != null
+                          ? '${school.subCity} - ${school.woreda ?? 'N/A'}'
+                          : 'No location info',
                       style: theme.textTheme.bodySmall,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,

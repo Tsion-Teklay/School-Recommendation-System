@@ -183,7 +183,9 @@ class SchoolRepository {
   /// Create a new school. School admin only. Returns the newly created School.
   Future<School> create({
     required String schoolName,
-    required String address,
+   SubCity? subCity,  
+  String? woreda,  
+  String? streetName,  
     required String contactEmail,
     String? contactPhone,
     required Curriculum curriculum,
@@ -195,7 +197,9 @@ class SchoolRepository {
   }) async {
     final res = await _dio.post('/api/schools', data: {
       'schoolName': schoolName,
-      'address': address,
+      'subCity': subCity?.toWire(),
+      'woreda': woreda,
+      'streetName': streetName,
       'contactEmail': contactEmail,
       if (contactPhone != null) 'contactPhone': contactPhone,
       'curriculum': curriculum.toWire(),
@@ -214,7 +218,9 @@ class SchoolRepository {
   Future<School> update({
     required int id,
     String? schoolName,
-    String? address,
+    SubCity? subCity,
+    String? woreda,
+    String? streetName,
     String? contactEmail,
     String? contactPhone,
     Curriculum? curriculum,
@@ -226,7 +232,9 @@ class SchoolRepository {
   }) async {
     final data = <String, dynamic>{};
     if (schoolName != null) data['schoolName'] = schoolName;
-    if (address != null) data['address'] = address;
+    if (subCity != null) data['subCity'] = subCity.toWire();
+    if (woreda != null) data['woreda'] = woreda;
+    if (streetName != null) data['streetName'] = streetName;
     if (contactEmail != null) data['contactEmail'] = contactEmail;
     if (contactPhone != null) data['contactPhone'] = contactPhone;
     if (curriculum != null) data['curriculum'] = curriculum.toWire();

@@ -18,8 +18,6 @@ export const createSchoolBodySchema = z.object({
   // schools without a level still validate.
   schoolLevel: schoolLevelEnum.optional(),
   schoolType: schoolTypeEnum.optional(),
-  passingRate: z.coerce.number().min(0).max(100).optional(),
-  nationalExamScore: z.coerce.number().min(0).max(100).optional(),
   tuitionFee: z.coerce.number().nonnegative(),
   facilities: z.string().optional(),
   latitude: z.coerce.number().min(-90).max(90).optional(),
@@ -36,8 +34,6 @@ export const updateSchoolBodySchema = createSchoolBodySchema
     streetName: z.string().trim().max(100).nullable().optional(),  
     schoolLevel: schoolLevelEnum.nullable().optional(),
     schoolType: schoolTypeEnum.nullable().optional(),
-    passingRate: z.coerce.number().min(0).max(100).nullable().optional(),
-    nationalExamScore: z.coerce.number().min(0).max(100).nullable().optional(),
   })
   .refine((val) => Object.keys(val).length > 0, {
     message: "At least one field is required",
