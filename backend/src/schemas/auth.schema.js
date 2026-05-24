@@ -47,6 +47,10 @@ export const resendVerificationBodySchema = z.object({
   email: z.string().trim().toLowerCase().email(),
 });
 
+export const resendPhoneBodySchema = z.object({
+  phone: z.string().trim().min(5).max(15),
+});
+
 export const forgotPasswordBodySchema = z.object({
   email: z.string().trim().toLowerCase().email(),
 });

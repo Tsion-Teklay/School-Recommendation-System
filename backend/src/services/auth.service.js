@@ -326,6 +326,46 @@ export async function resendVerificationEmail({ email }) {
   return { sent: true };
 }
 
+export async function resendVerificationPhone({ phone }) {
+  if (!phone) throw new ValidationError("Phone is required");
+
+  const normalizedPhone = normalizePhone(phone);
+
+  const user = await db.user.findUnique({ where: { phone: normalizedPhone } });
+
+  // Do not leak whether the phone exists — always return success-shaped payload.
+  if (!user || user.phoneVerified) return { sent: false };
+
+  // Generate a fresh 6-digit OTP
+  const phoneVerificationToken = Math.floor(
+    100000 + Math.random() * 900000,
+  ).toString();
+  const phoneVerificationExpires = expiresAt(PHONE_VERIFICATION_TTL_MS);
+
+  await db.user.update({
+    where: { id: user.id },
+    data: {
+      phoneVerificationToken,
+      phoneVerificationExpires,
+    },
+  });
+
+  try {
+    await sendSMS({
+      to: normalizedPhone,
+      message: `Your School Recommendation verification code is ${phoneVerificationToken}`,
+    });
+    logger.info({ userId: user.id }, "Phone verification SMS resent");
+  } catch (err) {
+    logger.warn(
+      { err, userId: user.id },
+      "Phone verification SMS failed on resend",
+    );
+  }
+
+  return { sent: true };
+}
+
 // -----------------------------------------------------------------------------
 // Login
 // -----------------------------------------------------------------------------

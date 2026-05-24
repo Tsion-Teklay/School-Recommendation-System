@@ -9,6 +9,7 @@ import {
   changePasswordHandler,
   reactivate,
   verifyPhone,
+  resendPhone,
 } from "../controllers/auth.controller.js";
 import { authenticate } from "../middlewares/auth.middleware.js";
 import { validate } from "../middlewares/validate.middleware.js";
@@ -18,6 +19,7 @@ import {
   verifyEmailBodySchema,
   verifyPhoneBodySchema,
   resendVerificationBodySchema,
+  resendPhoneBodySchema,
   forgotPasswordBodySchema,
   resetPasswordBodySchema,
   changePasswordBodySchema,
@@ -162,6 +164,12 @@ router.post(
   "/resend-verification",
   validate({ body: resendVerificationBodySchema }),
   resend,
+);
+
+router.post(
+  "/resend-phone-verification",
+  validate({ body: resendPhoneBodySchema }),
+  resendPhone,
 );
 
 /**

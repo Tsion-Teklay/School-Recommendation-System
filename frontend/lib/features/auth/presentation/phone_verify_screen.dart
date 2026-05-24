@@ -64,6 +64,23 @@ class _PhoneVerifyScreenState extends ConsumerState<PhoneVerifyScreen> {
     }
   }
 
+  Future<void> resendOtp() async {
+    try {
+      await ref
+          .read(authRepositoryProvider)
+          .resendPhoneVerification(widget.phone);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Verification code resent')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Resend failed: ${e.toString()}')),
+      );
+    }
+  }
+
   @override
   void dispose() {
     otpController.dispose();
@@ -92,6 +109,14 @@ class _PhoneVerifyScreenState extends ConsumerState<PhoneVerifyScreen> {
               decoration: const InputDecoration(
                 labelText: "OTP Code",
                 border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: resendOtp,
+                child: const Text('Resend code'),
               ),
             ),
             const SizedBox(height: 16),

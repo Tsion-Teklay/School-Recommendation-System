@@ -5,6 +5,7 @@ import {
   verifyEmail,
   verifyPhone as verifyPhoneService,
   resendVerificationEmail,
+  resendVerificationPhone,
   requestPasswordReset,
   resetPassword,
   changePassword,
@@ -48,6 +49,15 @@ export const resend = asyncHandler(async (req, res) => {
   res.json({
     message:
       "If that email belongs to an unverified account, a new verification link was sent.",
+  });
+});
+
+export const resendPhone = asyncHandler(async (req, res) => {
+  await resendVerificationPhone(req.body);
+  // Always 200 — do not leak whether the phone exists.
+  res.json({
+    message:
+      "If that phone belongs to an unverified account, a new verification code was sent.",
   });
 });
 

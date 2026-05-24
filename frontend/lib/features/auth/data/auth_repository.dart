@@ -103,6 +103,12 @@ class AuthRepository {
     }
   }
 
+  Future<void> resendPhoneVerification(String phone) async {
+    final res = await _dio
+        .post('/api/auth/resend-phone-verification', data: {'phone': phone});
+    if (res.statusCode != 200) throw _toApiException(res);
+  }
+
   Future<void> resendVerification(String email) async {
     final res = await _dio
         .post('/api/auth/resend-verification', data: {'email': email});
