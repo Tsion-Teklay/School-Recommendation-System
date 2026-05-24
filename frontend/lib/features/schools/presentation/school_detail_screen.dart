@@ -278,7 +278,7 @@ class _DetailBody extends StatelessWidget {
               children: [
                 Text(school.schoolName, style: theme.textTheme.headlineSmall),
                 const SizedBox(height: 4),
-                Text(school.address, style: theme.textTheme.bodyMedium),
+                Text(school.subCity != null ? '${school.subCity} - ${school.woreda ?? 'N/A'}' : 'No location info', style: theme.textTheme.bodyMedium),
                 const SizedBox(height: 16),
                 Wrap(
                   spacing: 8,

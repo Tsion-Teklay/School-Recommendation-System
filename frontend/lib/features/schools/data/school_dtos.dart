@@ -17,6 +17,24 @@ extension CurriculumX on Curriculum {
   }
 }
 
+enum SubCity {  
+  addisKetema('Addis Ketema'),  
+  akaliKalti('Akali Kalti'),  
+  arada('Arada'),  
+  bole('Bole'),  
+  gulele('Gulele'),  
+  kolfeKeranio('Kolfe Keranio'),  
+  kirkos('Kirkos'),  
+  lideta('Lideta'),  
+  nifasSilkLafto('Nifas Silk Lafto'),  
+  yekka('Yekka');  
+  
+  final String label;  
+  const SubCity(this.label);  
+  
+  String toWire() => name.toUpperCase();  
+}
+
 enum SchoolType { private, government, church }  
   
 extension SchoolTypeX on SchoolType {  
@@ -147,7 +165,9 @@ extension VerificationStatusX on VerificationStatus {
 class School {
   final int id;
   final String schoolName;
-  final String address;
+  final SubCity? subCity;
+  final String? woreda;
+  final String? streetName;
   final String contactEmail;
   final String? contactPhone;
   final Curriculum curriculum;
@@ -180,7 +200,9 @@ class School {
   const School({
     required this.id,
     required this.schoolName,
-    required this.address,
+    required this.subCity,
+    required this.woreda,
+    required this.streetName,
     required this.contactEmail,
     required this.contactPhone,
     required this.curriculum,
@@ -226,7 +248,14 @@ class School {
     return School(
       id: coerceInt(json['id'])!,
       schoolName: json['schoolName'] as String,
-      address: (json['address'] ?? '') as String,
+      subCity: json['subCity'] == null
+          ? null
+          : SubCity.values.firstWhere(
+              (v) => v.toWire() == json['subCity'],
+              orElse: () => throw FormatException("Invalid subCity: ${json['subCity']}"),
+            ),
+      woreda: json['woreda'] as String?,
+      streetName: json['streetName'] as String?,
       contactEmail: (json['contactEmail'] ?? '') as String,
       contactPhone: json['contactPhone'] as String?,
       curriculum: CurriculumX.fromWire(json['curriculum'] as String),

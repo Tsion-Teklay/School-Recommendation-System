@@ -33,6 +33,7 @@ import '../features/notifications/presentation/notifications_screen.dart';
 import '../features/preferences/presentation/preferences_screen.dart';
 import '../features/schools/presentation/school_detail_screen.dart';
 import '../features/schools/presentation/schools_list_screen.dart';
+import '../features/demographics/presentation/demographics_manage_screen.dart';
 
 /// Lists routes that anyone (logged in or not) is allowed to hit. Email-verify
 /// + reset-password are public because they're entered from email deep links;
@@ -246,6 +247,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/moderation/create-user',
         builder: (_, __) => const AdminUserCreateScreen(),
       ),
+      GoRoute(  
+  path: '/admin/schools/:schoolId/demographics',  
+  builder: (context, state) {  
+    final schoolId = int.parse(state.pathParameters['schoolId']!);  
+    return DemographicsManageScreen(schoolId: schoolId);  
+  },  
+),
     ],
     errorBuilder: (_, state) => Scaffold(
       body: Center(child: Text('Route not found: ${state.uri}')),

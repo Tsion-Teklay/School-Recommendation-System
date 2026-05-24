@@ -196,8 +196,6 @@ model School {
   curriculum         Curriculum
   schoolLevel        SchoolLevel?       @map("school_level")
   schoolType         SchoolType?        @map("school_type")
-  passingRate        Decimal?           @db.Decimal(5,2) @map("passing_rate")
-  nationalExamScore  Decimal?           @db.Decimal(5,2) @map("national_exam_score")
   tuitionFee         Decimal            @db.Decimal(10,2) @map("tuition_fee")
   facilities         String?            @db.Text
   verificationStatus VerificationStatus @default(PENDING) @map("verification_status")
@@ -222,6 +220,7 @@ model School {
   updates            SchoolUpdate[]
   subscribers        Subscription[]
   verificationRequests VerificationRequest[]
+  demographics SchoolDemographics[]
 
   @@index([schoolName])
   @@index([curriculum])
@@ -330,7 +329,7 @@ model MoEOfficer {
   user User @relation(fields: [userId], references: [id])
 
   @@index([subCity])
-  
+
   @@map("moe_officer")
 }
 
@@ -405,6 +404,25 @@ model Analytics {
   school School @relation(fields: [schoolId], references: [id])
 
   @@map("analytics")
+}
+
+model SchoolDemographics {  
+  id               Int      @id @default(autoincrement())  
+  schoolId         Int      @map("school_id")  
+  academicYear     Int      @map("academic_year")  
+  totalStudents    Int      @map("total_students")  
+  girlsCount       Int      @map("girls_count")  
+  boysCount        Int      @map("boys_count")  
+  passingRate      Decimal  @db.Decimal(5,2) @map("passing_rate")  
+  nationalExamScore Decimal @db.Decimal(5,2) @map("national_exam_score")  
+  submittedAt     DateTime @default(now()) @map("submitted_at")  
+    
+  school School @relation(fields: [schoolId], references: [id])  
+    
+  @@unique([schoolId, academicYear])  
+  @@index([schoolId])  
+  @@index([academicYear])  
+  @@map("school_demographics")  
 }
 
 model ModeratorAction {

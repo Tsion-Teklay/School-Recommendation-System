@@ -20,8 +20,6 @@ export async function createSchool(data, userId) {
     curriculum,
     schoolLevel,
     schoolType,
-    passingRate,
-    nationalExamScore,
     tuitionFee,
     facilities,
     latitude,
@@ -50,8 +48,6 @@ export async function createSchool(data, userId) {
       // Phase 11 — optional education level; omitted keeps the column null.
       ...(schoolLevel ? { schoolLevel } : {}),
       ...(schoolType ? { schoolType } : {}),
-      ...(passingRate !== undefined ? { passingRate } : {}),
-      ...(nationalExamScore !== undefined ? { nationalExamScore } : {}),
       tuitionFee,
       facilities,
       latitude,
@@ -91,8 +87,6 @@ export async function getAllSchools(query) {
     minRating,
     near,
     radiusKm,
-    passingRate,
-    nationalExamScore,
     page = 1,
     limit = 10,
   } = query;

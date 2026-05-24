@@ -14,6 +14,8 @@ import {
 
 import trainingRoutes from "./routes/training.routes.js";
 
+import demographicsRoutes from "./routes/demographics.routes.js";
+
 const app = express();
 
 // --- Security + infra middleware ---------------------------------------------
@@ -68,7 +70,7 @@ app.use("/uploads", express.static(UPLOAD_DIR, { fallthrough: true }));
 app.use("/api/auth", (await import("./routes/auth.routes.js")).default);
 app.use("/api/users", (await import("./routes/user.routes.js")).default);
 app.use("/api/schools", (await import("./routes/school.routes.js")).default);
-
+app.use("/api/demographics", demographicsRoutes);
 // Phase 4: follow/subscribe + my-follows. Mounted under two paths so the
 // URL structure mirrors the conceptual model.
 const subscriptionRoutes = await import("./routes/subscription.routes.js");

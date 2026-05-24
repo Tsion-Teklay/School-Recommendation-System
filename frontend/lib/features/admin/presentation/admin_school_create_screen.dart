@@ -25,7 +25,9 @@ class _AdminSchoolCreateScreenState
   final _form = GlobalKey<FormState>();
 
   final _schoolName = TextEditingController();
-  final _address = TextEditingController();
+  SubCity? _subCity;  
+final _woreda = TextEditingController();  
+final _streetName = TextEditingController();
   final _contactEmail = TextEditingController();
   final _contactPhone = TextEditingController();
   final _tuitionFee = TextEditingController();
@@ -48,7 +50,8 @@ class _AdminSchoolCreateScreenState
   @override
   void dispose() {
     _schoolName.dispose();
-    _address.dispose();
+    _woreda.dispose();
+    _streetName.dispose();
     _contactEmail.dispose();
     _contactPhone.dispose();
     _tuitionFee.dispose();
@@ -96,7 +99,9 @@ class _AdminSchoolCreateScreenState
       final school =
           await ref.read(schoolRepositoryProvider).create(
                 schoolName: _schoolName.text.trim(),
-                address: _address.text.trim(),
+                subCity: _subCity,
+                woreda: _woreda.text.trim().isEmpty ? null : _woreda.text.trim(),
+                streetName: _streetName.text.trim().isEmpty ? null : _streetName.text.trim(),
                 contactEmail:
                     _contactEmail.text.trim(),
                 contactPhone:
@@ -206,19 +211,38 @@ class _AdminSchoolCreateScreenState
 
                     const SizedBox(height: 12),
 
-                    TextFormField(
-                      controller: _address,
-                      decoration:
-                          const InputDecoration(
-                        labelText: 'Address *',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (v) =>
-                          v == null ||
-                                  v.trim().isEmpty
-                              ? 'Required'
-                              : null,
-                    ),
+                    DropdownButtonFormField<SubCity>(  
+  decoration: const InputDecoration(  
+    labelText: 'Sub-city',  
+    border: OutlineInputBorder(),  
+  ),  
+  value: _subCity,  
+  items: SubCity.values.map((subCity) {  
+    return DropdownMenuItem(value: subCity, child: Text(subCity.label));  
+  }).toList(),  
+  onChanged: (v) => setState(() => _subCity = v),  
+),  
+  
+const SizedBox(height: 12),  
+  
+TextFormField(  
+  controller: _woreda,  
+  decoration: const InputDecoration(  
+    labelText: 'Woreda',  
+    border: OutlineInputBorder(),  
+  ),  
+  keyboardType: TextInputType.number,  
+),  
+  
+const SizedBox(height: 12),  
+  
+TextFormField(  
+  controller: _streetName,  
+  decoration: const InputDecoration(  
+    labelText: 'Street Name',  
+    border: OutlineInputBorder(),  
+  ),  
+),
 
                     const SizedBox(height: 12),
 
