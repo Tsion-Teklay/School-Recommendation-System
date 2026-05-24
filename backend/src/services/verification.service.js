@@ -225,3 +225,25 @@ export async function reviewVerificationRequest({
 
   return updated;
 }
+
+
+export async function assignVerificationRequest(requestId) {  
+  const request = await db.verificationRequest.findUnique({  
+    where: { id: requestId },  
+    include: { school: true }  
+  });  
+    
+  if (!request) throw new NotFoundError("Verification request not found");  
+    
+  // Try to find MoE officer for the school's sub-city  
+  const assignedOfficer = await db.moeOfficer.findFirst({  
+    where: { subCity: request.school.subCity }  
+  });  
+    
+  // Fallback to any available MoE officer if no sub-city match  
+  if (!assignedOfficer) {  
+    return db.moeOfficer.findFirst();  
+  }  
+    
+  return assignedOfficer;  
+}
