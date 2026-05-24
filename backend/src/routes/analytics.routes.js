@@ -6,6 +6,8 @@ import { validate } from "../middlewares/validate.middleware.js";
 import { idParamsSchema } from "../schemas/common.schema.js";
 import { createAnalyticsBodySchema } from "../schemas/analytics.schema.js";
 
+ 
+
 const router = express.Router();
 
 /**
@@ -75,5 +77,7 @@ router.get(
   authorizeRoles("MOE_OFFICER"),
   controller.dashboardCsv
 );
+
+router.get("/schools/:schoolId/analytics", authenticate, controller.getSchool);
 
 export default router;

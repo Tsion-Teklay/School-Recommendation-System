@@ -34,6 +34,7 @@ import '../features/preferences/presentation/preferences_screen.dart';
 import '../features/schools/presentation/school_detail_screen.dart';
 import '../features/schools/presentation/schools_list_screen.dart';
 import '../features/demographics/presentation/demographics_manage_screen.dart';
+import '../features/analytics/presentation/school_analytics_screen.dart';
 
 /// Lists routes that anyone (logged in or not) is allowed to hit. Email-verify
 /// + reset-password are public because they're entered from email deep links;
@@ -252,6 +253,13 @@ final routerProvider = Provider<GoRouter>((ref) {
   builder: (context, state) {  
     final schoolId = int.parse(state.pathParameters['schoolId']!);  
     return DemographicsManageScreen(schoolId: schoolId);  
+  },  
+),
+GoRoute(  
+  path: '/schools/:schoolId/analytics',  
+  builder: (_, state) {  
+    final schoolId = int.parse(state.pathParameters['schoolId']!);  
+    return SchoolAnalyticsScreen(schoolId: schoolId);  
   },  
 ),
     ],

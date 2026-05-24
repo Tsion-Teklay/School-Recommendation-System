@@ -15,6 +15,7 @@ import {
 import trainingRoutes from "./routes/training.routes.js";
 
 import demographicsRoutes from "./routes/demographics.routes.js";
+import analyticsRoutes from "./routes/analytics.routes.js";  
 
 const app = express();
 
@@ -113,6 +114,7 @@ app.use(
 app.use("/api/likes", (await import("./routes/like.routes.js")).default);
 
 app.use("/api", (await import("./routes/achievement.routes.js")).default);
+app.use("/api", analyticsRoutes);
 
 // Phase 3: school-verification workflow. The router registers paths under
 // both /api/schools/:id/verification-requests (submit) and

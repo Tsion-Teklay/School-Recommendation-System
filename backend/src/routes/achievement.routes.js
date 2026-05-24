@@ -1,5 +1,6 @@
 import { Router } from "express";  
-import { authenticate, authorizeRoles } from "../middlewares/auth.middleware.js";  
+import { authenticate } from "../middlewares/auth.middleware.js";  
+import { authorizeRoles } from "../middlewares/role.middleware.js";
 import { validate } from "../middlewares/validate.middleware.js";  
 import * as achievementController from "../controllers/achievement.controller.js";  
 import * as achievementSchemas from "../schemas/achievement.schema.js";  

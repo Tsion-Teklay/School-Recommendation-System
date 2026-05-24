@@ -2,6 +2,7 @@ import { asyncHandler } from "../middlewares/async.middleware.js";
 import {
   createAnalytics,
   getSchoolAnalytics,
+  getSchoolCompositeAnalytics,
   getDashboard,
   getDashboardCsv,
 } from "../services/analytics.service.js";
@@ -14,13 +15,11 @@ export const create = asyncHandler(async (req, res) => {
   });
 });
 
-export const getSchool = asyncHandler(async (req, res) => {
-  const data = await getSchoolAnalytics(req.params.id);
-  res.json({
-    message: "Analytics fetched",
-    ...data,
-  });
-});
+export const getSchool = asyncHandler(async (req, res) => {    
+  const { schoolId } = req.params;    
+  const result = await getSchoolCompositeAnalytics(Number(schoolId));    
+  res.json(result);    
+});  
 
 export const dashboard = asyncHandler(async (req, res) => {
   const data = await getDashboard();
