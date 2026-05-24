@@ -6,10 +6,10 @@ export const create = asyncHandler(async (req, res) => {
   res.status(201).json(result);  
 });  
   
-export const getBySchool = asyncHandler(async (req, res) => {  
-  const { schoolId } = req.params;  
-  const result = await demographicsService.getSchoolDemographics(Number(schoolId));  
-  res.json(result);  
+export const getBySchool = asyncHandler(async (req, res) => {
+  const { schoolId } = req.params;
+  const result = await demographicsService.getSchoolDemographics(Number(schoolId));
+  res.json(result);
 });  
   
 export const getByYear = asyncHandler(async (req, res) => {  

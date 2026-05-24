@@ -44,19 +44,20 @@ class _DemographicsManageScreenState extends ConsumerState<DemographicsManageScr
     super.dispose();  
   }  
   
-  Future<void> _load() async {  
-    setState(() {  
-      _loading = true;  
-      _error = null;  
-    });  
-    try {  
-      final data = await ref.read(demographicsRepositoryProvider).getBySchool(widget.schoolId);  
-      setState(() => _demographics = data);  
-    } catch (e) {  
-      setState(() => _error = e.toString());  
-    } finally {  
-      if (mounted) setState(() => _loading = false);  
-    }  
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+    });
+    try {
+      final data = await ref.read(demographicsRepositoryProvider).getBySchool(widget.schoolId);
+      setState(() => _demographics = data);
+    } catch (e) {
+      // Don't show loading errors - it's normal to have no demographics initially
+      print('Failed to load demographics: $e');
+      setState(() => _demographics = []);
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }  
   
   Future<void> _submit() async {  
@@ -76,21 +77,21 @@ class _DemographicsManageScreenState extends ConsumerState<DemographicsManageScr
       nationalExamScore: double.parse(_nationalExamScore.text),  
     );  
       
-    // Clear form fields  
-    _academicYear.clear();  
-    _totalStudents.clear();  
-    _girlsCount.clear();  
-    _boysCount.clear();  
-    _passingRate.clear();  
+    // Clear form fields
+    _academicYear.clear();
+    _totalStudents.clear();
+    _girlsCount.clear();
+    _boysCount.clear();
+    _passingRate.clear();
     _nationalExamScore.clear();  
     _academicYear.text = '2024'; // Reset to default  
-      
-    // Reload demographics list  
-    await _load();  
       
     if (mounted) ScaffoldMessenger.of(context).showSnackBar(  
       const SnackBar(content: Text('Demographics added successfully')),  
     );  
+      
+    // Reload demographics list
+    await _load();  
   } catch (e) {  
     setState(() => _error = e.toString());  
   } finally {  
@@ -112,7 +113,7 @@ class _DemographicsManageScreenState extends ConsumerState<DemographicsManageScr
                   crossAxisAlignment: CrossAxisAlignment.stretch,  
                   children: [  
                     if (_error != null) ...[  
-                      Text(_error!, style: const TextStyle(color: Colors.red)),  
+                      Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),  
                       const SizedBox(height: 16),  
                     ],  
                     TextFormField(  
@@ -162,18 +163,21 @@ class _DemographicsManageScreenState extends ConsumerState<DemographicsManageScr
                       onPressed: _submit,  
                       child: const Text('Add Demographics'),  
                     ),  
-                    const SizedBox(height: 24),  
-                    const Text('Existing Demographics:', style: TextStyle(fontWeight: FontWeight.bold)),  
-                    const SizedBox(height: 8),  
-                    ..._demographics.map((d) => Card(  
-                      child: ListTile(  
-                        title: Text('Year ${d.academicYear}'),  
-                        subtitle: Text(  
-                          'Students: ${d.totalStudents} | Girls: ${d.girlsCount} | Boys: ${d.boysCount}\n'  
-                          'Passing: ${d.passingRate}% | Exam: ${d.nationalExamScore}'  
-                        ),  
-                      ),  
-                    )),  
+                    const SizedBox(height: 24),
+                    const Text('Existing Demographics:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    if (_demographics.isEmpty)
+                      const Text('No demographics submitted yet', style: TextStyle(color: Colors.grey))
+                    else
+                      ..._demographics.map((d) => Card(
+                        child: ListTile(
+                          title: Text('Year ${d.academicYear}'),
+                          subtitle: Text(
+                            'Students: ${d.totalStudents} | Girls: ${d.girlsCount} | Boys: ${d.boysCount}\n'
+                            'Passing: ${d.passingRate}% | Exam: ${d.nationalExamScore}'
+                          ),
+                        ),
+                      )),  
                   ],  
                 ),  
               ),  

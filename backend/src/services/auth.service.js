@@ -64,9 +64,9 @@ export async function registerUser({ fullName, email, phone, password, role, sub
   if (!email && !phone) {
     throw new ValidationError("Either email or phone is required");
   }
-  // Validate MOE_OFFICER specific fields  
-  if (role === "MOE_OFFICER" && (!subCity || !officerRole)) {  
-    throw new ValidationError("subCity and officerRole are required for MOE_OFFICER role");  
+  // Validate MOE_OFFICER specific fields
+  if (role === "MOE_OFFICER" && (!subCity || !officerRole)) {
+    throw new ValidationError("subCity and officerRole are required for MOE_OFFICER role");
   }  
 
   // Email is unique + serves as the verifiable-handle. Phone is unique +
@@ -91,7 +91,8 @@ export async function registerUser({ fullName, email, phone, password, role, sub
   const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
   const verificationToken = normalizedEmail ? generateToken() : null;
 
-  const user = await db.user.create({
+  const user = await db.$transaction(async (tx) => {
+  const newUser = await tx.user.create({
     data: {
       fullName,
       email: normalizedEmail ?? `phone-${normalizedPhone}@placeholder.invalid`,
@@ -99,9 +100,6 @@ export async function registerUser({ fullName, email, phone, password, role, sub
       password: hashedPassword,
       accountStatus: "ACTIVE",
       role,
-      // Phone-only signups have no email channel to verify against, so the
-      // account starts already-verified. If an email is later added via
-      // profile update (out of scope), it would re-trigger the verify flow.
       emailVerified: !normalizedEmail,
       emailVerificationToken: verificationToken,
       emailVerificationExpires: verificationToken
@@ -110,16 +108,19 @@ export async function registerUser({ fullName, email, phone, password, role, sub
     },
   });
 
-  // Create MoEOfficer profile if role is MOE_OFFICER  
-  if (role === "MOE_OFFICER") {  
-    await db.moeOfficer.create({  
-      data: {  
-        userId: user.id,  
-        officerRole: officerRole,  
-        subCity: subCity,  
-      },  
-    });  
-  }  
+  // Create MoEOfficer profile if role is MOE_OFFICER
+  if (role === "MOE_OFFICER") {
+    await tx.moEOfficer.create({
+      data: {
+        userId: newUser.id,
+        officerRole: officerRole,
+        subCity: subCity,
+      },
+    });
+  }
+
+  return newUser;
+});
 
   if (normalizedEmail && verificationToken) {
     await sendMailSafe(
