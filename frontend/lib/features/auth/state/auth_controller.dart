@@ -120,6 +120,14 @@ class AuthController extends ChangeNotifier {
   _user = result.user;  
   notifyListeners();  
 }
+
+Future<void> deletePermanently(String password) async {  
+  await _repo.deleteMePermanently(password);  
+  await _storage.clear();  
+  _user = null;  
+  notifyListeners();  
+}
+
 }
 
 final authControllerProvider = ChangeNotifierProvider<AuthController>((ref) {

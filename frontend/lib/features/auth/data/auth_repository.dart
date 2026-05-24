@@ -153,7 +153,16 @@ class AuthRepository {
     final res = await _dio.post('/api/users/me/deactivate');
     if (res.statusCode != 200) throw _toApiException(res);
   }
+
+  Future<void> deleteMePermanently(String password) async {  
+  final res = await _dio.post('/api/users/me/delete-permanently', data: {  
+    'password': password,  
+  });  
+  if (res.statusCode != 200) throw _toApiException(res);  
 }
+}
+
+
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepository(ref.watch(apiClientProvider).dio);
