@@ -8,7 +8,9 @@ const schoolTypeEnum = z.enum(["PRIVATE", "GOVERNMENT", "CHURCH"]);
 
 export const createSchoolBodySchema = z.object({
   schoolName: z.string().trim().min(1).max(100),
-  address: z.string().trim().min(1).max(255),
+  subCity: z.enum(["ADDIS_KETEMA", "AKALI_KALTI", "ARADA", "BOLE", "GULELE", "KOLFE_KERANIO", "KIRKOS", "LIDETA", "NIFAS_SILK_LAFTO", "YEKKA"]).optional(),  
+  woreda: z.string().trim().max(20).optional(),  
+  streetName: z.string().trim().max(100).optional(),  
   contactEmail: z.string().trim().toLowerCase().email().max(100),
   contactPhone: z.string().trim().min(5).max(15).optional(),
   curriculum: curriculumEnum,
@@ -29,6 +31,9 @@ export const updateSchoolBodySchema = createSchoolBodySchema
   // Allow clearing the nullable fields explicitly (PUT with `field: null`);
   // `.partial()` already accepts the field being absent.
   .extend({
+    subCity: z.enum(["ADDIS_KETEMA", "AKALI_KALTI", "ARADA", "BOLE", "GULELE", "KOLFE_KERANIO", "KIRKOS", "LIDETA", "NIFAS_SILK_LAFTO", "YEKKA"]).nullable().optional(),  
+    woreda: z.string().trim().max(20).nullable().optional(),  
+    streetName: z.string().trim().max(100).nullable().optional(),  
     schoolLevel: schoolLevelEnum.nullable().optional(),
     schoolType: schoolTypeEnum.nullable().optional(),
     passingRate: z.coerce.number().min(0).max(100).nullable().optional(),

@@ -12,7 +12,9 @@ import { logger } from "../config/logger.js";
 export async function createSchool(data, userId) {
   const {
     schoolName,
-    address,
+    subCity,  
+    woreda,  
+    streetName,  
     contactEmail,
     contactPhone,
     curriculum,
@@ -29,7 +31,6 @@ export async function createSchool(data, userId) {
   // Basic validation (also enforced at route level via Zod)
   if (
     !schoolName ||
-    !address ||
     !contactEmail ||
     !curriculum ||
     tuitionFee === undefined
@@ -40,7 +41,9 @@ export async function createSchool(data, userId) {
   const school = await db.school.create({
     data: {
       schoolName,
-      address,
+     ...(subCity ? { subCity } : {}),  
+      ...(woreda ? { woreda } : {}),  
+      ...(streetName ? { streetName } : {}),  
       contactEmail,
       contactPhone,
       curriculum,

@@ -36,6 +36,19 @@ enum SchoolType {
   CHURCH     @map("church")
 }
 
+enum SubCity {  
+  ADDIS_KETEMA @map("addis_ketema")  
+  AKALI_KALTI @map("akali_kalti")  
+  ARADA @map("arada")  
+  BOLE @map("bole")  
+  GULELE @map("gulele")  
+  KOLFE_KERANIO @map("kolfe_keranio")  
+  KIRKOS @map("kirkos")  
+  LIDETA @map("lideta")  
+  NIFAS_SILK_LAFTO @map("nifas_silk_lafto")  
+  YEKKA @map("yekka")  
+}
+
 enum VerificationStatus {
   VERIFIED @map("verified")
   PENDING  @map("pending")
@@ -175,7 +188,9 @@ model School {
   id                 Int                @id @default(autoincrement()) @map("school_id")
   adminId            Int                @map("admin_id")
   schoolName         String             @map("school_name") @db.VarChar(150)
-  address            String             @db.VarChar(255)
+  subCity String? @map("sub_city") @db.VarChar(50)  
+  woreda String? @map("woreda") @db.VarChar(20)  
+  streetName String? @map("street_name") @db.VarChar(100)
   contactEmail       String             @map("contact_email") @db.VarChar(100)
   contactPhone       String             @map("contact_phone") @db.VarChar(15)
   curriculum         Curriculum
@@ -211,6 +226,7 @@ model School {
   @@index([schoolName])
   @@index([curriculum])
   @@index([verificationStatus])
+  @@index([subCity])
 
   @@map("school")
 }
@@ -309,9 +325,12 @@ model FacilityImage {
 model MoEOfficer {
   userId      Int    @id @map("user_id")
   officerRole String @map("officer_role") @db.VarChar(255)
+  subCity SubCity? @map("sub_city")  
 
   user User @relation(fields: [userId], references: [id])
 
+  @@index([subCity])
+  
   @@map("moe_officer")
 }
 
