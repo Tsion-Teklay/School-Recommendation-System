@@ -183,9 +183,9 @@ class SchoolRepository {
   /// Create a new school. School admin only. Returns the newly created School.
   Future<School> create({
     required String schoolName,
-   SubCity? subCity,  
-  String? woreda,  
-  String? streetName,  
+   SubCity? subCity,
+  String? woreda,
+  String? streetName,
     required String contactEmail,
     String? contactPhone,
     required Curriculum curriculum,

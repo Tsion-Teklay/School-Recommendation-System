@@ -111,15 +111,15 @@ final _streetName = TextEditingController();
                         : _contactPhone.text.trim(),
                 curriculum: _curriculum!,
                 schoolLevel: _schoolLevel,
-                schoolType: _schoolType, 
+                schoolType: _schoolType,
                 tuitionFee:
                     num.parse(_tuitionFee.text.trim()),
                 facilities:
                     _facilities.text.trim().isEmpty
                         ? null
                         : _facilities.text.trim(),
-                latitude: double.parse(_latitude.text.trim()),  
-longitude: double.parse(_longitude.text.trim()),
+                latitude: _latitude.text.trim().isEmpty ? null : double.parse(_latitude.text.trim()),
+                longitude: _longitude.text.trim().isEmpty ? null : double.parse(_longitude.text.trim()),
               );
 
       if (!mounted) return;
@@ -410,7 +410,7 @@ const SizedBox(height: 12),
                           children: [
                             Expanded(
                               child: Text(
-                                'Location *',
+                                'Location (optional)',
                                 style: theme
                                     .textTheme
                                     .titleSmall,
@@ -452,7 +452,7 @@ const SizedBox(height: 12),
                                 decoration:
                                     const InputDecoration(
                                   labelText:
-                                      'Latitude *',
+                                      'Latitude',
                                   border:
                                       OutlineInputBorder(),
                                 ),
@@ -462,25 +462,23 @@ const SizedBox(height: 12),
                                 onChanged: (_) =>
                                     _updatePinFromTextFields(),
                                 validator: (v) {
-                                  if (v == null ||
+                                  if (v != null &&
                                       v.trim()
-                                          .isEmpty) {
-                                    return 'Required';
-                                  }
+                                          .isNotEmpty) {
+                                    final lat =
+                                        double.tryParse(
+                                      v.trim(),
+                                    );
 
-                                  final lat =
-                                      double.tryParse(
-                                    v.trim(),
-                                  );
+                                    if (lat ==
+                                        null) {
+                                      return 'Invalid number';
+                                    }
 
-                                  if (lat ==
-                                      null) {
-                                    return 'Invalid number';
-                                  }
-
-                                  if (lat < -90 ||
-                                      lat > 90) {
-                                    return 'Must be -90 to 90';
+                                    if (lat < -90 ||
+                                        lat > 90) {
+                                      return 'Must be -90 to 90';
+                                    }
                                   }
 
                                   return null;
@@ -498,7 +496,7 @@ const SizedBox(height: 12),
                                 decoration:
                                     const InputDecoration(
                                   labelText:
-                                      'Longitude *',
+                                      'Longitude',
                                   border:
                                       OutlineInputBorder(),
                                 ),
@@ -508,27 +506,25 @@ const SizedBox(height: 12),
                                 onChanged: (_) =>
                                     _updatePinFromTextFields(),
                                 validator: (v) {
-                                  if (v == null ||
+                                  if (v != null &&
                                       v.trim()
-                                          .isEmpty) {
-                                    return 'Required';
-                                  }
+                                          .isNotEmpty) {
+                                    final lng =
+                                        double.tryParse(
+                                      v.trim(),
+                                    );
 
-                                  final lng =
-                                      double.tryParse(
-                                    v.trim(),
-                                  );
+                                    if (lng ==
+                                        null) {
+                                      return 'Invalid number';
+                                    }
 
-                                  if (lng ==
-                                      null) {
-                                    return 'Invalid number';
-                                  }
-
-                                  if (lng <
-                                          -180 ||
-                                      lng >
-                                          180) {
-                                    return 'Must be -180 to 180';
+                                    if (lng <
+                                            -180 ||
+                                        lng >
+                                            180) {
+                                      return 'Must be -180 to 180';
+                                    }
                                   }
 
                                   return null;

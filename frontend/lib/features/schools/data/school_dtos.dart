@@ -32,7 +32,57 @@ enum SubCity {
   final String label;  
   const SubCity(this.label);  
   
-  String toWire() => name.toUpperCase();  
+  String toWire() {
+    switch (this) {
+      case SubCity.addisKetema:
+        return 'ADDIS_KETEMA';
+      case SubCity.akaliKalti:
+        return 'AKALI_KALTI';
+      case SubCity.arada:
+        return 'ARADA';
+      case SubCity.bole:
+        return 'BOLE';
+      case SubCity.gulele:
+        return 'GULELE';
+      case SubCity.kolfeKeranio:
+        return 'KOLFE_KERANIO';
+      case SubCity.kirkos:
+        return 'KIRKOS';
+      case SubCity.lideta:
+        return 'LIDETA';
+      case SubCity.nifasSilkLafto:
+        return 'NIFAS_SILK_LAFTO';
+      case SubCity.yekka:
+        return 'YEKKA';
+    }
+  }
+
+  static SubCity? fromWire(String? s) {
+    switch (s) {
+      case 'ADDIS_KETEMA':
+        return SubCity.addisKetema;
+      case 'AKALI_KALTI':
+        return SubCity.akaliKalti;
+      case 'ARADA':
+        return SubCity.arada;
+      case 'BOLE':
+        return SubCity.bole;
+      case 'GULELE':
+        return SubCity.gulele;
+      case 'KOLFE_KERANIO':
+        return SubCity.kolfeKeranio;
+      case 'KIRKOS':
+        return SubCity.kirkos;
+      case 'LIDETA':
+        return SubCity.lideta;
+      case 'NIFAS_SILK_LAFTO':
+        return SubCity.nifasSilkLafto;
+      case 'YEKKA':
+        return SubCity.yekka;
+      default:
+        return null;
+    }
+  }  
 }
 
 enum SchoolType { private, government, church }  

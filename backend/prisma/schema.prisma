@@ -214,8 +214,8 @@ model School {
   tuitionFee         Decimal            @db.Decimal(10,2) @map("tuition_fee")
   facilities         String?            @db.Text
   verificationStatus VerificationStatus @default(PENDING) @map("verification_status")
-  latitude           Decimal            @db.Decimal(10, 8)
-  longitude          Decimal            @db.Decimal(11, 8)
+  latitude           Decimal?           @db.Decimal(10, 8)
+  longitude          Decimal?           @db.Decimal(11, 8)
 
   // --- Phase 2 rating aggregate (recomputed on review CRUD) -----------
   rating      Decimal @default(0)    @db.Decimal(3, 2)
@@ -341,7 +341,7 @@ model FacilityImage {
 model MoEOfficer {
   userId      Int    @id @map("user_id")
   officerRole String @map("officer_role") @db.VarChar(255)
-  subCity SubCity? @map("sub_city")  
+  subCity SubCity @map("sub_city")  
 
   user User @relation(fields: [userId], references: [id])
 
