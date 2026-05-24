@@ -49,6 +49,20 @@ enum SubCity {
   YEKKA @map("yekka")  
 }
 
+enum AchievementTier {  
+  GOLD   @map("gold")  
+  SILVER @map("silver")  
+  BRONZE @map("bronze")  
+}  
+  
+enum EducationLevel {  
+  PHD       @map("phd")  
+  MASTERS   @map("masters")  
+  DEGREE    @map("degree")  
+  DIPLOMA   @map("diploma")  
+  CERTIFICATE @map("certificate")  
+}
+
 enum VerificationStatus {
   VERIFIED @map("verified")
   PENDING  @map("pending")
@@ -170,6 +184,7 @@ model User {
 
   moeOfficerProfile MoEOfficer?
   moderatorActions  ModeratorAction[] @relation("Moderator")
+  achievementsReviewed Achievement[] @relation("AchievementReviewer")
 
   announcements Announcement[]
   reports       Report[] @relation("Reporter")
@@ -221,6 +236,8 @@ model School {
   subscribers        Subscription[]
   verificationRequests VerificationRequest[]
   demographics SchoolDemographics[]
+  staffBreakdowns StaffBreakdown[]  
+  achievements   Achievement[]
 
   @@index([schoolName])
   @@index([curriculum])
@@ -423,6 +440,44 @@ model SchoolDemographics {
   @@index([schoolId])  
   @@index([academicYear])  
   @@map("school_demographics")  
+}
+
+model StaffBreakdown {  
+  id             Int           @id @default(autoincrement())  
+  schoolId       Int           @map("school_id")  
+  educationLevel EducationLevel @map("education_level")  
+  count          Int  
+  updatedAt      DateTime      @updatedAt @map("updated_at")  
+    
+  school School @relation(fields: [schoolId], references: [id])  
+    
+  @@unique([schoolId, educationLevel])  
+  @@index([schoolId])  
+  @@map("staff_breakdown")  
+}
+
+model Achievement {  
+  id          Int                       @id @default(autoincrement())  
+  schoolId    Int                       @map("school_id")  
+  title       String                    @db.VarChar(150)  
+  description String?                   @db.Text  
+  tier        AchievementTier  
+  score       Int                       // Points: Gold=100, Silver=50, Bronze=25  
+  year        Int  
+  status      VerificationRequestStatus @default(PENDING)  
+  documents   Json?                     // array of uploaded file URLs  
+  submittedAt DateTime                  @default(now()) @map("submitted_at")  
+  reviewedAt  DateTime?                 @map("reviewed_at")  
+  reviewedById Int?                     @map("reviewed_by_id")  
+  reviewNotes String?                   @map("review_notes") @db.Text  
+    
+  school     School @relation(fields: [schoolId], references: [id])  
+  reviewedBy User?  @relation("AchievementReviewer", fields: [reviewedById], references: [id])  
+    
+  @@index([schoolId])  
+  @@index([status])  
+  @@index([year])  
+  @@map("achievement")  
 }
 
 model ModeratorAction {

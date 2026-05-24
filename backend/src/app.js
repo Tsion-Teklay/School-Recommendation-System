@@ -112,6 +112,8 @@ app.use(
 );
 app.use("/api/likes", (await import("./routes/like.routes.js")).default);
 
+app.use("/api", (await import("./routes/achievement.routes.js")).default);
+
 // Phase 3: school-verification workflow. The router registers paths under
 // both /api/schools/:id/verification-requests (submit) and
 // /api/verification-requests/* (list/get/review), so it's mounted at /api.
