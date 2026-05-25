@@ -25,7 +25,9 @@ class _AdminSchoolCreateScreenState
   final _form = GlobalKey<FormState>();
 
   final _schoolName = TextEditingController();
-  final _address = TextEditingController();
+  SubCity? _subCity;  
+final _woreda = TextEditingController();  
+final _streetName = TextEditingController();
   final _contactEmail = TextEditingController();
   final _contactPhone = TextEditingController();
   final _tuitionFee = TextEditingController();
@@ -35,6 +37,7 @@ class _AdminSchoolCreateScreenState
 
   Curriculum? _curriculum;
   SchoolLevel? _schoolLevel;
+  SchoolType? _schoolType;
 
   bool _fetchingLocation = false;
   bool _loading = false;
@@ -48,7 +51,8 @@ class _AdminSchoolCreateScreenState
   @override
   void dispose() {
     _schoolName.dispose();
-    _address.dispose();
+    _woreda.dispose();
+    _streetName.dispose();
     _contactEmail.dispose();
     _contactPhone.dispose();
     _tuitionFee.dispose();
@@ -96,7 +100,9 @@ class _AdminSchoolCreateScreenState
       final school =
           await ref.read(schoolRepositoryProvider).create(
                 schoolName: _schoolName.text.trim(),
-                address: _address.text.trim(),
+                subCity: _subCity,
+                woreda: _woreda.text.trim().isEmpty ? null : _woreda.text.trim(),
+                streetName: _streetName.text.trim().isEmpty ? null : _streetName.text.trim(),
                 contactEmail:
                     _contactEmail.text.trim(),
                 contactPhone:
@@ -105,24 +111,15 @@ class _AdminSchoolCreateScreenState
                         : _contactPhone.text.trim(),
                 curriculum: _curriculum!,
                 schoolLevel: _schoolLevel,
+                schoolType: _schoolType,
                 tuitionFee:
                     num.parse(_tuitionFee.text.trim()),
                 facilities:
                     _facilities.text.trim().isEmpty
                         ? null
                         : _facilities.text.trim(),
-                latitude:
-                    _latitude.text.trim().isEmpty
-                        ? null
-                        : double.tryParse(
-                            _latitude.text.trim(),
-                          ),
-                longitude:
-                    _longitude.text.trim().isEmpty
-                        ? null
-                        : double.tryParse(
-                            _longitude.text.trim(),
-                          ),
+                latitude: _latitude.text.trim().isEmpty ? null : double.parse(_latitude.text.trim()),
+                longitude: _longitude.text.trim().isEmpty ? null : double.parse(_longitude.text.trim()),
               );
 
       if (!mounted) return;
@@ -164,6 +161,7 @@ class _AdminSchoolCreateScreenState
               padding: const EdgeInsets.all(16),
               child: Form(
                 key: _form,
+                 autovalidateMode: AutovalidateMode.onUserInteraction,
                 child: Column(
                   crossAxisAlignment:
                       CrossAxisAlignment.stretch,
@@ -205,19 +203,38 @@ class _AdminSchoolCreateScreenState
 
                     const SizedBox(height: 12),
 
-                    TextFormField(
-                      controller: _address,
-                      decoration:
-                          const InputDecoration(
-                        labelText: 'Address *',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (v) =>
-                          v == null ||
-                                  v.trim().isEmpty
-                              ? 'Required'
-                              : null,
-                    ),
+                    DropdownButtonFormField<SubCity>(  
+  decoration: const InputDecoration(  
+    labelText: 'Sub-city',  
+    border: OutlineInputBorder(),  
+  ),  
+  value: _subCity,  
+  items: SubCity.values.map((subCity) {  
+    return DropdownMenuItem(value: subCity, child: Text(subCity.label));  
+  }).toList(),  
+  onChanged: (v) => setState(() => _subCity = v),  
+),  
+  
+const SizedBox(height: 12),  
+  
+TextFormField(  
+  controller: _woreda,  
+  decoration: const InputDecoration(  
+    labelText: 'Woreda',  
+    border: OutlineInputBorder(),  
+  ),  
+  keyboardType: TextInputType.number,  
+),  
+  
+const SizedBox(height: 12),  
+  
+TextFormField(  
+  controller: _streetName,  
+  decoration: const InputDecoration(  
+    labelText: 'Street Name',  
+    border: OutlineInputBorder(),  
+  ),  
+),
 
                     const SizedBox(height: 12),
 
@@ -316,7 +333,32 @@ class _AdminSchoolCreateScreenState
                       ),
                     ),
 
-                    const SizedBox(height: 12),
+
+                    const SizedBox(height: 12),  
+  
+DropdownButtonFormField<SchoolType>(  
+  decoration: const InputDecoration(  
+    labelText: 'School type (optional)',  
+    border: OutlineInputBorder(),  
+  ),  
+  value: _schoolType,  
+  items: SchoolType.values  
+      .map(  
+        (t) =>  
+            DropdownMenuItem(  
+          value: t,  
+          child:  
+              Text(t.label()),  
+        ),  
+      )  
+      .toList(),  
+  onChanged: (v) =>  
+      setState(  
+    () => _schoolType = v,  
+  ),  
+),  
+  
+const SizedBox(height: 12),
 
                     TextFormField(
                       controller: _tuitionFee,
@@ -420,25 +462,23 @@ class _AdminSchoolCreateScreenState
                                 onChanged: (_) =>
                                     _updatePinFromTextFields(),
                                 validator: (v) {
-                                  if (v == null ||
+                                  if (v != null &&
                                       v.trim()
-                                          .isEmpty) {
-                                    return null;
-                                  }
+                                          .isNotEmpty) {
+                                    final lat =
+                                        double.tryParse(
+                                      v.trim(),
+                                    );
 
-                                  final lat =
-                                      double.tryParse(
-                                    v.trim(),
-                                  );
+                                    if (lat ==
+                                        null) {
+                                      return 'Invalid number';
+                                    }
 
-                                  if (lat ==
-                                      null) {
-                                    return 'Invalid number';
-                                  }
-
-                                  if (lat < -90 ||
-                                      lat > 90) {
-                                    return 'Must be -90 to 90';
+                                    if (lat < -90 ||
+                                        lat > 90) {
+                                      return 'Must be -90 to 90';
+                                    }
                                   }
 
                                   return null;
@@ -466,27 +506,25 @@ class _AdminSchoolCreateScreenState
                                 onChanged: (_) =>
                                     _updatePinFromTextFields(),
                                 validator: (v) {
-                                  if (v == null ||
+                                  if (v != null &&
                                       v.trim()
-                                          .isEmpty) {
-                                    return null;
-                                  }
+                                          .isNotEmpty) {
+                                    final lng =
+                                        double.tryParse(
+                                      v.trim(),
+                                    );
 
-                                  final lng =
-                                      double.tryParse(
-                                    v.trim(),
-                                  );
+                                    if (lng ==
+                                        null) {
+                                      return 'Invalid number';
+                                    }
 
-                                  if (lng ==
-                                      null) {
-                                    return 'Invalid number';
-                                  }
-
-                                  if (lng <
-                                          -180 ||
-                                      lng >
-                                          180) {
-                                    return 'Must be -180 to 180';
+                                    if (lng <
+                                            -180 ||
+                                        lng >
+                                            180) {
+                                      return 'Must be -180 to 180';
+                                    }
                                   }
 
                                   return null;

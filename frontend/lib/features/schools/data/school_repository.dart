@@ -183,11 +183,14 @@ class SchoolRepository {
   /// Create a new school. School admin only. Returns the newly created School.
   Future<School> create({
     required String schoolName,
-    required String address,
+   SubCity? subCity,
+  String? woreda,
+  String? streetName,
     required String contactEmail,
     String? contactPhone,
     required Curriculum curriculum,
     SchoolLevel? schoolLevel,
+    SchoolType? schoolType,
     required num tuitionFee,
     String? facilities,
     double? latitude,
@@ -195,11 +198,14 @@ class SchoolRepository {
   }) async {
     final res = await _dio.post('/api/schools', data: {
       'schoolName': schoolName,
-      'address': address,
+      'subCity': subCity?.toWire(),
+      'woreda': woreda,
+      'streetName': streetName,
       'contactEmail': contactEmail,
       if (contactPhone != null) 'contactPhone': contactPhone,
       'curriculum': curriculum.toWire(),
       if (schoolLevel != null) 'schoolLevel': schoolLevel.toWire(),
+      if (schoolType != null) 'schoolType': schoolType.toWire(),
       'tuitionFee': tuitionFee,
       if (facilities != null) 'facilities': facilities,
       if (latitude != null) 'latitude': latitude,
@@ -214,7 +220,9 @@ class SchoolRepository {
   Future<School> update({
     required int id,
     String? schoolName,
-    String? address,
+    SubCity? subCity,
+    String? woreda,
+    String? streetName,
     String? contactEmail,
     String? contactPhone,
     Curriculum? curriculum,
@@ -226,7 +234,9 @@ class SchoolRepository {
   }) async {
     final data = <String, dynamic>{};
     if (schoolName != null) data['schoolName'] = schoolName;
-    if (address != null) data['address'] = address;
+    if (subCity != null) data['subCity'] = subCity.toWire();
+    if (woreda != null) data['woreda'] = woreda;
+    if (streetName != null) data['streetName'] = streetName;
     if (contactEmail != null) data['contactEmail'] = contactEmail;
     if (contactPhone != null) data['contactPhone'] = contactPhone;
     if (curriculum != null) data['curriculum'] = curriculum.toWire();
@@ -260,8 +270,8 @@ class SchoolRepository {
     );
   }
 
-  Future<void> revokeVerification(int schoolId) async {  
-  final res = await _dio.post('/api/schools/$schoolId/revoke');  
+  Future<void> revokeVerification(int schoolId, String reason) async {  
+  final res = await _dio.post('/api/schools/$schoolId/revoke', data: {'reason': reason});  
   if (res.statusCode != 200) throw _toApiException(res);  
 }
 Future<Map<int, int>> getRatingDistribution(int schoolId) async {  

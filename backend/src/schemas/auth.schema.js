@@ -2,6 +2,8 @@ import { z } from "zod";
 
 const roleEnum = z.enum(["PARENT", "SCHOOL_ADMIN", "MOE_OFFICER", "MODERATOR"]);
 
+const subCityEnum = z.enum(["ADDIS_KETEMA", "AKALI_KALTI", "ARADA", "BOLE", "GULELE", "KOLFE_KERANIO", "KIRKOS", "LIDETA", "NIFAS_SILK_LAFTO", "YEKKA"]); 
+
 // Either `email` or `phone` must be present at register time — both are
 // independent credentials a user can later log in with. We still accept both
 // in the same request so a user who signed up by phone can add an email later
@@ -14,10 +16,21 @@ export const registerBodySchema = z
     phone: z.string().trim().min(5).max(15).optional(),
     password: z.string().min(6).max(255),
     role: roleEnum,
+    subCity: subCityEnum.optional(),  
+    officerRole: z.string().trim().min(1).max(255).optional(),
   })
   .refine((v) => v.email || v.phone, {
     message: "Either email or phone is required",
     path: ["email"],
+  })
+  .refine((v) => {  
+    if (v.role === "MOE_OFFICER") {  
+      return v.subCity !== undefined && v.officerRole !== undefined;  
+    }  
+    return true;  
+  }, {  
+    message: "subCity and officerRole are required for MOE_OFFICER role",  
+    path: ["subCity"],  
   });
 
 // `identifier` is whichever credential the user typed — we resolve it to an
@@ -66,6 +79,10 @@ export const changePasswordBodySchema = z.object({
 });
 
 export const reactivateAccountBodySchema = z.object({
-  identifier: z.string().trim().min(1),
-  password: z.string().min(1),
+  identifier: z.string().trim().min(1),  
+  password: z.string().min(1),  
+});
+
+export const deleteAccountSchema = z.object({  
+  password: z.string().min(1),  
 });

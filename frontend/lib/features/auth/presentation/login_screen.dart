@@ -29,15 +29,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
-  String? _validateIdentifier(String? raw) {
-    final v = (raw ?? '').trim();
-    if (v.isEmpty) return 'Email or phone required';
-    if (v.contains('@')) {
-      return EmailValidator.validate(v) ? null : 'Invalid email';
-    }
-    if (v.length < 5 || v.length > 15) return 'Phone must be 5–15 characters';
-    return null;
-  }
+  String? _validateIdentifier(String? raw) {  
+  final v = (raw ?? '').trim();  
+  if (v.isEmpty) return null; // Don't show error for empty during interaction  
+  if (v.contains('@')) {  
+    return EmailValidator.validate(v) ? null : 'Invalid email';  
+  }  
+  if (v.length < 5 || v.length > 15) return 'Phone must be 5–15 characters';  
+  return null;  
+}
 
   Future<void> _submit() async {
     if (!_form.currentState!.validate()) return;
@@ -84,6 +84,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       title: 'Sign in',
       child: Form(
         key: _form,
+         autovalidateMode: AutovalidateMode.onUserInteraction,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -110,8 +111,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               obscureText: true,
               autofillHints: const [AutofillHints.password],
               decoration: const InputDecoration(labelText: 'Password'),
-              validator: (v) =>
-                  (v ?? '').isNotEmpty ? null : 'Password required',
+              validator: (v) {  
+  final t = (v ?? '').trim();  
+  if (t.isEmpty) return null; // Don't show error for empty during interaction  
+   return t.length >= 6 ? null : 'At least 6 characters';  
+},
               onFieldSubmitted: (_) => _submit(),
             ),
             const SizedBox(height: 8),

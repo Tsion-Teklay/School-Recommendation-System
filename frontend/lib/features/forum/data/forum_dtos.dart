@@ -21,7 +21,7 @@ class ForumAuthor {
   factory ForumAuthor.fromJson(Map<String, dynamic> json) => ForumAuthor(
         id: (json['id'] as num).toInt(),
         fullName: (json['fullName'] ?? '?') as String,
-        role: UserRoleX.fromWire(json['role'] as String),
+        role: json['role'] != null ? UserRoleX.fromWire(json['role'] as String) : UserRole.parent,
       );
 }
 
@@ -64,7 +64,9 @@ class ForumPost {
       return int.tryParse(v.toString());
     }
     DateTime parseDate(dynamic v) {
+      if (v == null) return DateTime.now();
       if (v is String) return DateTime.tryParse(v) ?? DateTime.now();
+      if (v is DateTime) return v;
       return DateTime.now();
     }
     final authorJson = (json['author'] as Map?)?.cast<String, dynamic>();

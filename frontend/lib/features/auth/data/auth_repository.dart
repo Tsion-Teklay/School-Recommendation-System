@@ -16,7 +16,8 @@ class ApiException implements Exception {
   final int? statusCode;
   final String message;
   final String? code;
-  ApiException(this.message, {this.statusCode, this.code});
+  final List<Map<String, dynamic>>? details;
+  ApiException(this.message, {this.statusCode, this.code, this.details});
 
   @override
   String toString() => message;
@@ -28,7 +29,8 @@ ApiException _toApiException(Response<dynamic> r) {
     final msg =
         (data['error'] ?? data['message'])?.toString() ?? 'Request failed';
     final code = data['code']?.toString();
-    return ApiException(msg, statusCode: r.statusCode, code: code);
+    final details = data['details'] as List<dynamic>?;
+    return ApiException(msg, statusCode: r.statusCode, code: code, details: details?.cast<Map<String, dynamic>>());
   }
   return ApiException('Request failed (${r.statusCode})',
       statusCode: r.statusCode);
@@ -45,27 +47,31 @@ class AuthRepository {
   /// `phone`; the caller decides which path they're on. Phone-only signups
   /// skip the verification email entirely and the account is usable
   /// immediately.
-  Future<void> register({
-    required String fullName,
-    String? email,
-    String? phone,
-    required String password,
-    required UserRole role,
-  }) async {
-    assert(
-      (email != null && email.isNotEmpty) ||
-          (phone != null && phone.isNotEmpty),
-      'register: must provide email or phone',
-    );
-    final res = await _dio.post('/api/auth/register', data: {
-      'fullName': fullName,
-      if (email != null && email.isNotEmpty) 'email': email,
-      if (phone != null && phone.isNotEmpty) 'phone': phone,
-      'password': password,
-      'role': role.toWire(),
-    });
-    if (res.statusCode != 201) throw _toApiException(res);
-  }
+  Future<void> register({  
+  required String fullName,  
+  String? email,  
+  String? phone,  
+  required String password,  
+  required UserRole role,  
+  String? subCity,  
+  String? officerRole,  
+}) async {  
+  assert(  
+    (email != null && email.isNotEmpty) ||  
+        (phone != null && phone.isNotEmpty),  
+    'register: must provide email or phone',  
+  );  
+  final res = await _dio.post('/api/auth/register', data: {  
+    'fullName': fullName,  
+    if (email != null && email.isNotEmpty) 'email': email,  
+    if (phone != null && phone.isNotEmpty) 'phone': phone,  
+    'password': password,  
+    'role': role.toWire(),  
+    if (subCity != null) 'subCity': subCity,  
+    if (officerRole != null) 'officerRole': officerRole,  
+  });  
+  if (res.statusCode != 201) throw _toApiException(res);  
+}
 
   /// Log in by email or phone. The backend accepts a single `identifier`
   /// field — anything containing `@` is matched against the email column,
@@ -175,7 +181,16 @@ class AuthRepository {
     final res = await _dio.post('/api/users/me/deactivate');
     if (res.statusCode != 200) throw _toApiException(res);
   }
+
+  Future<void> deleteMePermanently(String password) async {  
+  final res = await _dio.post('/api/users/me/delete-permanently', data: {  
+    'password': password,  
+  });  
+  if (res.statusCode != 200) throw _toApiException(res);  
 }
+}
+
+
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepository(ref.watch(apiClientProvider).dio);

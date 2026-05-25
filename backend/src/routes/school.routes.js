@@ -22,6 +22,7 @@ import {
   createSchoolBodySchema,
   updateSchoolBodySchema,
   listSchoolsQuerySchema,
+  revokeVerificationBodySchema,
 } from "../schemas/school.schema.js";
 
 const router = express.Router();
@@ -181,11 +182,11 @@ router.delete(
 );
 
 router.post(  
-  "/:id/revoke",  // Change to :id  
-  authenticate,  
-  authorizeRoles("MOE_OFFICER"),  
-  validate({ params: idParamsSchema }),  
-  revoke  
+  "/:id/revoke",
+  authenticate,
+  authorizeRoles("MOE_OFFICER"),
+  validate({ params: idParamsSchema, body: revokeVerificationBodySchema }),
+  revoke
 );
 
 export default router;

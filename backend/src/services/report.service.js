@@ -5,20 +5,21 @@ import { createNotification } from "./notification.service.js";
 import { deletePostAsModerator } from "./forum.service.js";
 
 // ✅ Create Report
-export async function createReport(data, userId) {
-  const { targetType, targetId, reason } = data;
-
-  const report = await db.report.create({
-    data: {
-      reporterId: userId,
-      targetType,
-      targetId: Number(targetId),
-      reason,
-    },
-  });
-
-  // Notify all moderators  
+export async function createReport(data, userId) {  
+  const { targetType, targetId, reason } = data;  
+  
+  const report = await db.report.create({  
+    data: {  
+      reporterId: userId,  
+      targetType,  
+      targetId: Number(targetId),  
+      reason,  
+    },  
+  });  
+  
+  // Notify moderators and relevant MOE officers based on school subcity  
   try {  
+    // Always notify moderators  
     const moderators = await db.user.findMany({  
       where: { role: "MODERATOR" },  
       select: { id: true },  
@@ -33,11 +34,36 @@ export async function createReport(data, userId) {
         sourceType: "REPORT",  
       });  
     }  
+  
+    // If report is about a school, notify the MOE officer for that subcity  
+    if (targetType === "SCHOOL") {  
+      const school = await db.school.findUnique({  
+        where: { id: Number(targetId) },  
+        select: { subCity: true, schoolName: true },  
+      });  
+  
+      if (school && school.subCity) {  
+        const assignedOfficer = await db.moeOfficer.findFirst({  
+          where: { subCity: school.subCity },  
+          select: { userId: true },  
+        });  
+  
+        if (assignedOfficer) {  
+          await createNotification({  
+            recipientId: assignedOfficer.userId,  
+            recipientType: "MOE",  
+            message: `New report about school "${school.schoolName}" in your subcity: ${reason}`,  
+            sourceId: report.id,  
+            sourceType: "REPORT",  
+          });  
+        }  
+      }  
+    }  
   } catch (err) {  
-    logger.warn({ err }, "Failed to notify moderators of new report");  
+    logger.warn({ err }, "Failed to notify moderators/MOE officers of new report");  
   }  
-
-  return report;
+  
+  return report;  
 }
 
 // ✅ Get All Reports (Moderator)
