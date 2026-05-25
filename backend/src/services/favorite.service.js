@@ -3,12 +3,21 @@ import { NotFoundError } from "../utils/errors.js";
 
 // ✅ Add favorite
 export async function addFavorite(userId, schoolId) {
-  // Check parent exists
-  const parent = await db.parent.findUnique({
+  // Check parent exists, create if not (lazy creation)
+  let parent = await db.parent.findUnique({
     where: { userId },
   });
 
-  if (!parent) throw new NotFoundError("Parent profile not found");
+  if (!parent) {
+    parent = await db.parent.create({
+      data: {
+        userId,
+        address: "Default Address",
+        latitude: 0,
+        longitude: 0,
+      },
+    });
+  }
 
   // Check school exists
   const school = await db.school.findUnique({

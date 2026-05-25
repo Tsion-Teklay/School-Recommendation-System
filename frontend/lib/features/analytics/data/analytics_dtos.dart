@@ -110,19 +110,23 @@ class Dashboard {
   final DashboardSummary summary;
   final Map<String, int> usersByRole;
   final Map<String, int> schoolsByVerification;
+  final Map<String, int> schoolsBySubcity;
   final Map<String, int> reportsByStatus;
   final List<TopSchool> topSchools;
   final List<MostFollowed> mostFollowed;
   final List<MoeRankedSchool> moeRanking;
+  final List<Map<String, dynamic>> signupsLast30Days;
 
   const Dashboard({
     required this.summary,
     required this.usersByRole,
     required this.schoolsByVerification,
+    required this.schoolsBySubcity,
     required this.reportsByStatus,
     required this.topSchools,
     required this.mostFollowed,
     required this.moeRanking,  
+    required this.signupsLast30Days,
   });
 
   factory Dashboard.fromJson(Map<String, dynamic> json) {
@@ -144,6 +148,8 @@ class Dashboard {
       usersByRole: intMap(json['usersByRole'] as Map?),
       schoolsByVerification:
           intMap(json['schoolsByVerification'] as Map?),
+      schoolsBySubcity:
+          intMap(json['schoolsBySubcity'] as Map?),
       reportsByStatus: intMap(json['reportsByStatus'] as Map?),
       topSchools: (json['topSchools'] as List? ?? const [])
           .cast<Map<String, dynamic>>()
@@ -157,6 +163,9 @@ class Dashboard {
               ?.map((e) => MoeRankedSchool.fromJson(e as Map<String, dynamic>))  
               .toList() ??  
           [],
+      signupsLast30Days: (json['signupsLast30Days'] as List? ?? const [])
+          .cast<Map<String, dynamic>>()
+          .toList(),
     );
   }
 }
@@ -169,11 +178,11 @@ class MoeRankedSchool {
   final String verificationStatus;  
   final String? facilities;  
   final double moeScore;  
-  final String? schoolLevel;      // Add  
-  final String? schoolType;       // Add  
-  final num? passingRate;        // Add  
+  final String? schoolLevel;      
+  final String? schoolType;       
+  final num? passingRate;        
   final num? nationalExamScore;  
-  
+
   const MoeRankedSchool({  
     required this.id,  
     required this.schoolName,  
@@ -182,9 +191,9 @@ class MoeRankedSchool {
     required this.verificationStatus,  
     required this.facilities,  
     required this.moeScore,  
-    this.schoolLevel,             // Add  
-    this.schoolType,              // Add  
-    this.passingRate,             // Add  
+    this.schoolLevel,             
+    this.schoolType,              
+    this.passingRate,             
     this.nationalExamScore, 
   });  
 
@@ -193,7 +202,7 @@ class MoeRankedSchool {
     if (v is num) return v;  
     return num.tryParse(v.toString());  
   }
-  
+
   factory MoeRankedSchool.fromJson(Map<String, dynamic> json) {  
 
 
@@ -205,76 +214,54 @@ class MoeRankedSchool {
       verificationStatus: json['verificationStatus'] as String? ?? 'PENDING',  
       facilities: json['facilities'] as String?,  
       moeScore: (json['moeScore'] as num).toDouble(), 
-      schoolLevel: json['schoolLevel'] as String?,          // Add  
-      schoolType: json['schoolType'] as String?,           // Add  
-      passingRate: coerceNum(json['passingRate']),         // Add  
-      nationalExamScore: coerceNum(json['nationalExamScore']), // Add  
+      schoolLevel: json['schoolLevel'] as String?,          
+      schoolType: json['schoolType'] as String?,           
+      passingRate: coerceNum(json['passingRate']),         
+      nationalExamScore: coerceNum(json['nationalExamScore']), 
     );  
   }  
 }
 
 class SchoolAnalytics {  
-  final int currentYear;  
-  final SchoolDemographics? demographics;  
-  final List<SchoolDemographics> historicalDemographics;  
-  final SchoolMetrics metrics;  
-  final List<Achievement> achievements;  
-  
+  final double achievementScore;
+  final double genderBalanceIndex;
+  final double yearOverYearGrowth;
+  final double percentileRanking;
+  final double parentEngagementScore;
+  final double communityTrustScore;
+  final List<SchoolDemographics> demographics;
+  final List<Achievement> achievements;
+
   SchoolAnalytics({  
-    required this.currentYear,  
-    this.demographics,  
-    required this.historicalDemographics,  
-    required this.metrics,  
-    required this.achievements,  
+    required this.achievementScore,
+    required this.genderBalanceIndex,
+    required this.yearOverYearGrowth,
+    required this.percentileRanking,
+    required this.parentEngagementScore,
+    required this.communityTrustScore,
+    required this.demographics,
+    required this.achievements,
   });  
-  
-  factory SchoolAnalytics.fromJson(Map<String, dynamic> json) {  
-    return SchoolAnalytics(  
-      currentYear: json['currentYear'] as int,  
-      demographics: json['demographics'] != null   
-          ? SchoolDemographics.fromJson(json['demographics'] as Map<String, dynamic>)  
-          : null,  
-      historicalDemographics: (json['historicalDemographics'] as List? ?? const [])  
-          .map((e) => SchoolDemographics.fromJson(e as Map<String, dynamic>))  
-          .toList(),  
-      metrics: SchoolMetrics.fromJson(json['metrics'] as Map<String, dynamic>),  
-      achievements: (json['achievements'] as List? ?? const [])  
-          .map((e) => Achievement.fromJson(e as Map<String, dynamic>))  
-          .toList(),  
-    );  
-  }  
-}  
-  
-class SchoolMetrics {  
-  final double achievementScore;  
-  final double genderBalanceIndex;  
-  final double yearOverYearGrowth;  
-  final double percentileRanking;  
-  final double parentEngagementScore;  
-  final double communityTrustScore;  
-  
-  SchoolMetrics({  
-    required this.achievementScore,  
-    required this.genderBalanceIndex,  
-    required this.yearOverYearGrowth,  
-    required this.percentileRanking,  
-    required this.parentEngagementScore,  
-    required this.communityTrustScore,  
-  });  
-  
-  factory SchoolMetrics.fromJson(Map<String, dynamic> json) {  
+
+  factory SchoolAnalytics.fromJson(Map<String, dynamic> json) {
     double parseDouble(dynamic v) {  
       if (v is num) return v.toDouble();  
       if (v is String) return double.tryParse(v) ?? 0;  
       return 0;  
-    }  
-    return SchoolMetrics(  
-      achievementScore: parseDouble(json['achievementScore']),  
-      genderBalanceIndex: parseDouble(json['genderBalanceIndex']),  
-      yearOverYearGrowth: parseDouble(json['yearOverYearGrowth']),  
-      percentileRanking: parseDouble(json['percentileRanking']),  
-      parentEngagementScore: parseDouble(json['parentEngagementScore']),  
-      communityTrustScore: parseDouble(json['communityTrustScore']),  
+    }
+    return SchoolAnalytics(  
+      achievementScore: parseDouble(json['achievementScore']),
+      genderBalanceIndex: parseDouble(json['genderBalanceIndex']),
+      yearOverYearGrowth: parseDouble(json['yearOverYearGrowth']),
+      percentileRanking: parseDouble(json['percentileRanking']),
+      parentEngagementScore: parseDouble(json['parentEngagementScore']),
+      communityTrustScore: parseDouble(json['communityTrustScore']),
+      demographics: (json['demographics'] as List? ?? const [])  
+          .map((e) => SchoolDemographics.fromJson(e as Map<String, dynamic>))  
+          .toList(),  
+      achievements: (json['achievements'] as List? ?? const [])  
+          .map((e) => Achievement.fromJson(e as Map<String, dynamic>))  
+          .toList(),  
     );  
   }  
 }

@@ -214,6 +214,7 @@ extension VerificationStatusX on VerificationStatus {
 }
 class School {
   final int id;
+  final int adminId;
   final String schoolName;
   final SubCity? subCity;
   final String? woreda;
@@ -249,6 +250,7 @@ class School {
 
   const School({
     required this.id,
+    required this.adminId,
     required this.schoolName,
     required this.subCity,
     required this.woreda,
@@ -297,6 +299,7 @@ class School {
     final imgs = (json['facilityImages'] as List?) ?? const [];
     return School(
       id: coerceInt(json['id'])!,
+      adminId: coerceInt(json['adminId'])!,
       schoolName: json['schoolName'] as String,
       subCity: json['subCity'] == null
           ? null
@@ -380,6 +383,8 @@ class SchoolListFilters {
   // Phase 11 additions.
   final num? minRating;
   final SchoolLevel? schoolLevel;
+  final SchoolType? schoolType;
+  final SubCity? subCity;
   final int page;
   final int limit;
 
@@ -393,6 +398,8 @@ class SchoolListFilters {
     this.radiusKm,
     this.minRating,
     this.schoolLevel,
+    this.schoolType,
+    this.subCity,
     this.page = 1,
     this.limit = 10,
   });
@@ -406,6 +413,8 @@ class SchoolListFilters {
     Object? radiusKm = _sentinel,
     Object? minRating = _sentinel,
     Object? schoolLevel = _sentinel,
+    Object? schoolType = _sentinel,
+    Object? subCity = _sentinel,
     int? page,
     int? limit,
   }) {
@@ -424,6 +433,12 @@ class SchoolListFilters {
       schoolLevel: identical(schoolLevel, _sentinel)
           ? this.schoolLevel
           : schoolLevel as SchoolLevel?,
+      schoolType: identical(schoolType, _sentinel)
+          ? this.schoolType
+          : schoolType as SchoolType?,
+      subCity: identical(subCity, _sentinel)
+          ? this.subCity
+          : subCity as SubCity?,
       page: page ?? this.page,
       limit: limit ?? this.limit,
     );
@@ -440,6 +455,8 @@ class SchoolListFilters {
       if (radiusKm != null) 'radiusKm': radiusKm.toString(),
       if (minRating != null) 'minRating': minRating.toString(),
       if (schoolLevel != null) 'schoolLevel': schoolLevel!.toWire(),
+      if (schoolType != null) 'schoolType': schoolType!.toWire(),
+      if (subCity != null) 'subCity': subCity!.toWire(),
       'page': page.toString(),
       'limit': limit.toString(),
     };

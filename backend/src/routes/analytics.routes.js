@@ -3,7 +3,7 @@ import * as controller from "../controllers/analytics.controller.js";
 import { authenticate } from "../middlewares/auth.middleware.js";
 import { authorizeRoles } from "../middlewares/role.middleware.js";
 import { validate } from "../middlewares/validate.middleware.js";
-import { idParamsSchema } from "../schemas/common.schema.js";
+import { schoolIdParamsSchema } from "../schemas/common.schema.js";
 import { createAnalyticsBodySchema } from "../schemas/analytics.schema.js";
 
  
@@ -12,14 +12,14 @@ const router = express.Router();
 
 /**
  * @openapi
- * /api/analytics/school/{id}:
+ * /api/analytics/schools/{schoolId}:
  *   get:
  *     tags: [Analytics]
  *     summary: Analytics for a single school (public)
  */
 router.get(
-  "/school/:id",
-  validate({ params: idParamsSchema }),
+  "/schools/:schoolId",
+  validate({ params: schoolIdParamsSchema }),
   controller.getSchool
 );
 
@@ -77,7 +77,5 @@ router.get(
   authorizeRoles("MOE_OFFICER"),
   controller.dashboardCsv
 );
-
-router.get("/schools/:schoolId/analytics", authenticate, controller.getSchool);
 
 export default router;

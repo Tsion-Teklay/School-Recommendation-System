@@ -45,6 +45,7 @@ export const listSchoolsQuerySchema = z.object({
   // Phase 11 — new filter chip on the schools list.
   schoolLevel: schoolLevelEnum.optional(),
   schoolType: schoolTypeEnum.optional(),
+  subCity: z.enum(["ADDIS_KETEMA", "AKALI_KALTI", "ARADA", "BOLE", "GULELE", "KOLFE_KERANIO", "KIRKOS", "LIDETA", "NIFAS_SILK_LAFTO", "YEKKA"]).nullable().optional(),
   minFee: z.coerce.number().nonnegative().optional(),
   maxFee: z.coerce.number().nonnegative().optional(),
   // Phase 11 — "stars and up" filter. Decimal so the UI can pass values like

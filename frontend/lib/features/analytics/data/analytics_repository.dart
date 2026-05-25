@@ -39,13 +39,12 @@ class AnalyticsRepository {
 ApiException _toApiException(Response<dynamic> r) {  
   final data = r.data;  
   if (data is Map) {  
-    final msg =  
-        (data['error'] ?? data['message'])?.toString() ?? 'Request failed';  
+    final msg = (data['error'] ?? data['message'])?.toString() ?? 'Request failed';  
     final code = data['code']?.toString();  
-    return ApiException(msg, statusCode: r.statusCode, code: code);  
+    final details = data['details'] as List<dynamic>?;  
+    return ApiException(msg, statusCode: r.statusCode, code: code, details: details?.cast<Map<String, dynamic>>());  
   }  
-  return ApiException('Request failed (${r.statusCode})',  
-      statusCode: r.statusCode);  
+  return ApiException('Request failed (${r.statusCode})', statusCode: r.statusCode);  
 }  
   
 final analyticsRepositoryProvider = Provider<AnalyticsRepository>((ref) {    

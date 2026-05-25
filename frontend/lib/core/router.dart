@@ -36,6 +36,11 @@ import '../features/schools/presentation/schools_list_screen.dart';
 import '../features/demographics/presentation/demographics_manage_screen.dart';
 import '../features/analytics/presentation/school_analytics_screen.dart';
 
+import '../features/achievements/presentation/achievements_manage_screen.dart';  
+import '../features/achievements/presentation/achievement_detail_screen.dart';  
+import '../features/achievements/presentation/staff_breakdown_screen.dart';  
+import '../features/achievements/presentation/moe_achievement_review_screen.dart';
+
 /// Lists routes that anyone (logged in or not) is allowed to hit. Email-verify
 /// + reset-password are public because they're entered from email deep links;
 /// hiding them behind auth would be a chicken-and-egg loop.
@@ -261,6 +266,32 @@ GoRoute(
     final schoolId = int.parse(state.pathParameters['schoolId']!);  
     return SchoolAnalyticsScreen(schoolId: schoolId);  
   },  
+),
+GoRoute(  
+  path: '/admin/schools/:schoolId/achievements',  
+  builder: (context, state) {  
+    final schoolId = int.parse(state.pathParameters['schoolId']!);  
+    return AchievementsManageScreen(schoolId: schoolId);  
+  },  
+),  
+GoRoute(  
+  path: '/admin/schools/:schoolId/achievements/:achievementId',  
+  builder: (context, state) {  
+    final schoolId = int.parse(state.pathParameters['schoolId']!);  
+    final achievementId = int.parse(state.pathParameters['achievementId']!);  
+    return AchievementDetailScreen(schoolId: schoolId, achievementId: achievementId);  
+  },  
+),  
+GoRoute(  
+  path: '/admin/schools/:schoolId/staff-breakdown',  
+  builder: (context, state) {  
+    final schoolId = int.parse(state.pathParameters['schoolId']!);  
+    return StaffBreakdownScreen(schoolId: schoolId);  
+  },  
+),  
+GoRoute(  
+  path: '/moe/achievements',  
+  builder: (_, __) => const MoeAchievementReviewScreen(),  
 ),
     ],
     errorBuilder: (_, state) => Scaffold(

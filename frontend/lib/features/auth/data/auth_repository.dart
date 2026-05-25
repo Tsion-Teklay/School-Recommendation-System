@@ -16,7 +16,8 @@ class ApiException implements Exception {
   final int? statusCode;
   final String message;
   final String? code;
-  ApiException(this.message, {this.statusCode, this.code});
+  final List<Map<String, dynamic>>? details;
+  ApiException(this.message, {this.statusCode, this.code, this.details});
 
   @override
   String toString() => message;
@@ -27,7 +28,8 @@ ApiException _toApiException(Response<dynamic> r) {
   if (data is Map) {
     final msg = (data['error'] ?? data['message'])?.toString() ?? 'Request failed';
     final code = data['code']?.toString();
-    return ApiException(msg, statusCode: r.statusCode, code: code);
+    final details = data['details'] as List<dynamic>?;
+    return ApiException(msg, statusCode: r.statusCode, code: code, details: details?.cast<Map<String, dynamic>>());
   }
   return ApiException('Request failed (${r.statusCode})', statusCode: r.statusCode);
 }

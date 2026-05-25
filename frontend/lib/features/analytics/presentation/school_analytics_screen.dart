@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';  
 import 'package:flutter_riverpod/flutter_riverpod.dart';  
 import '../../../shared/widgets/responsive_shell.dart';  
+import '../../auth/data/auth_repository.dart' show ApiException;
 import '../data/analytics_repository.dart';  
 import '../data/analytics_dtos.dart';  
   
@@ -31,8 +32,21 @@ class _SchoolAnalyticsScreenState extends ConsumerState<SchoolAnalyticsScreen> {
     try {  
       final data = await ref.read(analyticsRepositoryProvider).getSchoolAnalytics(widget.schoolId);  
       setState(() => _analytics = data);  
+    } on ApiException catch (e) {
+      String errorMessage = e.message;
+      if (e.statusCode == 401) {
+        errorMessage = 'You must be logged in to view analytics';
+      } else if (e.statusCode == 403) {
+        errorMessage = 'You do not have permission to view these analytics';
+      } else if (e.code == 'VALIDATION_ERROR' && e.details != null) {
+        final validationErrors = e.details!.map((d) => '${d['path']}: ${d['message']}').join(', ');
+        errorMessage = 'Validation error: $validationErrors';
+      } else if (e.code == 'VALIDATION_ERROR') {
+        errorMessage = 'Validation error: ${e.message}';
+      }
+      setState(() => _error = errorMessage);
     } catch (e) {  
-      setState(() => _error = e.toString());  
+      setState(() => _error = 'An unexpected error occurred: ${e.toString()}');  
     } finally {  
       setState(() => _loading = false);  
     }  
@@ -60,49 +74,49 @@ class _SchoolAnalyticsScreenState extends ConsumerState<SchoolAnalyticsScreen> {
                         children: [  
                           _MetricCard(  
   title: 'Achievement Score',  
-  value: _analytics!.metrics.achievementScore.toStringAsFixed(0),  
+  value: _analytics!.achievementScore.toStringAsFixed(0),  
   icon: Icons.emoji_events,  
   color: Colors.amber,  
 ),  
 const SizedBox(height: 12),  
 _MetricCard(  
   title: 'Gender Balance Index',  
-  value: _analytics!.metrics.genderBalanceIndex.toStringAsFixed(2),  
+  value: _analytics!.genderBalanceIndex.toStringAsFixed(2),  
   icon: Icons.balance,  
   color: Colors.blue,  
 ),  
 const SizedBox(height: 12),  
 _MetricCard(  
   title: 'Year-over-Year Growth',  
-  value: '${_analytics!.metrics.yearOverYearGrowth.toStringAsFixed(1)}%',  
+  value: '${_analytics!.yearOverYearGrowth.toStringAsFixed(1)}%',  
   icon: Icons.trending_up,  
   color: Colors.green,  
 ),  
 const SizedBox(height: 12),  
 _MetricCard(  
   title: 'Percentile Ranking',  
-  value: '${_analytics!.metrics.percentileRanking.toStringAsFixed(0)}%',  
+  value: '${_analytics!.percentileRanking.toStringAsFixed(0)}%',  
   icon: Icons.percent,  
   color: Colors.purple,  
 ),  
 const SizedBox(height: 12),  
 _MetricCard(  
   title: 'Parent Engagement Score',  
-  value: _analytics!.metrics.parentEngagementScore.toStringAsFixed(0),  
+  value: _analytics!.parentEngagementScore.toStringAsFixed(0),  
   icon: Icons.people,  
   color: Colors.orange,  
 ),  
 const SizedBox(height: 12),  
 _MetricCard(  
   title: 'Community Trust Score',  
-  value: _analytics!.metrics.communityTrustScore.toStringAsFixed(0),  
+  value: _analytics!.communityTrustScore.toStringAsFixed(0),  
   icon: Icons.verified,  
   color: Colors.teal,  
 ),
                           const SizedBox(height: 24),  
                           Text('Historical Demographics', style: theme.textTheme.titleLarge),  
 const SizedBox(height: 12),  
-..._analytics!.historicalDemographics.map((d) => Card(  
+..._analytics!.demographics.map((d) => Card(  
   child: ListTile(  
     title: Text('Year ${d.academicYear}'),  
     subtitle: Text(  

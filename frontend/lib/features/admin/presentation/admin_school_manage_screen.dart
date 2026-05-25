@@ -466,6 +466,50 @@ Card(
           icon: const Icon(Icons.bar_chart_outlined),  
           label: const Text('Manage Demographics'),  
         ),  
+        const SizedBox(height: 16),  
+Card(  
+  child: Padding(  
+    padding: const EdgeInsets.all(16),  
+    child: Column(  
+      crossAxisAlignment: CrossAxisAlignment.start,  
+      children: [  
+        Text('School Achievements', style: theme.textTheme.titleLarge),  
+        const SizedBox(height: 8),  
+        const Text(  
+          'Submit and manage school achievements (Gold/Silver/Bronze) for MoE verification.',  
+        ),  
+        const SizedBox(height: 12),  
+        FilledButton.icon(  
+          onPressed: () => context.go('/admin/schools/${widget.schoolId}/achievements'),  
+          icon: const Icon(Icons.emoji_events_outlined),  
+          label: const Text('Manage Achievements'),  
+        ),  
+      ],  
+    ),  
+  ),  
+),  
+const SizedBox(height: 16),  
+Card(  
+  child: Padding(  
+    padding: const EdgeInsets.all(16),  
+    child: Column(  
+      crossAxisAlignment: CrossAxisAlignment.start,  
+      children: [  
+        Text('Staff Breakdown', style: theme.textTheme.titleLarge),  
+        const SizedBox(height: 8),  
+        const Text(  
+          'Manage staff qualification breakdown by education level (PhD, Masters, Degree, etc.).',  
+        ),  
+        const SizedBox(height: 12),  
+        FilledButton.icon(  
+          onPressed: () => context.go('/admin/schools/${widget.schoolId}/staff-breakdown'),  
+          icon: const Icon(Icons.people_outline),  
+          label: const Text('Manage Staff Breakdown'),  
+        ),  
+      ],  
+    ),  
+  ),  
+),
       ],  
     ),  
   ),  

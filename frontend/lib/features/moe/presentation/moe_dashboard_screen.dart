@@ -39,10 +39,21 @@ class _MoeDashboardScreenState extends ConsumerState<MoeDashboardScreen> {
     try {  
       final d = await ref.read(analyticsRepositoryProvider).dashboard();  
       setState(() => _dashboard = d);  
-    } on ApiException catch (e) {  
-      setState(() => _error = e.message);  
+    } on ApiException catch (e) {
+      String errorMessage = e.message;
+      if (e.statusCode == 401) {
+        errorMessage = 'You must be logged in to view the dashboard';
+      } else if (e.statusCode == 403) {
+        errorMessage = 'You do not have permission to view the dashboard';
+      } else if (e.code == 'VALIDATION_ERROR' && e.details != null) {
+        final validationErrors = e.details!.map((d) => '${d['path']}: ${d['message']}').join(', ');
+        errorMessage = 'Validation error: $validationErrors';
+      } else if (e.code == 'VALIDATION_ERROR') {
+        errorMessage = 'Validation error: ${e.message}';
+      }
+      setState(() => _error = errorMessage);
     } catch (e) {  
-      setState(() => _error = e.toString());  
+      setState(() => _error = 'An unexpected error occurred: ${e.toString()}');  
     } finally {  
       if (mounted) setState(() => _loading = false);  
     }  
@@ -139,6 +150,8 @@ class _MoeDashboardScreenState extends ConsumerState<MoeDashboardScreen> {
                           _UsersByRoleChart(data: d.usersByRole),  
                           const SizedBox(height: 24),  
                           _SchoolsByVerificationChart(data: d.schoolsByVerification),  
+                          const SizedBox(height: 24),  
+                          _SchoolsBySubcityChart(data: d.schoolsBySubcity),  
                           const SizedBox(height: 24),  
                           _TopSchoolsByRatingChart(schools: d.topSchools),  
                           const SizedBox(height: 24),  
@@ -339,7 +352,84 @@ class _SchoolsByVerificationChart extends StatelessWidget {
   }  
 }  
   
-// 4. Top Schools by Rating Horizontal Bar Chart  
+// 4. Schools by Subcity Bar Chart
+class _SchoolsBySubcityChart extends StatelessWidget {
+  final Map<String, int> data;
+  const _SchoolsBySubcityChart({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    if (data.isEmpty) {
+      return const Card(child: Padding(padding: EdgeInsets.all(16), child: Text('No subcity data available')));
+    }
+      
+    final entries = data.entries.toList();
+    final maxValue = entries.map((e) => e.value).reduce((a, b) => a > b ? a : b);
+      
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Schools by Subcity', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 200,
+              child: BarChart(
+                BarChartData(
+                  alignment: BarChartAlignment.spaceAround,
+                  maxY: maxValue > 0 ? maxValue * 1.2 : 10,
+                  barTouchData: BarTouchData(enabled: true),
+                  titlesData: FlTitlesData(
+                    leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (value, meta) {
+                          final index = value.toInt();
+                          if (index >= 0 && index < entries.length) {
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 8),
+                              child: Text(
+                                entries[index].key,
+                                style: theme.textTheme.bodySmall,
+                              ),
+                            );
+                          }
+                          return const SizedBox();
+                        },
+                      ),
+                    ),
+                  ),
+                  borderData: FlBorderData(show: false),
+                  barGroups: entries.asMap().entries.map((entry) {
+                    return BarChartGroupData(
+                      x: entry.key,
+                      barRods: [
+                        BarChartRodData(
+                          toY: entry.value.value.toDouble(),
+                          color: theme.colorScheme.primary,
+                          width: 20,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ],
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// 5. Top Schools by Rating Horizontal Bar Chart  
 class _TopSchoolsByRatingChart extends StatelessWidget {  
   final List<TopSchool> schools;  
   const _TopSchoolsByRatingChart({required this.schools});  
@@ -416,7 +506,7 @@ class _TopSchoolsByRatingChart extends StatelessWidget {
   }  
 }
 
-// 5. Most Followed Schools Leaderboard with Mini Bars  
+// 6. Most Followed Schools Leaderboard with Mini Bars  
 class _MostFollowedLeaderboard extends StatelessWidget {  
   final List<MostFollowed> schools;  
   const _MostFollowedLeaderboard({required this.schools});  
@@ -518,7 +608,7 @@ class _MostFollowedLeaderboard extends StatelessWidget {
   }  
 }
 
-// 6. MoE Ranking Leaderboard (Top 10)  
+// 7. MoE Ranking Leaderboard (Top 10)  
 class _MoeRankingLeaderboard extends StatelessWidget {  
   final List<MoeRankedSchool> schools;  
   const _MoeRankingLeaderboard({required this.schools});  
