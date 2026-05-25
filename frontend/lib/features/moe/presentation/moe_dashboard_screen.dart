@@ -429,6 +429,8 @@ class _SchoolsBySubcityChart extends StatelessWidget {
   }
 }
 
+
+
 // 5. Top Schools by Rating Horizontal Bar Chart  
 class _TopSchoolsByRatingChart extends StatelessWidget {  
   final List<TopSchool> schools;  
@@ -655,19 +657,11 @@ class _MoeRankingLeaderboard extends StatelessWidget {
                     ),  
                   ),  
                 ),  
-                title: Text(school.schoolName),  
-                subtitle: Text(  
-  'Score: ${school.moeScore.toStringAsFixed(2)} · '  
-  'Rating: ${school.rating.toStringAsFixed(1)} · '  
-  '${school.verificationStatus}'  
-  '${school.schoolLevel != null ? ' · Level: ${school.schoolLevel}' : ''}'  
-  '${school.schoolType != null ? ' · Type: ${school.schoolType}' : ''}'  
-  '${school.passingRate != null ? ' · Pass: ${school.passingRate}%' : ''}'  
-  '${school.nationalExamScore != null ? ' · Exam: ${school.nationalExamScore}%' : ''}',  
-),  
+                title: Text(school.schoolName),
+                subtitle: Text('Total Score: ${school.totalScore}/100'),
                 trailing: IconButton(  
                   icon: const Icon(Icons.open_in_new),  
-                  onPressed: () => context.go('/schools/${school.id}'),  
+                  onPressed: () => context.go('/schools/${school.schoolId}'),  
                 ),  
               );  
             }).toList(),  
@@ -676,4 +670,50 @@ class _MoeRankingLeaderboard extends StatelessWidget {
       ),  
     );  
   }  
+}
+
+class _ScoreBar extends StatelessWidget {
+  final String label;
+  final int score;
+  final int maxScore;
+
+  const _ScoreBar({
+    required this.label,
+    required this.score,
+    required this.maxScore,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final percentage = maxScore > 0 ? score / maxScore : 0;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(label, style: theme.textTheme.bodySmall),
+              Text('$score/$maxScore', style: theme.textTheme.bodySmall),
+            ],
+          ),
+          const SizedBox(height: 4),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: percentage.toDouble(),
+              backgroundColor: theme.colorScheme.surfaceContainerHighest,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                theme.colorScheme.primary,
+              ),
+              minHeight: 6,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

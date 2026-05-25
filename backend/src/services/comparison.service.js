@@ -39,8 +39,9 @@ const SCHOOL_SELECT = {
   longitude: true,
   verificationStatus: true,
   facilities: true,
-  schoolLevel: true,      
-  schoolType: true,        
+  schoolLevel: true,
+  schoolType: true,
+  contactEmail: true,
 };
 
 function decodeMetrics(raw) {

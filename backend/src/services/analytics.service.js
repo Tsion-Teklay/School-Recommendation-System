@@ -97,6 +97,148 @@ export async function getDashboard() {
         return acc;
       }, {});
 
+    // Get top schools by rating
+    const topSchoolsRaw = await db.school.findMany({
+      where: { rating: { gt: 0 } },
+      orderBy: { rating: "desc" },
+      take: 10,
+      include: {
+        _count: {
+          select: { reviews: true },
+        },
+      },
+    });
+
+    const topSchools = topSchoolsRaw.map((s) => ({
+      id: s.id,
+      schoolName: s.schoolName,
+      rating: Number(s.rating),
+      reviewCount: s._count.reviews,
+      verificationStatus: s.verificationStatus,
+    }));
+
+    // Get most followed schools
+    const mostFollowedRaw = await db.school.findMany({
+      orderBy: {
+        subscribers: {
+          _count: "desc",
+        },
+      },
+      take: 10,
+      include: {
+        _count: {
+          select: { subscribers: true },
+        },
+      },
+    });
+
+    const mostFollowed = mostFollowedRaw.map((s) => ({
+      schoolId: s.id,
+      schoolName: s.schoolName,
+      followers: s._count.subscribers,
+    }));
+
+    // Get MOE ranking with updated weights
+    const allSchools = await db.school.findMany({
+      include: {
+        demographics: {
+          orderBy: { academicYear: "desc" },
+          take: 1,
+        },
+        achievements: {
+          where: { status: "APPROVED" },
+        },
+        _count: {
+          select: { subscribers: true, reviews: true },
+        },
+      },
+    });
+
+    const moeRanking = await Promise.all(
+      allSchools.map(async (school) => {
+        const achievementScore = school.achievements.reduce((sum, a) => sum + (a.score || 0), 0);
+        const latestDemographics = school.demographics[0];
+
+        // Calculate gender balance index
+        let genderBalanceIndex = 0;
+        if (latestDemographics && latestDemographics.totalStudents > 0) {
+          const girlsRatio = latestDemographics.girlsCount / latestDemographics.totalStudents;
+          const boysRatio = latestDemographics.boysCount / latestDemographics.totalStudents;
+          genderBalanceIndex = Math.max(0, 1 - Math.abs(girlsRatio - boysRatio));
+        }
+
+        // Calculate passing rate score
+        const passingRateScore = latestDemographics ? (latestDemographics.passingRate || 0) / 100 : 0;
+
+        // Calculate national exam score
+        const nationalExamScore = latestDemographics ? (latestDemographics.nationalExamScore || 0) / 100 : 0;
+
+        // Calculate rating score
+        const ratingScore = (school.rating || 0) / 5;
+
+        // Calculate verification score
+        let verificationScore = 0;
+        switch (school.verificationStatus) {
+          case "VERIFIED":
+            verificationScore = 1;
+            break;
+          case "PENDING":
+            verificationScore = 0.4;
+            break;
+          case "REJECTED":
+            verificationScore = 0;
+            break;
+          default:
+            verificationScore = 0;
+        }
+
+        // Calculate facilities score
+        const facilities = school.facilities ? school.facilities.split(",").length : 0;
+        const facilitiesScore = Math.min(1, facilities / 5);
+
+        // Calculate achievement score (normalized to 0-1)
+        const achievementScoreNormalized = Math.min(1, achievementScore / 500);
+
+        // MOE Ranking weights (updated based on user requirements)
+        const weights = {
+          rating: 25,           // Rating: 25%
+          verification: 20,     // Verification: 20%
+          facilities: 15,       // Facilities: 15%
+          achievement: 15,      // Achievement score: 15%
+          genderBalance: 10,    // Gender balance index: 10%
+          passingRate: 10,      // Passing rate: 10%
+          nationalExam: 5,      // National exam score: 5%
+        };
+
+        const totalScore =
+          ratingScore * weights.rating +
+          verificationScore * weights.verification +
+          facilitiesScore * weights.facilities +
+          achievementScoreNormalized * weights.achievement +
+          genderBalanceIndex * weights.genderBalance +
+          passingRateScore * weights.passingRate +
+          nationalExamScore * weights.nationalExam;
+
+        return {
+          schoolId: school.id,
+          schoolName: school.schoolName,
+          totalScore: Math.round(totalScore),
+          breakdown: {
+            rating: Math.round(ratingScore * weights.rating),
+            verification: Math.round(verificationScore * weights.verification),
+            facilities: Math.round(facilitiesScore * weights.facilities),
+            achievement: Math.round(achievementScoreNormalized * weights.achievement),
+            genderBalance: Math.round(genderBalanceIndex * weights.genderBalance),
+            passingRate: Math.round(passingRateScore * weights.passingRate),
+            nationalExam: Math.round(nationalExamScore * weights.nationalExam),
+          },
+        };
+      })
+    );
+
+    // Sort by total score descending
+    moeRanking.sort((a, b) => b.totalScore - a.totalScore);
+
     return {
       summary: {
         totalUsers,
@@ -115,10 +257,10 @@ export async function getDashboard() {
       ),
       schoolsBySubcity: flattenGroup(schoolsBySubcityRaw, "subCity"),
       reportsByStatus: flattenGroup(reportsByStatusRaw, "status"),
-      topSchools: [],
-      mostFollowed: [],
+      topSchools,
+      mostFollowed,
       signupsLast30Days: [],
-      moeRanking: [],
+      moeRanking,
     };
   } catch (error) {
     console.error('Dashboard error:', error);

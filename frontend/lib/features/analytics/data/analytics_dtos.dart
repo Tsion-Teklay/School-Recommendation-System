@@ -170,56 +170,66 @@ class Dashboard {
   }
 }
 
-class MoeRankedSchool {  
-  final int id;  
-  final String schoolName;  
-  final double rating;  
-  final int reviewCount;  
-  final String verificationStatus;  
-  final String? facilities;  
-  final double moeScore;  
-  final String? schoolLevel;      
-  final String? schoolType;       
-  final num? passingRate;        
-  final num? nationalExamScore;  
+class MoeRankedSchool {
+  final int schoolId;
+  final String schoolName;
+  final int totalScore;
+  final MoeRankingBreakdown breakdown;
 
-  const MoeRankedSchool({  
-    required this.id,  
-    required this.schoolName,  
-    required this.rating,  
-    required this.reviewCount,  
-    required this.verificationStatus,  
-    required this.facilities,  
-    required this.moeScore,  
-    this.schoolLevel,             
-    this.schoolType,              
-    this.passingRate,             
-    this.nationalExamScore, 
-  });  
+  const MoeRankedSchool({
+    required this.schoolId,
+    required this.schoolName,
+    required this.totalScore,
+    required this.breakdown,
+  });
 
-  static num? coerceNum(dynamic v) {  
-    if (v == null) return null;  
-    if (v is num) return v;  
-    return num.tryParse(v.toString());  
+  factory MoeRankedSchool.fromJson(Map<String, dynamic> json) {
+    return MoeRankedSchool(
+      schoolId: json['schoolId'] as int,
+      schoolName: json['schoolName'] as String,
+      totalScore: json['totalScore'] as int,
+      breakdown: MoeRankingBreakdown.fromJson(
+        json['breakdown'] as Map<String, dynamic>,
+      ),
+    );
   }
+}
 
-  factory MoeRankedSchool.fromJson(Map<String, dynamic> json) {  
+class MoeRankingBreakdown {
+  final int rating;
+  final int verification;
+  final int facilities;
+  final int achievement;
+  final int genderBalance;
+  final int passingRate;
+  final int nationalExam;
 
+  const MoeRankingBreakdown({
+    required this.rating,
+    required this.verification,
+    required this.facilities,
+    required this.achievement,
+    required this.genderBalance,
+    required this.passingRate,
+    required this.nationalExam,
+  });
 
-    return MoeRankedSchool(  
-      id: json['id'] as int,  
-      schoolName: json['schoolName'] as String,  
-      rating: (json['rating'] as num).toDouble(),  
-      reviewCount: json['reviewCount'] as int? ?? 0,  
-      verificationStatus: json['verificationStatus'] as String? ?? 'PENDING',  
-      facilities: json['facilities'] as String?,  
-      moeScore: (json['moeScore'] as num).toDouble(), 
-      schoolLevel: json['schoolLevel'] as String?,          
-      schoolType: json['schoolType'] as String?,           
-      passingRate: coerceNum(json['passingRate']),         
-      nationalExamScore: coerceNum(json['nationalExamScore']), 
-    );  
-  }  
+  factory MoeRankingBreakdown.fromJson(Map<String, dynamic> json) {
+    int parseInt(dynamic v) {
+      if (v is num) return v.toInt();
+      if (v is String) return int.tryParse(v) ?? 0;
+      return 0;
+    }
+    return MoeRankingBreakdown(
+      rating: parseInt(json['rating']),
+      verification: parseInt(json['verification']),
+      facilities: parseInt(json['facilities']),
+      achievement: parseInt(json['achievement']),
+      genderBalance: parseInt(json['genderBalance']),
+      passingRate: parseInt(json['passingRate']),
+      nationalExam: parseInt(json['nationalExam']),
+    );
+  }
 }
 
 class SchoolAnalytics {  
