@@ -61,7 +61,7 @@ model School {
   adminId              Int                   @map("admin_id")
   schoolName           String                @map("school_name") @db.VarChar(150)
   contactEmail         String                @map("contact_email") @db.VarChar(100)
-  contactPhone         String                @map("contact_phone") @db.VarChar(15)
+  contactPhone         String?               @map("contact_phone") @db.VarChar(15)
   curriculum           Curriculum
   tuitionFee           Decimal               @map("tuition_fee") @db.Decimal(10, 2)
   facilities           String?               @db.Text

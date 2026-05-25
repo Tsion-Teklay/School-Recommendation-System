@@ -193,7 +193,7 @@ export async function registerUser({ fullName, email, phone, password, role, sub
   return newUser;
 });
 
-  if (normalizedEmail && verificationToken) {
+  if (normalizedEmail && emailVerificationToken) {
     await sendMailSafe(
       {
         to: normalizedEmail,

@@ -1,4 +1,5 @@
 import { db } from "../config/db.js";
+import { logger } from "../config/logger.js";
 import {
   ConflictError,
   ForbiddenError,
@@ -70,13 +71,13 @@ export async function submitVerificationRequest({
     );  
   }  
   
-  const request = await db.verificationRequest.create({  
-    data: {  
-      schoolId: school.id,  
-      submittedById: userId,  
-      documents,  
-      notes: notes || null,  
-    },  
+  const request = await db.verificationRequest.create({
+    data: {
+      schoolId: school.id,
+      submittedById: userId,
+      documents: JSON.stringify(documents),
+      notes: notes || null,
+    },
   });  
   
   // Notify MOE officer based on subcity  
@@ -91,11 +92,15 @@ export async function submitVerificationRequest({
         sourceId: school.id,  
       });  
     }  
-  } catch (err) {  
-    logger.warn({ err, requestId: request.id }, "Failed to notify MOE officer of verification request");  
-  }  
-  
-  return request;  
+  } catch (err) {
+    logger.warn({ err, requestId: request.id }, "Failed to notify MOE officer of verification request");
+  }
+
+  // Return the created request with parsed documents
+  return {
+    ...request,
+    documents: request.documents ? JSON.parse(request.documents) : null,
+  };  
 }
 
 // -----------------------------------------------------------------------------
@@ -137,8 +142,14 @@ export async function listVerificationRequests({ user, query }) {
     db.verificationRequest.count({ where }),
   ]);
 
+// Parse documents JSON strings back to arrays
+const parsedData = data.map(request => ({
+  ...request,
+  documents: request.documents ? JSON.parse(request.documents) : null,
+}));
+
   return {
-    data,
+    data: parsedData,
     meta: {
       total,
       page: Number(page),
@@ -164,8 +175,14 @@ export async function getVerificationRequest({ id, user }) {
   });
   if (!vr) throw new NotFoundError("Verification request not found");
 
-  if (user.role === "MOE_OFFICER") return vr;
-  if (user.role === "SCHOOL_ADMIN" && vr.school.adminId === user.id) return vr;
+// Parse documents JSON string back to array
+const parsedVr = {
+  ...vr,
+  documents: vr.documents ? JSON.parse(vr.documents) : null,
+};
+
+  if (user.role === "MOE_OFFICER") return parsedVr;
+  if (user.role === "SCHOOL_ADMIN" && vr.school.adminId === user.id) return parsedVr;
   throw new ForbiddenError("Not authorized to view this verification request");
 }
 
@@ -197,6 +214,12 @@ export async function reviewVerificationRequest({
       `Verification request already ${vr.status.toLowerCase()}`
     );
   }
+
+// Parse documents JSON string back to array for the response
+const parsedVr = {
+  ...vr,
+  documents: vr.documents ? JSON.parse(vr.documents) : null,
+};
 
   const newSchoolStatus = status === "APPROVED" ? "VERIFIED" : "REJECTED";
 
@@ -240,7 +263,11 @@ export async function reviewVerificationRequest({
     // intentional swallow — see comment above
   }
 
-  return updated;
+  // Return the updated request with parsed documents
+  return {
+    ...updated,
+    documents: updated.documents ? JSON.parse(updated.documents) : null,
+  };
 }
 
 
