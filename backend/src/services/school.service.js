@@ -82,6 +82,7 @@ export async function getAllSchools(query) {
     curriculum,
     schoolLevel,
     schoolType,
+    subCity,
     minFee,
     maxFee,
     minRating,
@@ -120,6 +121,11 @@ export async function getAllSchools(query) {
   // 🏫 Filter by school type if provided
   if (schoolType) {
     filters.schoolType = schoolType;
+  }
+
+  // 🏙️ Filter by subcity if provided
+  if (subCity) {
+    filters.subCity = subCity;
   }
 
   // 💰 Filter by fee range

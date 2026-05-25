@@ -375,6 +375,12 @@ class _DetailBody extends StatelessWidget {
                         label:
                             Text(inCart ? 'In compare cart' : 'Add to compare'),
                       ),
+                    if (isParent)
+                      OutlinedButton.icon(
+                        onPressed: () => context.go('/schools/${school.id}/analytics'),
+                        icon: const Icon(Icons.bar_chart_outlined),
+                        label: const Text('Analytics'),
+                      ),
                     if (onRevokeVerification != null &&
                         school.verificationStatus ==
                             VerificationStatus.verified)

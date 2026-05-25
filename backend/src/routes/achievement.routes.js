@@ -8,18 +8,18 @@ import * as achievementSchemas from "../schemas/achievement.schema.js";
 const router = Router();  
   
 // Achievement routes  
-router.post(  
-  "/achievements",  
-  authenticate,  
-  authorizeRoles("SCHOOL_ADMIN"),  
-  validate({ body: achievementSchemas.createAchievementBodySchema }),  
-  achievementController.createAchievement  
+router.post(
+  "/achievements",
+  authenticate,
+  authorizeRoles("SCHOOL_ADMIN"),
+  validate({ body: achievementSchemas.createAchievementBodySchema }),
+  achievementController.createAchievement
 );  
   
-router.get(  
-  "/achievements/school/:schoolId",  
-  authenticate,  
-  achievementController.getSchoolAchievements  
+router.get(
+  "/achievements/school/:schoolId",
+  authenticate,
+  achievementController.getSchoolAchievements
 );  
   
 router.get(  

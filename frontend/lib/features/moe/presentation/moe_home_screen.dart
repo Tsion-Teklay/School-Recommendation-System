@@ -55,6 +55,14 @@ class MoeHomeScreen extends ConsumerWidget {
                   buttonLabel: 'Manage announcements',
                   onTap: () => context.go('/moe/announcements'),
                 ),
+                _ActionCard(  
+  icon: Icons.emoji_events_outlined,  
+  title: 'Achievement review',  
+  body:  
+      'Review and approve/reject pending school achievement submissions.',  
+  buttonLabel: 'Review achievements',  
+  onTap: () => context.go('/moe/achievements'),  
+),
               ];
               if (wide) {
                 return Row(

@@ -1,6 +1,7 @@
 class Achievement {  
   final int id;  
   final int schoolId;  
+  final String? schoolName;
   final String title;  
   final String? description;  
   final String tier;  
@@ -16,6 +17,7 @@ class Achievement {
   Achievement({  
     required this.id,  
     required this.schoolId,  
+    this.schoolName,
     required this.title,  
     this.description,  
     required this.tier,  
@@ -33,6 +35,7 @@ class Achievement {
     return Achievement(  
       id: json['id'] as int,  
       schoolId: json['schoolId'] as int,  
+      schoolName: json['school']?['schoolName'] as String?,
       title: json['title'] as String,  
       description: json['description'] as String?,  
       tier: json['tier'] as String,  

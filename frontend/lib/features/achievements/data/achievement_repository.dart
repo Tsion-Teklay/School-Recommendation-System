@@ -18,14 +18,19 @@ class AchievementRepository {
     required int year,  
     List<String>? documents,  
   }) async {  
-    final res = await _dio.post('/api/achievements', data: {  
-      'schoolId': schoolId,  
-      'title': title,  
-      'description': description,  
-      'tier': tier,  
-      'year': year,  
-      'documents': documents,  
-    });  
+    final data = <String, dynamic>{
+      'schoolId': schoolId,
+      'title': title,
+      'tier': tier,
+      'year': year,
+    };
+    if (description != null) {
+      data['description'] = description;
+    }
+    if (documents != null) {
+      data['documents'] = documents;
+    }
+    final res = await _dio.post('/api/achievements', data: data);  
     if (res.statusCode != 201) throw _toApiException(res);  
     return Achievement.fromJson(res.data as Map<String, dynamic>);  
   }  
@@ -36,6 +41,13 @@ class AchievementRepository {
     final List<dynamic> data = res.data as List<dynamic>;  
     return data.map((e) => Achievement.fromJson(e as Map<String, dynamic>)).toList();  
   }  
+
+  Future<List<Achievement>> getPendingAchievements() async {  
+  final res = await _dio.get('/api/achievements/pending');  
+  if (res.statusCode != 200) throw _toApiException(res);  
+  final List<dynamic> data = res.data as List<dynamic>;  
+  return data.map((e) => Achievement.fromJson(e as Map<String, dynamic>)).toList();  
+}
   
   Future<Achievement?> getById(int id) async {  
     final res = await _dio.get('/api/achievements/$id');  
@@ -66,6 +78,22 @@ class AchievementRepository {
     final res = await _dio.delete('/api/achievements/$id');  
     if (res.statusCode != 200) throw _toApiException(res);  
   }  
+
+  Future<Achievement> reviewAchievement({  
+  required int id,  
+  required String status,  
+  String? reviewNotes,  
+}) async {
+  final data = <String, dynamic>{
+    'status': status,
+  };
+  if (reviewNotes != null) {
+    data['reviewNotes'] = reviewNotes;
+  }
+  final res = await _dio.post('/api/achievements/$id/review', data: data);  
+  if (res.statusCode != 200) throw _toApiException(res);  
+  return Achievement.fromJson(res.data as Map<String, dynamic>);  
+}
   
   // Staff breakdown methods  
   Future<StaffBreakdown> createStaffBreakdown({  
@@ -103,13 +131,16 @@ class AchievementRepository {
     if (res.statusCode != 200) throw _toApiException(res);  
   }  
   
-  ApiException _toApiException(Response res) {  
-    return ApiException(
-  res.data['error'] ?? 'An error occurred',
-  code: res.data['code']?.toString(),
-  statusCode: res.statusCode,
-);
-  }  
+  ApiException _toApiException(Response res) {
+  final data = res.data;
+  if (data is Map) {
+    final msg = (data['error'] ?? data['message'])?.toString() ?? 'An error occurred';
+    final code = data['code']?.toString();
+    final details = data['details'] as List<dynamic>?;
+    return ApiException(msg, statusCode: res.statusCode, code: code, details: details?.cast<Map<String, dynamic>>());
+  }
+  return ApiException('An error occurred (${res.statusCode})', statusCode: res.statusCode);
+}  
 }  
   
 final achievementRepositoryProvider =
