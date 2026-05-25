@@ -1,38 +1,63 @@
-import 'package:dio/dio.dart';  
-import '../../../core/api_client.dart';  
-import '../../auth/data/auth_repository.dart' show ApiException;  
-import 'achievement_dtos.dart';  
+import 'dart:typed_data';
+
+import 'package:dio/dio.dart';
+import '../../../core/api_client.dart';
+import '../../auth/data/auth_repository.dart' show ApiException;
+import 'achievement_dtos.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+/// Tiny holder for a file the user picked. Web uses `bytes`; native platforms
+/// can also use `bytes` (we read the file into memory before submitting).
+class PickedFile {
+  final String filename;
+  final Uint8List bytes;
+  final String? contentType;
+  const PickedFile({
+    required this.filename,
+    required this.bytes,
+    this.contentType,
+  });
+}
   
 class AchievementRepository {  
   final Dio _dio;  
   
   AchievementRepository(this._dio);  
   
-  // Achievement methods  
-  Future<Achievement> createAchievement({  
-    required int schoolId,  
-    required String title,  
-    String? description,  
-    required String tier,  
-    required int year,  
-    List<String>? documents,  
-  }) async {  
-    final data = <String, dynamic>{
-      'schoolId': schoolId,
-      'title': title,
-      'tier': tier,
-      'year': year,
-    };
-    if (description != null) {
-      data['description'] = description;
+  // Achievement methods
+  Future<Achievement> createAchievement({
+    required int schoolId,
+    required String title,
+    String? description,
+    required int year,
+    required List<PickedFile> documents,
+  }) async {
+    final form = FormData();
+    // Add files
+    for (final f in documents) {
+      form.files.add(MapEntry(
+        'documents',
+        MultipartFile.fromBytes(
+          f.bytes,
+          filename: f.filename,
+        ),
+      ));
     }
-    if (documents != null) {
-      data['documents'] = documents;
+    // Add optional description as form field
+    if (description != null && description.isNotEmpty) {
+      form.fields.add(MapEntry('description', description));
     }
-    final res = await _dio.post('/api/achievements', data: data);  
-    if (res.statusCode != 201) throw _toApiException(res);  
-    return Achievement.fromJson(res.data as Map<String, dynamic>);  
+    // Send title and year as query parameters
+    final res = await _dio.post(
+      '/api/schools/$schoolId/achievements',
+      data: form,
+      queryParameters: {
+        'title': title,
+        'year': year.toString(),
+      },
+    );
+    if (res.statusCode != 201) throw _toApiException(res);
+    return Achievement.fromJson(res.data as Map<String, dynamic>);
   }  
   
   Future<List<Achievement>> getSchoolAchievements(int schoolId) async {  
@@ -60,13 +85,13 @@ class AchievementRepository {
     required int id,  
     String? title,  
     String? description,  
-    String? tier,  
+      
     int? year,  
   }) async {  
     final data = <String, dynamic>{};  
     if (title != null) data['title'] = title;  
     if (description != null) data['description'] = description;  
-    if (tier != null) data['tier'] = tier;  
+      
     if (year != null) data['year'] = year;  
   
     final res = await _dio.put('/api/achievements/$id', data: data);  
@@ -79,10 +104,11 @@ class AchievementRepository {
     if (res.statusCode != 200) throw _toApiException(res);  
   }  
 
-  Future<Achievement> reviewAchievement({  
-  required int id,  
-  required String status,  
-  String? reviewNotes,  
+  Future<Achievement> reviewAchievement({
+  required int id,
+  required String status,
+  String? reviewNotes,
+  String? tier,
 }) async {
   final data = <String, dynamic>{
     'status': status,
@@ -90,9 +116,12 @@ class AchievementRepository {
   if (reviewNotes != null) {
     data['reviewNotes'] = reviewNotes;
   }
-  final res = await _dio.post('/api/achievements/$id/review', data: data);  
-  if (res.statusCode != 200) throw _toApiException(res);  
-  return Achievement.fromJson(res.data as Map<String, dynamic>);  
+  if (tier != null) {
+    data['tier'] = tier;
+  }
+  final res = await _dio.post('/api/achievements/$id/review', data: data);
+  if (res.statusCode != 200) throw _toApiException(res);
+  return Achievement.fromJson(res.data as Map<String, dynamic>);
 }
   
   // Staff breakdown methods  

@@ -1,11 +1,13 @@
+import 'dart:convert';
+
 class Achievement {  
   final int id;  
   final int schoolId;  
   final String? schoolName;
   final String title;  
   final String? description;  
-  final String tier;  
-  final int score;  
+  final String? tier;  // Made nullable - assigned by MOE officer
+  final int? score;   // Made nullable - calculated from tier by MOE officer  
   final int year;  
   final String status;  
   final List<String>? documents;  
@@ -20,8 +22,8 @@ class Achievement {
     this.schoolName,
     required this.title,  
     this.description,  
-    required this.tier,  
-    required this.score,  
+    this.tier,
+    this.score,  
     required this.year,  
     required this.status,  
     this.documents,  
@@ -31,27 +33,38 @@ class Achievement {
     this.reviewNotes,  
   });  
   
-  factory Achievement.fromJson(Map<String, dynamic> json) {  
-    return Achievement(  
-      id: json['id'] as int,  
-      schoolId: json['schoolId'] as int,  
+  factory Achievement.fromJson(Map<String, dynamic> json) {
+    // Parse documents - handle both JSON string and array formats
+    List<String>? parsedDocuments;
+    if (json['documents'] != null) {
+      if (json['documents'] is String) {
+        // Parse from JSON string
+        final docsList = jsonDecode(json['documents'] as String) as List;
+        parsedDocuments = docsList.map((e) => e['url'] as String).toList();
+      } else if (json['documents'] is List) {
+        // Already an array
+        parsedDocuments = (json['documents'] as List).map((e) => e as String).toList();
+      }
+    }
+
+    return Achievement(
+      id: json['id'] as int,
+      schoolId: json['schoolId'] as int,
       schoolName: json['school']?['schoolName'] as String?,
-      title: json['title'] as String,  
-      description: json['description'] as String?,  
-      tier: json['tier'] as String,  
-      score: json['score'] as int,  
-      year: json['year'] as int,  
-      status: json['status'] as String,  
-      documents: json['documents'] != null   
-          ? (json['documents'] as List).map((e) => e as String).toList()  
-          : null,  
-      submittedAt: DateTime.parse(json['submittedAt'] as String),  
-      reviewedAt: json['reviewedAt'] != null   
-          ? DateTime.parse(json['reviewedAt'] as String)  
-          : null,  
-      reviewedById: json['reviewedById'] as int?,  
-      reviewNotes: json['reviewNotes'] as String?,  
-    );  
+      title: json['title'] as String,
+      description: json['description'] as String?,
+      tier: json['tier'] as String?,
+      score: json['score'] as int?,
+      year: json['year'] as int,
+      status: json['status'] as String,
+      documents: parsedDocuments,
+      submittedAt: DateTime.parse(json['submittedAt'] as String),
+      reviewedAt: json['reviewedAt'] != null
+          ? DateTime.parse(json['reviewedAt'] as String)
+          : null,
+      reviewedById: json['reviewedById'] as int?,
+      reviewNotes: json['reviewNotes'] as String?,
+    );
   }  
 }  
   

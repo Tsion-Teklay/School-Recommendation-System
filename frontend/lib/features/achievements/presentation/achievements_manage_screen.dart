@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';  
 import 'package:flutter_riverpod/flutter_riverpod.dart';  
-import 'package:go_router/go_router.dart';  
+import 'package:go_router/go_router.dart';
+import 'package:file_picker/file_picker.dart';  
   
 import '../../../shared/widgets/responsive_shell.dart';  
 import '../../../shared/widgets/loading_button.dart';  
@@ -17,12 +18,12 @@ class AchievementsManageScreen extends ConsumerStatefulWidget {
   ConsumerState<AchievementsManageScreen> createState() => _AchievementsManageScreenState();  
 }  
   
-class _AchievementsManageScreenState extends ConsumerState<AchievementsManageScreen> {  
-  final _form = GlobalKey<FormState>();  
-  final _title = TextEditingController();  
-  final _description = TextEditingController();  
-  final _year = TextEditingController(text: DateTime.now().year.toString());  
-  String _selectedTier = 'BRONZE';  
+class _AchievementsManageScreenState extends ConsumerState<AchievementsManageScreen> {
+  final _form = GlobalKey<FormState>();
+  final _title = TextEditingController();
+  final _description = TextEditingController();
+  final _year = TextEditingController(text: DateTime.now().year.toString());
+  List<PickedFile> _pickedFiles = [];  
   
   bool _loading = false;  
   String? _error;  
@@ -55,10 +56,76 @@ class _AchievementsManageScreenState extends ConsumerState<AchievementsManageScr
     } finally {  
       if (mounted) setState(() => _loading = false);  
     }  
+  }
+
+  Future<void> _pickFile() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg'],
+        withData: true,
+      );
+
+      if (result == null || result.files.isEmpty) return;
+
+      final file = result.files.first;
+      
+      // Validate file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('File size exceeds 10MB limit')),
+        );
+        return;
+      }
+
+      // Get MIME type
+      String? contentType;
+      if (file.extension != null) {
+        switch (file.extension!.toLowerCase()) {
+          case 'pdf':
+            contentType = 'application/pdf';
+            break;
+          case 'png':
+            contentType = 'image/png';
+            break;
+          case 'jpg':
+          case 'jpeg':
+            contentType = 'image/jpeg';
+            break;
+        }
+      }
+
+      if (file.bytes == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to read file')),
+        );
+        return;
+      }
+
+      setState(() {
+        _pickedFiles.add(PickedFile(
+          filename: file.name,
+          bytes: file.bytes!,
+          contentType: contentType,
+        ));
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error picking file: ${e.toString()}')),
+      );
+    }
   }  
   
-  Future<void> _submit() async {  
-    if (!_form.currentState!.validate()) return;  
+  Future<void> _submit() async {
+    if (!_form.currentState!.validate()) return;
+    
+    if (_pickedFiles.isEmpty) {
+      setState(() => _error = 'Please upload at least one document');
+      return;
+    }
     
     // Check if user is authenticated
     final authController = ref.read(authControllerProvider);
@@ -67,26 +134,26 @@ class _AchievementsManageScreenState extends ConsumerState<AchievementsManageScr
       return;
     }
     
-    print('Submitting achievement: schoolId=${widget.schoolId}, title=${_title.text.trim()}, tier=$_selectedTier, year=${_year.text}');
+    print('Submitting achievement: schoolId=${widget.schoolId}, title=${_title.text.trim()}, year=${_year.text}');
     
     setState(() {  
       _loading = true;  
       _error = null;  
     });  
-    try {  
-      await ref.read(achievementRepositoryProvider).createAchievement(  
-        schoolId: widget.schoolId,  
-        title: _title.text.trim(),  
-        description: _description.text.trim().isEmpty ? null : _description.text.trim(),  
-        tier: _selectedTier,  
-        year: int.parse(_year.text),  
+    try {
+      await ref.read(achievementRepositoryProvider).createAchievement(
+        schoolId: widget.schoolId,
+        title: _title.text.trim(),
+        description: _description.text.trim().isEmpty ? null : _description.text.trim(),
+        year: int.parse(_year.text),
+        documents: _pickedFiles,
       );  
         
-      // Clear form fields  
-      _title.clear();  
-      _description.clear();  
-      _year.text = DateTime.now().year.toString();  
-      _selectedTier = 'BRONZE';  
+      // Clear form fields
+      _title.clear();
+      _description.clear();
+      _year.text = DateTime.now().year.toString();
+      _pickedFiles = [];  
         
       // Reload achievements list  
       await _load();  
@@ -152,7 +219,7 @@ class _AchievementsManageScreenState extends ConsumerState<AchievementsManageScr
     }  
   }  
   
-  Color _getTierColor(String tier) {  
+  Color _getTierColor(String? tier) {  
     switch (tier) {  
       case 'GOLD': return Colors.amber;  
       case 'SILVER': return Colors.grey;  
@@ -197,17 +264,46 @@ class _AchievementsManageScreenState extends ConsumerState<AchievementsManageScr
                               decoration: const InputDecoration(labelText: 'Description (optional)'),  
                               maxLines: 3,  
                             ),  
-                            const SizedBox(height: 12),  
-                            DropdownButtonFormField<String>(  
-                              value: _selectedTier,  
-                              decoration: const InputDecoration(labelText: 'Tier *'),  
-                              items: const [  
-                                DropdownMenuItem(value: 'GOLD', child: Text('Gold (100 pts)')),  
-                                DropdownMenuItem(value: 'SILVER', child: Text('Silver (50 pts)')),  
-                                DropdownMenuItem(value: 'BRONZE', child: Text('Bronze (25 pts)')),  
-                              ],  
-                              onChanged: (v) => setState(() => _selectedTier = v!),  
-                            ),  
+                            const SizedBox(height: 12),
+                            ElevatedButton.icon(
+                              onPressed: _loading ? null : _pickFile,
+                              icon: const Icon(Icons.upload_file),
+                              label: const Text('Upload Document'),
+                            ),
+                            if (_pickedFiles.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text('Uploaded documents:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                    const SizedBox(height: 4),
+                                    ..._pickedFiles.asMap().entries.map((entry) => Padding(
+                                      padding: const EdgeInsets.only(bottom: 4.0),
+                                      child: Row(
+                                        children: [
+                                          const Icon(Icons.description, size: 16),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              entry.value.filename,
+                                              style: const TextStyle(fontSize: 12),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          GestureDetector(
+                                            onTap: () => setState(() {
+                                              _pickedFiles.removeAt(entry.key);
+                                            }),
+                                            child: const Icon(Icons.close, size: 16, color: Colors.red),
+                                          ),
+                                        ],
+                                      ),
+                                    )),
+                                  ],
+                                ),
+                              ),  
                             const SizedBox(height: 12),  
                             TextFormField(  
                               controller: _year,  
@@ -231,14 +327,19 @@ class _AchievementsManageScreenState extends ConsumerState<AchievementsManageScr
                     if (_achievements.isEmpty)  
                       const Card(child: Padding(padding: EdgeInsets.all(16), child: Text('No achievements yet')))  
                     else  
-                      ..._achievements.map((a) => Card(  
-                        child: ListTile(  
-                          leading: CircleAvatar(  
-                            backgroundColor: _getTierColor(a.tier),  
-                            child: Text(a.tier[0], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),  
-                          ),  
-                          title: Text(a.title),  
-                          subtitle: Text('${a.year} • ${a.score} pts'),  
+                      ..._achievements.map((a) => Card(
+                        child: ListTile(
+                          leading: a.tier != null
+                              ? CircleAvatar(
+                                  backgroundColor: _getTierColor(a.tier),
+                                  child: Text(a.tier![0], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                )
+                              : const CircleAvatar(
+                                  backgroundColor: Colors.grey,
+                                  child: Icon(Icons.pending, color: Colors.white, size: 20),
+                                ),
+                          title: Text(a.title),
+                          subtitle: Text('${a.year}${a.score != null ? ' • ${a.score} pts' : ' • Pending review'}'),  
                           trailing: Row(  
                             mainAxisSize: MainAxisSize.min,  
                             children: [  

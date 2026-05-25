@@ -270,8 +270,8 @@ class SchoolRepository {
     );
   }
 
-  Future<void> revokeVerification(int schoolId) async {  
-  final res = await _dio.post('/api/schools/$schoolId/revoke');  
+  Future<void> revokeVerification(int schoolId, String reason) async {  
+  final res = await _dio.post('/api/schools/$schoolId/revoke', data: {'reason': reason});  
   if (res.statusCode != 200) throw _toApiException(res);  
 }
 Future<Map<int, int>> getRatingDistribution(int schoolId) async {  

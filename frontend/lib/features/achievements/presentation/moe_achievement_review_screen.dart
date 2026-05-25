@@ -1,11 +1,13 @@
-import 'package:flutter/material.dart';  
-import 'package:flutter_riverpod/flutter_riverpod.dart';  
-import 'package:go_router/go_router.dart';  
-  
-import '../../../shared/widgets/responsive_shell.dart';  
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../../../shared/widgets/responsive_shell.dart';
+import '../../../core/config.dart';
 import '../../auth/data/auth_repository.dart' show ApiException;
-import '../data/achievement_repository.dart';  
-import '../data/achievement_dtos.dart';  
+import '../data/achievement_repository.dart';
+import '../data/achievement_dtos.dart';
 import 'achievement_review_dialog.dart';  
   
 class MoeAchievementReviewScreen extends ConsumerStatefulWidget {  
@@ -63,7 +65,7 @@ class _MoeAchievementReviewScreenState extends ConsumerState<MoeAchievementRevie
   }  
   
   Future<void> _review(Achievement achievement) async {  
-    final result = await showDialog<({String status, String notes})>(  
+    final result = await showDialog<({String status, String notes, String? tier})>(  
       context: context,  
       builder: (_) => AchievementReviewDialog(achievement: achievement),  
     );  
@@ -71,10 +73,11 @@ class _MoeAchievementReviewScreenState extends ConsumerState<MoeAchievementRevie
   
     setState(() => _loading = true);  
     try {  
-      await ref.read(achievementRepositoryProvider).reviewAchievement(  
-        id: achievement.id,  
-        status: result.status,  
-        reviewNotes: result.notes.isEmpty ? null : result.notes,  
+      await ref.read(achievementRepositoryProvider).reviewAchievement(
+        id: achievement.id,
+        status: result.status,
+        reviewNotes: result.notes.isEmpty ? null : result.notes,
+        tier: result.tier,
       );  
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(  
         SnackBar(content: Text('Marked as ${result.status}')),  
@@ -109,7 +112,7 @@ class _MoeAchievementReviewScreenState extends ConsumerState<MoeAchievementRevie
     }  
   }  
   
-  Color _getTierColor(String tier) {  
+  Color _getTierColor(String? tier) {  
     switch (tier) {  
       case 'GOLD': return Colors.amber;  
       case 'SILVER': return Colors.grey;  
@@ -175,21 +178,23 @@ class _MoeAchievementReviewScreenState extends ConsumerState<MoeAchievementRevie
                 child: Column(  
                   crossAxisAlignment: CrossAxisAlignment.start,  
                   children: [  
-                    Row(  
-                      children: [  
-                        CircleAvatar(  
-                          backgroundColor: _getTierColor(a.tier),  
-                          child: Text(a.tier[0], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),  
-                        ),  
-                        const SizedBox(width: 12),  
-                        Expanded(  
-                          child: Column(  
-                            crossAxisAlignment: CrossAxisAlignment.start,  
-                            children: [  
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          backgroundColor: a.tier != null ? _getTierColor(a.tier) : Colors.grey,
+                          child: a.tier != null
+                              ? Text(a.tier![0], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))
+                              : const Icon(Icons.pending, color: Colors.white, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
                               Text(a.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                              Text('${a.schoolName ?? "School #${a.schoolId}"} • ${a.year} • ${a.score} pts'),  
-                            ],  
-                          ),  
+                              Text('${a.schoolName ?? "School #${a.schoolId}"} • ${a.year}${a.score != null ? ' • ${a.score} pts' : ' • Pending review'}'),
+                            ],
+                          ),
                         ),  
                         Chip(  
                           label: Text(a.status),  
@@ -197,9 +202,38 @@ class _MoeAchievementReviewScreenState extends ConsumerState<MoeAchievementRevie
                         ),  
                       ],  
                     ),  
-                    if (a.description != null) ...[  
-                      const SizedBox(height: 8),  
-                      Text(a.description!),  
+                    if (a.description != null) ...[
+                      const SizedBox(height: 8),
+                      Text(a.description!),
+                    ],
+                    if (a.documents != null && a.documents!.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      const Text('Documents:', style: TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      ...a.documents!.map((docUrl) => Padding(
+                        padding: const EdgeInsets.only(bottom: 4.0),
+                        child: InkWell(
+                          onTap: () async {
+                            final fullUrl = '${AppConfig.apiBaseUrl}$docUrl';
+                            final uri = Uri.parse(fullUrl);
+                            if (await canLaunchUrl(uri)) {
+                              await launchUrl(uri, mode: LaunchMode.externalApplication);
+                            }
+                          },
+                          child: Row(
+                            children: [
+                              const Icon(Icons.description, size: 16),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  docUrl.split('/').last,
+                                  style: const TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )),
                     ],  
                     if (a.reviewNotes != null) ...[  
                       const SizedBox(height: 8),  
