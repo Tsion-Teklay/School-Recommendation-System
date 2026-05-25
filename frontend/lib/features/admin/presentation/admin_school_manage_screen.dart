@@ -273,9 +273,9 @@ void _startEdit() {
     _editing = true;  
     _saveError = null;  
     _editSchoolName.text = _school!.schoolName;  
-    _editContactEmail.text = _school!.contactEmail;  
+    _editContactEmail.text = _school!.contactEmail ?? '';  
     _editContactPhone.text = _school!.contactPhone ?? '';  
-    _editTuitionFee.text = _school!.tuitionFee.toString();  
+    _editTuitionFee.text = _school!.tuitionFee?.toString() ?? '';  
     _editFacilities.text = _school!.facilities ?? '';  
     _editLatitude.text = _school!.latitude?.toString() ?? '';  
     _editLongitude.text = _school!.longitude?.toString() ?? '';  
@@ -843,7 +843,7 @@ class _SchoolSummary extends StatelessWidget {
                 children: [  
                   Chip(label: Text(school.curriculum.label())),  
                   Chip(label: Text(school.verificationStatus.label())),  
-                  if (school.tuitionFee > 0)  
+                  if ((school.tuitionFee ?? 0) > 0)  
                     Chip(  
                       avatar: const Icon(Icons.payments_outlined, size: 18),  
                       label: Text('${school.tuitionFee} / year'),  

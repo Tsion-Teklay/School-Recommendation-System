@@ -41,7 +41,11 @@ class _ForumListScreenState extends ConsumerState<ForumListScreen> {
     final controller = ref.read(forumListControllerProvider);
     final ok = await controller.create(result.trim());
     if (!mounted) return;
-    if (!ok) {
+    if (ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Post created successfully')),
+      );
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(controller.error ?? 'Failed to post')),
       );
@@ -51,6 +55,12 @@ class _ForumListScreenState extends ConsumerState<ForumListScreen> {
   @override
   Widget build(BuildContext context) {
     final controller = ref.watch(forumListControllerProvider);
+    // Ensure controller is loaded when building
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!controller.initialized && !controller.loading) {
+        controller.ensureLoaded();
+      }
+    });
     return ResponsiveShell(
       title: 'Forum',
       onScrollNotification: _onScroll,

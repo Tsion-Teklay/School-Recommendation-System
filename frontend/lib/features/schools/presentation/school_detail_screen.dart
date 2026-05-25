@@ -325,7 +325,7 @@ class _DetailBody extends StatelessWidget {
                       ),
                     _Badge(
                       icon: Icons.payments_outlined,
-                      label: 'Fee: ${school.tuitionFee}',
+                      label: 'Fee: ${school.tuitionFee ?? 'Not specified'}',
                     ),
                     if ((school.rating ?? 0) > 0)
                       _Badge(
@@ -352,7 +352,7 @@ class _DetailBody extends StatelessWidget {
                 const SizedBox(height: 20),
                 _ContactRow(
                   icon: Icons.email_outlined,
-                  label: school.contactEmail,
+                  label: school.contactEmail ?? 'Not specified',
                 ),
                 if (school.contactPhone != null &&
                     school.contactPhone!.isNotEmpty) ...[

@@ -214,15 +214,15 @@ extension VerificationStatusX on VerificationStatus {
 }
 class School {
   final int id;
-  final int adminId;
+  final int? adminId;
   final String schoolName;
   final SubCity? subCity;
   final String? woreda;
   final String? streetName;
-  final String contactEmail;
+  final String? contactEmail;
   final String? contactPhone;
   final Curriculum curriculum;
-  final num tuitionFee;
+  final num? tuitionFee;
   final String? facilities;
   final double? latitude;
   final double? longitude;
@@ -233,9 +233,14 @@ class School {
   /// Phase 11 — null when the school hasn't been categorised yet.
   final SchoolLevel? schoolLevel;
 
-  final SchoolType? schoolType;      
-  final num? passingRate;            
-  final num? nationalExamScore;      
+  final SchoolType? schoolType;
+  final num? passingRate;
+  final num? nationalExamScore;
+
+  /// Additional metrics from comparisons and analytics
+  final int? totalStudents;
+  final num? genderBalance;
+  final int? achievementScore;
 
   /// Phase 11 — facility images attached to this school. Only populated on
   /// the detail response (`GET /api/schools/:id`); the list endpoint
@@ -250,28 +255,31 @@ class School {
 
   const School({
     required this.id,
-    required this.adminId,
+    this.adminId,
     required this.schoolName,
-    required this.subCity,
-    required this.woreda,
-    required this.streetName,
-    required this.contactEmail,
-    required this.contactPhone,
+    this.subCity,
+    this.woreda,
+    this.streetName,
+    this.contactEmail,
+    this.contactPhone,
     required this.curriculum,
-    required this.tuitionFee,
-    required this.facilities,
-    required this.latitude,
-    required this.longitude,
-    required this.rating,
-    required this.reviewCount,
+    this.tuitionFee,
+    this.facilities,
+    this.latitude,
+    this.longitude,
+    this.rating,
+    this.reviewCount,
     required this.verificationStatus,
-    required this.schoolLevel,
-    required this.schoolType,
-    required this.passingRate,
-    required this.nationalExamScore,
+    this.schoolLevel,
+    this.schoolType,
+    this.passingRate,
+    this.nationalExamScore,
+    this.totalStudents,
+    this.genderBalance,
+    this.achievementScore,
     required this.facilityImages,
-    required this.followerCount,
-    required this.distanceKm,
+    this.followerCount,
+    this.distanceKm,
   });
 
   factory School.fromJson(Map<String, dynamic> json) {
@@ -284,10 +292,10 @@ class School {
       return double.tryParse(v.toString());
     }
 
-    num coerceNum(dynamic v, num fallback) {
-      if (v == null) return fallback;
+    num? coerceNum(dynamic v) {
+      if (v == null) return null;
       if (v is num) return v;
-      return num.tryParse(v.toString()) ?? fallback;
+      return num.tryParse(v.toString());
     }
 
     int? coerceInt(dynamic v) {
@@ -299,20 +307,17 @@ class School {
     final imgs = (json['facilityImages'] as List?) ?? const [];
     return School(
       id: coerceInt(json['id'])!,
-      adminId: coerceInt(json['adminId'])!,
+      adminId: coerceInt(json['adminId']),
       schoolName: json['schoolName'] as String,
       subCity: json['subCity'] == null
           ? null
-          : SubCity.values.firstWhere(
-              (v) => v.toWire() == json['subCity'],
-              orElse: () => throw FormatException("Invalid subCity: ${json['subCity']}"),
-            ),
+          : SubCity.fromWire(json['subCity'] as String?),
       woreda: json['woreda'] as String?,
       streetName: json['streetName'] as String?,
-      contactEmail: (json['contactEmail'] ?? '') as String,
+      contactEmail: json['contactEmail'] as String?,
       contactPhone: json['contactPhone'] as String?,
       curriculum: CurriculumX.fromWire(json['curriculum'] as String),
-      tuitionFee: coerceNum(json['tuitionFee'], 0),
+      tuitionFee: coerceNum(json['tuitionFee']),
       facilities: json['facilities'] as String?,
       latitude: coerceDouble(json['latitude']),
       longitude: coerceDouble(json['longitude']),
@@ -321,9 +326,12 @@ class School {
       verificationStatus:
           VerificationStatusX.fromWire(json['verificationStatus'] as String?),
       schoolLevel: SchoolLevelX.fromWire(json['schoolLevel'] as String?),
-      schoolType: SchoolTypeX.fromWire(json['schoolType'] as String?),  // Add  
-      passingRate: coerceDouble(json['passingRate']),                  // Add  
+      schoolType: SchoolTypeX.fromWire(json['schoolType'] as String?),
+      passingRate: coerceDouble(json['passingRate']),
       nationalExamScore: coerceDouble(json['nationalExamScore']),
+      totalStudents: coerceInt(json['totalStudents']),
+      genderBalance: coerceDouble(json['genderBalance']),
+      achievementScore: coerceInt(json['achievementScore']),
       facilityImages: imgs
           .whereType<Map>()
           .map((m) => FacilityImage.fromJson(m.cast<String, dynamic>()))
