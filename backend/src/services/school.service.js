@@ -42,7 +42,7 @@ export async function createSchool(data, userId) {
       ...(woreda ? { woreda } : {}),  
       ...(streetName ? { streetName } : {}),  
       contactEmail,
-      contactPhone,
+      ...(contactPhone ? { contactPhone } : {}),
       curriculum,
       // Phase 11 — optional education level; omitted keeps the column null.
       ...(schoolLevel ? { schoolLevel } : {}),
