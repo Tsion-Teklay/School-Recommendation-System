@@ -25,6 +25,24 @@ app.use(cors());
 app.use(express.json({ limit: "1mb" }));
 app.use(httpLogger);
 
+app.use((req, res, next) => {
+  const originalJson = res.json;
+
+  res.json = function (body) {
+    req.log.info(
+      {
+        statusCode: res.statusCode,
+        responseBody: body,
+      },
+      "Outgoing response"
+    );
+
+    return originalJson.call(this, body);
+  };
+
+  next();
+});
+
 // Basic global rate limit to protect against brute-force + accidental loops.
 const globalLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute

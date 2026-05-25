@@ -6,7 +6,6 @@ import {
 } from "../utils/errors.js";
 
 import {createNotification} from "./notification.service.js";
-import { logger } from "../config/logger.js";
 
 // ✅ Create School
 export async function createSchool(data, userId) {
@@ -343,20 +342,39 @@ export async function deleteSchool(id, userId) {
 }
 
 
-export async function revokeVerification(schoolId) {  
-  const school = await db.school.findUnique({  
-    where: { id: schoolId },  
-  });  
-    
-  if (!school) throw new NotFoundError("School not found");  
-  if (school.verificationStatus !== "VERIFIED") {  
-    throw new ValidationError("Only verified schools can be revoked");  
-  }  
-  
-  const updated = await db.school.update({  
-    where: { id: schoolId },  
-    data: { verificationStatus: "REVOKED" },  
-  });  
+export async function revokeVerification(schoolId, userId, reason) {
+  const school = await db.school.findUnique({
+    where: { id: schoolId },
+  });
+
+  if (!school) throw new NotFoundError("School not found");
+  if (school.verificationStatus !== "VERIFIED") {
+    throw new ValidationError("Only verified schools can be revoked");
+  }
+
+  const updated = await db.school.update({
+    where: { id: schoolId },
+    data: {
+      verificationStatus: "REVOKED",
+      revokedAt: new Date(),
+      revokedById: userId,
+      revocationReason: reason || null,
+    },
+  });
+
+  // Notify the school admin about the revocation with the reason
+  try {
+    await createNotification({
+      recipientId: school.adminId,
+      recipientType: "SCHOOL_ADMIN",
+      message: `Your school "${school.schoolName}" verification has been revoked by the Ministry of Education.${reason ? ` Reason: ${reason}` : ''}`,
+      sourceType: "SCHOOL",
+      sourceId: school.id,
+    });
+  } catch (error) {
+    console.error("Failed to notify school admin of verification revocation:", error);
+    // Don't fail the revocation if notification fails
+  }
   
   return updated;  
 }

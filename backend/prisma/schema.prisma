@@ -6,10 +6,453 @@ datasource db {
   provider = "mysql"
 }
 
+model User {
+  id                       Int                     @id @default(autoincrement())
+  fullName                 String                  @map("full_name") @db.VarChar(100)
+  email                    String                  @unique @db.VarChar(100)
+  phone                    String?                 @unique @db.VarChar(15)
+  password                 String                  @db.VarChar(255)
+  accountStatus            AccountStatus           @default(ACTIVE) @map("account_status")
+  role                     UserRole
+  createdAt                DateTime                @default(now()) @map("created_at")
+  updatedAt                DateTime                @updatedAt
+  emailVerificationExpires DateTime?               @map("email_verification_expires")
+  emailVerificationToken   String?                 @unique @map("email_verification_token") @db.VarChar(128)
+  emailVerified            Boolean                 @default(false) @map("email_verified")
+  passwordResetExpires     DateTime?               @map("password_reset_expires")
+  passwordResetToken       String?                 @unique @map("password_reset_token") @db.VarChar(128)
+  deactivatedAt            DateTime?               @map("deactivated_at")
+  achievementsReviewed     Achievement[]           @relation("AchievementReviewer")
+  announcements            Announcement[]
+  comparisons              Comparison[]
+  forumPosts               DiscussionForum[]
+  favorites                Favorite[]
+  likes                    Like[]
+  moderatorActions         ModeratorAction[]       @relation("Moderator")
+  moeOfficerProfile        MoEOfficer?
+  notifications            Notification[]
+  parentProfile            Parent?
+  recommendationHistories  RecommendationHistory[]
+  reports                  Report[]                @relation("Reporter")
+  reviews                  Review[]
+  administeredSchools      School[]                @relation("SchoolAdmin")
+  revokedSchools           School[]                @relation("SchoolRevoker")
+  subscriptions            Subscription[]
+  verificationsReviewed    VerificationRequest[]   @relation("VerificationReviewer")
+  verificationsSubmitted   VerificationRequest[]   @relation("VerificationSubmitter")
+
+  @@map("user")
+}
+
+model School {
+  id                   Int                   @id @default(autoincrement()) @map("school_id")
+  adminId              Int                   @map("admin_id")
+  schoolName           String                @map("school_name") @db.VarChar(150)
+  contactEmail         String                @map("contact_email") @db.VarChar(100)
+  contactPhone         String                @map("contact_phone") @db.VarChar(15)
+  curriculum           Curriculum
+  tuitionFee           Decimal               @map("tuition_fee") @db.Decimal(10, 2)
+  facilities           String?               @db.Text
+  verificationStatus   VerificationStatus    @default(PENDING) @map("verification_status")
+  latitude             Decimal?              @db.Decimal(10, 8)
+  longitude            Decimal?              @db.Decimal(11, 8)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  rating               Decimal               @default(0.00) @db.Decimal(3, 2)
+  reviewCount          Int                   @default(0) @map("review_count")
+  totalAchievementScore Int                  @default(0) @map("total_achievement_score")
+  schoolLevel          SchoolLevel?          @map("school_level")
+  schoolType           SchoolType?           @map("school_type")
+  streetName           String?               @map("street_name") @db.VarChar(100)
+  subCity              String?               @map("sub_city") @db.VarChar(50)
+  woreda               String?               @map("woreda") @db.VarChar(20)
+  revocationReason     String?               @map("revocation_reason") @db.Text
+  revokedAt            DateTime?             @map("revoked_at")
+  revokedById          Int?                  @map("revoked_by_id")
+  achievements         Achievement[]
+  analytics            Analytics[]
+  announcements        Announcement[]
+  comparisonSchools    ComparisonSchool[]
+  facilityImages       FacilityImage[]
+  favorites            Favorite[]
+  recommendedSchools   RecommendedSchool[]
+  reviews              Review[]
+  admin                User                  @relation("SchoolAdmin", fields: [adminId], references: [id])
+  revokedBy            User?                 @relation("SchoolRevoker", fields: [revokedById], references: [id])
+  demographics         SchoolDemographics[]
+  updates              SchoolUpdate[]
+  staffBreakdowns      StaffBreakdown[]
+  subscribers          Subscription[]
+  verificationRequests VerificationRequest[]
+
+  @@index([schoolName])
+  @@index([curriculum])
+  @@index([verificationStatus])
+  @@index([subCity])
+  @@index([adminId], map: "school_admin_id_fkey")
+  @@index([revokedById], map: "school_revoked_by_id_fkey")
+  @@map("school")
+}
+
+model Review {
+  id          Int               @id @default(autoincrement()) @map("review_id")
+  parentId    Int               @map("parent_id")
+  schoolId    Int               @map("school_id")
+  rating      Int
+  comment     String?           @db.Text
+  createdAt   DateTime          @default(now()) @map("created_at")
+  updatedAt   DateTime          @updatedAt
+  categoryTag ReviewCategoryTag @map("category_tag")
+  parent      User              @relation(fields: [parentId], references: [id])
+  school      School            @relation(fields: [schoolId], references: [id])
+
+  @@index([parentId], map: "review_parent_id_fkey")
+  @@index([schoolId], map: "review_school_id_fkey")
+  @@map("review")
+}
+
+model Announcement {
+  id            Int                  @id @default(autoincrement()) @map("announcement_id")
+  publisherId   Int                  @map("publisher_id")
+  publisherType PublisherType        @map("publisher_type")
+  title         String               @db.VarChar(150)
+  content       String               @db.Text
+  imgUrl        String?              @map("img_url") @db.VarChar(255)
+  createdAt     DateTime             @default(now()) @map("created_at")
+  updatedAt     DateTime             @updatedAt
+  category      AnnouncementCategory
+  attachments   String?              @db.VarChar(255)
+  datePosted    DateTime             @default(now()) @map("date_posted")
+  urgencyLevel  UrgencyLevel         @default(NORMAL) @map("urgency_level")
+  schoolId      Int?                 @map("school_id")
+  publisher     User                 @relation(fields: [publisherId], references: [id])
+  school        School?              @relation(fields: [schoolId], references: [id])
+
+  @@index([schoolId])
+  @@index([publisherId], map: "announcement_publisher_id_fkey")
+  @@map("announcement")
+}
+
+model Report {
+  id         Int               @id @default(autoincrement()) @map("report_id")
+  reporterId Int               @map("reporter_id")
+  targetType ReportTargetType  @map("target_type")
+  targetId   Int               @map("target_id")
+  reason     String            @db.VarChar(255)
+  status     ReportStatus      @default(PENDING) @map("status")
+  createdAt  DateTime          @default(now()) @map("created_at")
+  actions    ModeratorAction[]
+  reporter   User              @relation("Reporter", fields: [reporterId], references: [id])
+
+  @@index([reporterId], map: "report_reporter_id_fkey")
+  @@map("report")
+}
+
+model Like {
+  id         Int            @id @default(autoincrement()) @map("like_id")
+  userId     Int            @map("user_id")
+  targetType LikeTargetType @map("target_type")
+  targetId   Int            @map("target_id")
+  createdAt  DateTime       @default(now()) @map("created_at")
+  user       User           @relation(fields: [userId], references: [id])
+
+  @@unique([userId, targetType, targetId])
+  @@map("like")
+}
+
+model Parent {
+  userId     Int         @id @map("user_id")
+  address    String      @db.VarChar(255)
+  latitude   Decimal     @db.Decimal(10, 8)
+  longitude  Decimal     @db.Decimal(11, 8)
+  user       User        @relation(fields: [userId], references: [id])
+  preference Preference?
+
+  @@map("parent")
+}
+
+model FacilityImage {
+  id       Int    @id @default(autoincrement()) @map("facility_image_id")
+  schoolId Int    @map("school_id")
+  imageUrl String @map("image_url") @db.VarChar(255)
+  school   School @relation(fields: [schoolId], references: [id])
+
+  @@index([schoolId], map: "facility_images_school_id_fkey")
+  @@map("facility_images")
+}
+
+model MoEOfficer {
+  userId      Int     @id @map("user_id")
+  officerRole String  @map("officer_role") @db.VarChar(255)
+  subCity     SubCity @map("sub_city")
+  user        User    @relation(fields: [userId], references: [id])
+
+  @@index([subCity])
+  @@map("moe_officer")
+}
+
+model DiscussionForum {
+  id               Int               @id @default(autoincrement()) @map("post_id")
+  authorId         Int               @map("author_id")
+  content          String            @db.Text
+  timestamp        DateTime          @default(now())
+  threadId         Int?              @map("thread_id")
+  isEdited         Boolean           @default(false) @map("is_edited")
+  targetType       ForumTargetType   @default(FORUM_POST) @map("target_type")
+  targetId         Int?              @map("target_id")
+  moderationStatus String            @default("approved")
+  toxicityScore    Float?
+  author           User              @relation(fields: [authorId], references: [id])
+  thread           DiscussionForum?  @relation("ForumThread", fields: [threadId], references: [id])
+  replies          DiscussionForum[] @relation("ForumThread")
+
+  @@index([authorId], map: "discussion_forum_author_id_fkey")
+  @@index([threadId], map: "discussion_forum_thread_id_fkey")
+  @@map("discussion_forum")
+}
+
+model Favorite {
+  id        Int      @id @default(autoincrement())
+  parentId  Int      @map("parent_id")
+  schoolId  Int      @map("school_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  parent    User     @relation(fields: [parentId], references: [id])
+  school    School   @relation(fields: [schoolId], references: [id])
+
+  @@unique([parentId, schoolId])
+  @@index([schoolId], map: "favorite_school_id_fkey")
+  @@map("favorite")
+}
+
+model RecommendationHistory {
+  id                 Int                                @id @default(autoincrement()) @map("recommendation_id")
+  parentId           Int                                @map("parent_id")
+  generatedOn        DateTime                           @default(now()) @map("generated_on")
+  interactionResult  InteractionResult                  @map("interaction_result")
+  features           String?                            @db.LongText
+  parent             User                               @relation(fields: [parentId], references: [id])
+  preferenceCriteria RecommendationPreferenceCriteria[]
+  recommendedSchools RecommendedSchool[]
+
+  @@index([parentId], map: "recommendation_history_parent_id_fkey")
+  @@map("recommendation_history")
+}
+
+model Comparison {
+  id                Int                @id @default(autoincrement()) @map("comparison_id")
+  parentId          Int                @map("parent_id")
+  metricsUsed       String             @map("metrics_used") @db.Text
+  createdAt         DateTime           @default(now()) @map("created_at")
+  parent            User               @relation(fields: [parentId], references: [id])
+  comparisonSchools ComparisonSchool[]
+
+  @@index([parentId], map: "comparison_parent_id_fkey")
+  @@map("comparison")
+}
+
+model Analytics {
+  id           Int     @id @default(autoincrement()) @map("data_id")
+  schoolId     Int     @map("school_id")
+  metricType   String  @map("metric_type") @db.VarChar(255)
+  metricValue  Decimal @map("metric_value") @db.Decimal(10, 2)
+  academicYear Int     @map("academic_year")
+  source       String  @db.VarChar(255)
+  school       School  @relation(fields: [schoolId], references: [id])
+
+  @@index([schoolId], map: "analytics_school_id_fkey")
+  @@map("analytics")
+}
+
+model SchoolDemographics {
+  id                Int      @id @default(autoincrement())
+  schoolId          Int      @map("school_id")
+  academicYear      Int      @map("academic_year")
+  totalStudents     Int      @map("total_students")
+  girlsCount        Int      @map("girls_count")
+  boysCount         Int      @map("boys_count")
+  passingRate       Decimal  @map("passing_rate") @db.Decimal(5, 2)
+  nationalExamScore Decimal  @map("national_exam_score") @db.Decimal(5, 2)
+  submittedAt       DateTime @default(now()) @map("submitted_at")
+  school            School   @relation(fields: [schoolId], references: [id])
+
+  @@unique([schoolId, academicYear])
+  @@index([schoolId])
+  @@index([academicYear])
+  @@map("school_demographics")
+}
+
+model StaffBreakdown {
+  id             Int            @id @default(autoincrement())
+  schoolId       Int            @map("school_id")
+  educationLevel EducationLevel @map("education_level")
+  count          Int
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+  school         School         @relation(fields: [schoolId], references: [id])
+
+  @@unique([schoolId, educationLevel])
+  @@index([schoolId])
+  @@map("staff_breakdown")
+}
+
+model Achievement {
+  id           Int                       @id @default(autoincrement())
+  schoolId     Int                       @map("school_id")
+  title        String                    @db.VarChar(150)
+  description  String?                   @db.Text
+  tier         AchievementTier?          // Made nullable - assigned by MOE officer
+  score        Int?                      // Made nullable - calculated from tier by MOE officer
+  year         Int
+  status       VerificationRequestStatus @default(PENDING)
+  documents    String?                   @db.LongText
+  submittedAt  DateTime                  @default(now()) @map("submitted_at")
+  reviewedAt   DateTime?                 @map("reviewed_at")
+  reviewedById Int?                      @map("reviewed_by_id")
+  reviewNotes  String?                   @map("review_notes") @db.Text
+  reviewedBy   User?                     @relation("AchievementReviewer", fields: [reviewedById], references: [id])
+  school       School                    @relation(fields: [schoolId], references: [id])
+
+  @@index([schoolId])
+  @@index([status])
+  @@index([year])
+  @@index([reviewedById], map: "achievement_reviewed_by_id_fkey")
+  @@map("achievement")
+}
+
+model ModeratorAction {
+  id          Int                 @id @default(autoincrement()) @map("action_id")
+  moderatorId Int                 @map("moderator_id")
+  reportId    Int                 @map("report_id")
+  actionType  ModeratorActionType @map("action_type")
+  notes       String?             @db.Text
+  actionDate  DateTime            @default(now()) @map("action_date")
+  moderator   User                @relation("Moderator", fields: [moderatorId], references: [id])
+  report      Report              @relation(fields: [reportId], references: [id])
+
+  @@index([moderatorId], map: "moderator_action_moderator_id_fkey")
+  @@index([reportId], map: "moderator_action_report_id_fkey")
+  @@map("moderator_action")
+}
+
+model Notification {
+  id            Int                       @id @default(autoincrement()) @map("notification_id")
+  recipientId   Int                       @map("recipient_id")
+  recipientType NotificationRecipientType @map("recipient_type")
+  message       String                    @db.Text
+  sourceType    NotificationSourceType    @map("source_type")
+  sourceId      Int                       @map("source_id")
+  isRead        Boolean                   @default(false) @map("is_read")
+  createdAt     DateTime                  @default(now()) @map("created_at")
+  recipient     User                      @relation(fields: [recipientId], references: [id])
+
+  @@index([recipientId])
+  @@map("notification")
+}
+
+model SchoolUpdate {
+  id          Int      @id @default(autoincrement()) @map("update_id")
+  schoolId    Int      @map("school_id")
+  title       String   @db.VarChar(255)
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  school      School   @relation(fields: [schoolId], references: [id])
+
+  @@index([schoolId], map: "school_update_school_id_fkey")
+  @@map("school_update")
+}
+
+model Preference {
+  id          Int          @id @default(autoincrement()) @map("preference_id")
+  parentId    Int          @unique @map("parent_id")
+  minBudget   Decimal      @map("min_budget") @db.Decimal(10, 2)
+  maxBudget   Decimal      @map("max_budget") @db.Decimal(10, 2)
+  curriculum  Curriculum
+  distance    Int
+  schoolLevel SchoolLevel? @map("school_level")
+  schoolType  SchoolType?  @map("school_type")
+  parent      Parent       @relation(fields: [parentId], references: [userId])
+
+  @@map("preference")
+}
+
+model RecommendedSchool {
+  recommendationId  Int                   @map("recommendation_id")
+  schoolId          Int                   @map("school_id")
+  features          String?               @db.LongText
+  interactionResult String?
+  recommendation    RecommendationHistory @relation(fields: [recommendationId], references: [id])
+  school            School                @relation(fields: [schoolId], references: [id])
+
+  @@id([recommendationId, schoolId])
+  @@index([schoolId], map: "recommended_school_school_id_fkey")
+  @@map("recommended_school")
+}
+
+model RecommendationPreferenceCriteria {
+  id               Int                   @id @default(autoincrement()) @map("preference_criteria_id")
+  recommendationId Int                   @map("recommendation_id")
+  minBudget        Decimal               @map("min_budget") @db.Decimal(10, 2)
+  maxBudget        Decimal               @map("max_budget") @db.Decimal(10, 2)
+  curriculum       Curriculum
+  distance         Int
+  schoolLevel      SchoolLevel?          @map("school_level")
+  schoolType       SchoolType?           @map("school_type")
+  recommendation   RecommendationHistory @relation(fields: [recommendationId], references: [id])
+
+  @@index([recommendationId], map: "recommendation_preference_criteria_recommendation_id_fkey")
+  @@map("recommendation_preference_criteria")
+}
+
+model Subscription {
+  id        Int      @id @default(autoincrement()) @map("subscription_id")
+  parentId  Int      @map("parent_id")
+  schoolId  Int      @map("school_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  parent    User     @relation(fields: [parentId], references: [id])
+  school    School   @relation(fields: [schoolId], references: [id])
+
+  @@unique([parentId, schoolId])
+  @@index([schoolId])
+  @@map("subscription")
+}
+
+model VerificationRequest {
+  id            Int                       @id @default(autoincrement()) @map("verification_request_id")
+  schoolId      Int                       @map("school_id")
+  submittedById Int                       @map("submitted_by_id")
+  reviewedById  Int?                      @map("reviewed_by_id")
+  status        VerificationRequestStatus @default(PENDING)
+  documents     String?                   @db.LongText
+  notes         String?                   @db.Text
+  reviewNotes   String?                   @map("review_notes") @db.Text
+  submittedAt   DateTime                  @default(now()) @map("submitted_at")
+  reviewedAt    DateTime?                 @map("reviewed_at")
+  reviewedBy    User?                     @relation("VerificationReviewer", fields: [reviewedById], references: [id])
+  school        School                    @relation(fields: [schoolId], references: [id])
+  submittedBy   User                      @relation("VerificationSubmitter", fields: [submittedById], references: [id])
+
+  @@index([schoolId])
+  @@index([status])
+  @@index([reviewedById], map: "verification_request_reviewed_by_id_fkey")
+  @@index([submittedById], map: "verification_request_submitted_by_id_fkey")
+  @@map("verification_request")
+}
+
+model ComparisonSchool {
+  id           Int        @id @default(autoincrement()) @map("comparison_school_id")
+  comparisonId Int        @map("comparison_id")
+  schoolId     Int        @map("school_id")
+  comparison   Comparison @relation(fields: [comparisonId], references: [id])
+  school       School     @relation(fields: [schoolId], references: [id])
+
+  @@index([comparisonId], map: "comparison_school_comparison_id_fkey")
+  @@index([schoolId], map: "comparison_school_school_id_fkey")
+  @@map("comparison_school")
+}
+
 enum AccountStatus {
-  ACTIVE      @map("active")
-  DEACTIVATED @map("deactivated")
-  SELF_DEACTIVATED @map("self_deactivated")  
+  ACTIVE           @map("active")
+  DEACTIVATED      @map("deactivated")
+  SELF_DEACTIVATED @map("self_deactivated")
 }
 
 enum UserRole {
@@ -36,31 +479,31 @@ enum SchoolType {
   CHURCH     @map("church")
 }
 
-enum SubCity {  
-  ADDIS_KETEMA @map("addis_ketema")  
-  AKALI_KALTI @map("akali_kalti")  
-  ARADA @map("arada")  
-  BOLE @map("bole")  
-  GULELE @map("gulele")  
-  KOLFE_KERANIO @map("kolfe_keranio")  
-  KIRKOS @map("kirkos")  
-  LIDETA @map("lideta")  
-  NIFAS_SILK_LAFTO @map("nifas_silk_lafto")  
-  YEKKA @map("yekka")  
+enum SubCity {
+  ADDIS_KETEMA     @map("addis_ketema")
+  AKALI_KALTI      @map("akali_kalti")
+  ARADA            @map("arada")
+  BOLE             @map("bole")
+  GULELE           @map("gulele")
+  KOLFE_KERANIO    @map("kolfe_keranio")
+  KIRKOS           @map("kirkos")
+  LIDETA           @map("lideta")
+  NIFAS_SILK_LAFTO @map("nifas_silk_lafto")
+  YEKKA            @map("yekka")
 }
 
-enum AchievementTier {  
-  GOLD   @map("gold")  
-  SILVER @map("silver")  
-  BRONZE @map("bronze")  
-}  
-  
-enum EducationLevel {  
-  PHD       @map("phd")  
-  MASTERS   @map("masters")  
-  DEGREE    @map("degree")  
-  DIPLOMA   @map("diploma")  
-  CERTIFICATE @map("certificate")  
+enum AchievementTier {
+  GOLD   @map("gold")
+  SILVER @map("silver")
+  BRONZE @map("bronze")
+}
+
+enum EducationLevel {
+  PHD         @map("phd")
+  MASTERS     @map("masters")
+  DEGREE      @map("degree")
+  DIPLOMA     @map("diploma")
+  CERTIFICATE @map("certificate")
 }
 
 enum VerificationStatus {
@@ -73,8 +516,8 @@ enum VerificationStatus {
 enum ReviewCategoryTag {
   SAFETY           @map("safety")
   TEACHING_QUALITY @map("teaching_quality")
-  FACILITIES      @map("facilities")
-  AFFORDABILITY   @map("affordability")
+  FACILITIES       @map("facilities")
+  AFFORDABILITY    @map("affordability")
   OTHER            @map("other")
 }
 
@@ -97,8 +540,8 @@ enum UrgencyLevel {
 }
 
 enum InteractionResult {
-  OPENED  @map("opened")
-  IGNORED @map("ignored")
+  OPENED   @map("opened")
+  IGNORED  @map("ignored")
   FOLLOWED @map("followed")
 }
 
@@ -144,478 +587,12 @@ enum VerificationRequestStatus {
   REJECTED @map("rejected")
 }
 
-enum LikeTargetType {  
-  ANNOUNCEMENT @map("announcement")  
-  FORUM_POST   @map("forum_post")  
+enum LikeTargetType {
+  ANNOUNCEMENT @map("announcement")
+  FORUM_POST   @map("forum_post")
 }
 
-enum ForumTargetType {  
-  FORUM_POST      @map("forum_post")  
-  ANNOUNCEMENT    @map("announcement")  
+enum ForumTargetType {
+  FORUM_POST   @map("forum_post")
+  ANNOUNCEMENT @map("announcement")
 }
-
-model User {
-  id            Int           @id @default(autoincrement())
-  fullName      String        @map("full_name") @db.VarChar(100)
-  email         String        @unique @db.VarChar(100)
-  phone         String?       @unique @db.VarChar(15)
-  password      String        @db.VarChar(255)
-  accountStatus AccountStatus @default(ACTIVE) @map("account_status")
-  deactivatedAt DateTime?     @map("deactivated_at") 
-  role          UserRole
-
-  // --- Phase 1 auth completeness ---------------------------------------
-  emailVerified            Boolean   @default(false) @map("email_verified")
-  emailVerificationToken   String?   @unique @map("email_verification_token") @db.VarChar(128)
-  emailVerificationExpires DateTime? @map("email_verification_expires")
-  passwordResetToken       String?   @unique @map("password_reset_token") @db.VarChar(128)
-  passwordResetExpires     DateTime? @map("password_reset_expires")
-
-  createdAt     DateTime      @default(now()) @map("created_at")
-  updatedAt     DateTime      @updatedAt
-
-  parentProfile           Parent?
-  recommendationHistories RecommendationHistory[]
-  comparisons             Comparison[]
-  favorites               Favorite[]
-  reviews                 Review[]
-
-  administeredSchools School[] @relation("SchoolAdmin")
-
-  moeOfficerProfile MoEOfficer?
-  moderatorActions  ModeratorAction[] @relation("Moderator")
-  achievementsReviewed Achievement[] @relation("AchievementReviewer")
-
-  announcements Announcement[]
-  reports       Report[] @relation("Reporter")
-  forumPosts    DiscussionForum[]
-  notifications Notification[]
-  likes         Like[]
-
-  subscriptions          Subscription[]
-  verificationsSubmitted VerificationRequest[] @relation("VerificationSubmitter")
-  verificationsReviewed  VerificationRequest[] @relation("VerificationReviewer")
-
-  @@map("user")
-}
-
-model School {
-  id                 Int                @id @default(autoincrement()) @map("school_id")
-  adminId            Int                @map("admin_id")
-  schoolName         String             @map("school_name") @db.VarChar(150)
-  subCity String? @map("sub_city") @db.VarChar(50)  
-  woreda String? @map("woreda") @db.VarChar(20)  
-  streetName String? @map("street_name") @db.VarChar(100)
-  contactEmail       String             @map("contact_email") @db.VarChar(100)
-  contactPhone       String             @map("contact_phone") @db.VarChar(15)
-  curriculum         Curriculum
-  schoolLevel        SchoolLevel?       @map("school_level")
-  schoolType         SchoolType?        @map("school_type")
-  tuitionFee         Decimal            @db.Decimal(10,2) @map("tuition_fee")
-  facilities         String?            @db.Text
-  verificationStatus VerificationStatus @default(PENDING) @map("verification_status")
-  latitude           Decimal?           @db.Decimal(10, 8)
-  longitude          Decimal?           @db.Decimal(11, 8)
-
-  // --- Phase 2 rating aggregate (recomputed on review CRUD) -----------
-  rating      Decimal @default(0)    @db.Decimal(3, 2)
-  reviewCount Int     @default(0)    @map("review_count")
-
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
-
-  admin              User               @relation("SchoolAdmin", fields: [adminId], references: [id])
-  analytics          Analytics[]
-  announcements      Announcement[]
-  comparisonSchools  ComparisonSchool[]
-  facilityImages     FacilityImage[]
-  favorites          Favorite[]
-  recommendedSchools RecommendedSchool[]
-  reviews            Review[]
-  updates            SchoolUpdate[]
-  subscribers        Subscription[]
-  verificationRequests VerificationRequest[]
-  demographics SchoolDemographics[]
-  staffBreakdowns StaffBreakdown[]  
-  achievements   Achievement[]
-
-  @@index([schoolName])
-  @@index([curriculum])
-  @@index([verificationStatus])
-  @@index([subCity])
-
-  @@map("school")
-}
-
-model Review {
-  id          Int               @id @default(autoincrement()) @map("review_id")
-  parentId    Int               @map("parent_id")
-  schoolId    Int               @map("school_id")
-  rating      Int
-  comment     String?           @db.Text
-  createdAt   DateTime          @default(now()) @map("created_at")
-  updatedAt   DateTime          @updatedAt
-  categoryTag ReviewCategoryTag @map("category_tag")
-
-  parent User   @relation(fields: [parentId], references: [id])
-  school School @relation(fields: [schoolId], references: [id])
-
-  @@map("review")
-}
-
-model Announcement {
-  id            Int                  @id @default(autoincrement()) @map("announcement_id")
-  publisherId   Int                  @map("publisher_id")
-  publisherType PublisherType        @map("publisher_type")
-  // Phase 4: school-scoped announcements set this; MoE-level announcements
-  // leave it null. Drives targeted fan-out (subscribers of THIS school) so
-  // we no longer blast every parent on every post.
-  schoolId      Int?                 @map("school_id")
-  title         String               @db.VarChar(150)
-  content       String               @db.Text
-  imgUrl        String?              @map("img_url") @db.VarChar(255)
-  createdAt     DateTime             @default(now()) @map("created_at")
-  updatedAt     DateTime             @updatedAt
-  category      AnnouncementCategory
-  attachments   String?              @db.VarChar(255)
-  datePosted    DateTime             @default(now()) @map("date_posted")
-  urgencyLevel  UrgencyLevel         @default(NORMAL) @map("urgency_level")
-
-  publisher User    @relation(fields: [publisherId], references: [id])
-  school    School? @relation(fields: [schoolId], references: [id])
-
-  @@index([schoolId])
-  @@map("announcement")
-}
-
-model Report {
-  id         Int               @id @default(autoincrement()) @map("report_id")
-  reporterId Int               @map("reporter_id")
-  targetType ReportTargetType  @map("target_type")
-  targetId   Int               @map("target_id")
-  reason     String            @db.VarChar(255)
-  status     ReportStatus      @default(PENDING) @map("status")
-  createdAt  DateTime          @default(now()) @map("created_at")
-
-  reporter User @relation("Reporter", fields: [reporterId], references: [id])
-  actions  ModeratorAction[]
-
-  @@map("report")
-}
-
-model Like {  
-  id         Int           @id @default(autoincrement()) @map("like_id")  
-  userId     Int           @map("user_id")  
-  targetType LikeTargetType @map("target_type")  
-  targetId   Int           @map("target_id")  
-  createdAt  DateTime      @default(now()) @map("created_at")  
-  
-  user User @relation(fields: [userId], references: [id])  
-  
-  @@unique([userId, targetType, targetId])  
-  @@map("like")  
-}
-
-model Parent {
-  userId    Int     @id @map("user_id")
-  address   String  @db.VarChar(255)
-  latitude  Decimal @db.Decimal(10, 8)
-  longitude Decimal @db.Decimal(11, 8)
-
-  user       User        @relation(fields: [userId], references: [id])
-  preference Preference?
-
-  @@map("parent")
-}
-
-model FacilityImage {
-  id       Int    @id @default(autoincrement()) @map("facility_image_id")
-  schoolId Int    @map("school_id")
-  imageUrl String @map("image_url") @db.VarChar(255)
-
-  school School @relation(fields: [schoolId], references: [id])
-
-  @@map("facility_images")
-}
-
-model MoEOfficer {
-  userId      Int    @id @map("user_id")
-  officerRole String @map("officer_role") @db.VarChar(255)
-  subCity SubCity @map("sub_city")  
-
-  user User @relation(fields: [userId], references: [id])
-
-  @@index([subCity])
-
-  @@map("moe_officer")
-}
-
-model DiscussionForum {
-  id        Int               @id @default(autoincrement()) @map("post_id")
-  authorId  Int               @map("author_id")
-  content   String            @db.Text
-  timestamp DateTime          @default(now())
-  threadId  Int?              @map("thread_id")
-  isEdited  Boolean           @default(false) @map("is_edited")
-  targetType ForumTargetType  @default(FORUM_POST) @map("target_type") 
-  targetId   Int?             @map("target_id") 
-  moderationStatus  String    @default("approved")  
-  toxicityScore     Float?  
-
-  author  User              @relation(fields: [authorId], references: [id])
-  thread  DiscussionForum?  @relation("ForumThread", fields: [threadId], references: [id])
-  replies DiscussionForum[] @relation("ForumThread")
-
-  @@index([authorId], map: "discussion_forum_author_id_fkey")
-  @@index([threadId], map: "discussion_forum_thread_id_fkey")
-  @@map("discussion_forum")
-}
-
-model Favorite {
-  id        Int      @id @default(autoincrement())
-  parentId  Int      @map("parent_id")
-  schoolId  Int      @map("school_id")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  parent User   @relation(fields: [parentId], references: [id])
-  school School @relation(fields: [schoolId], references: [id])
-
-  @@unique([parentId, schoolId])
-  @@map("favorite")
-}
-
-model RecommendationHistory {
-  id                Int               @id @default(autoincrement()) @map("recommendation_id")
-  parentId          Int               @map("parent_id")
-  generatedOn       DateTime          @default(now()) @map("generated_on")
-  interactionResult InteractionResult @map("interaction_result")
-  features  Json?
-
-  parent             User                            @relation(fields: [parentId], references: [id])
-  recommendedSchools RecommendedSchool[]
-  preferenceCriteria RecommendationPreferenceCriteria[]
-
-  @@map("recommendation_history")
-}
-
-model Comparison {
-  id          Int      @id @default(autoincrement()) @map("comparison_id")
-  parentId    Int      @map("parent_id")
-  metricsUsed String   @map("metrics_used") @db.Text
-  createdAt   DateTime @default(now()) @map("created_at")
-
-  parent            User               @relation(fields: [parentId], references: [id])
-  comparisonSchools ComparisonSchool[]
-
-  @@map("comparison")
-}
-
-model Analytics {
-  id           Int      @id @default(autoincrement()) @map("data_id")
-  schoolId     Int      @map("school_id")
-  metricType   String   @map("metric_type") @db.VarChar(255)
-  metricValue  Decimal  @db.Decimal(10,2) @map("metric_value")
-  academicYear Int      @map("academic_year")
-  source       String   @db.VarChar(255)
-
-  school School @relation(fields: [schoolId], references: [id])
-
-  @@map("analytics")
-}
-
-model SchoolDemographics {  
-  id               Int      @id @default(autoincrement())  
-  schoolId         Int      @map("school_id")  
-  academicYear     Int      @map("academic_year")  
-  totalStudents    Int      @map("total_students")  
-  girlsCount       Int      @map("girls_count")  
-  boysCount        Int      @map("boys_count")  
-  passingRate      Decimal  @db.Decimal(5,2) @map("passing_rate")  
-  nationalExamScore Decimal @db.Decimal(5,2) @map("national_exam_score")  
-  submittedAt     DateTime @default(now()) @map("submitted_at")  
-    
-  school School @relation(fields: [schoolId], references: [id])  
-    
-  @@unique([schoolId, academicYear])  
-  @@index([schoolId])  
-  @@index([academicYear])  
-  @@map("school_demographics")  
-}
-
-model StaffBreakdown {  
-  id             Int           @id @default(autoincrement())  
-  schoolId       Int           @map("school_id")  
-  educationLevel EducationLevel @map("education_level")  
-  count          Int  
-  updatedAt      DateTime      @updatedAt @map("updated_at")  
-    
-  school School @relation(fields: [schoolId], references: [id])  
-    
-  @@unique([schoolId, educationLevel])  
-  @@index([schoolId])  
-  @@map("staff_breakdown")  
-}
-
-model Achievement {  
-  id          Int                       @id @default(autoincrement())  
-  schoolId    Int                       @map("school_id")  
-  title       String                    @db.VarChar(150)  
-  description String?                   @db.Text  
-  tier        AchievementTier  
-  score       Int                       // Points: Gold=100, Silver=50, Bronze=25  
-  year        Int  
-  status      VerificationRequestStatus @default(PENDING)  
-  documents   Json?                     // array of uploaded file URLs  
-  submittedAt DateTime                  @default(now()) @map("submitted_at")  
-  reviewedAt  DateTime?                 @map("reviewed_at")  
-  reviewedById Int?                     @map("reviewed_by_id")  
-  reviewNotes String?                   @map("review_notes") @db.Text  
-    
-  school     School @relation(fields: [schoolId], references: [id])  
-  reviewedBy User?  @relation("AchievementReviewer", fields: [reviewedById], references: [id])  
-    
-  @@index([schoolId])  
-  @@index([status])  
-  @@index([year])  
-  @@map("achievement")  
-}
-
-model ModeratorAction {
-  id          Int                 @id @default(autoincrement()) @map("action_id")
-  moderatorId Int                 @map("moderator_id")
-  reportId    Int                 @map("report_id")
-  actionType  ModeratorActionType @map("action_type")
-  notes       String?             @db.Text
-  actionDate  DateTime            @default(now()) @map("action_date")
-
-  moderator User   @relation("Moderator", fields: [moderatorId], references: [id])
-  report    Report @relation(fields: [reportId], references: [id])
-
-  @@map("moderator_action")
-}
-
-model Notification {
-  id            Int      @id @default(autoincrement()) @map("notification_id")
-  recipientId   Int      @map("recipient_id")
-  recipientType NotificationRecipientType @map("recipient_type")
-  message       String   @db.Text
-
-  // Generic source reference (enum as of Phase 2; was free String before).
-  sourceType    NotificationSourceType @map("source_type")
-  sourceId      Int                    @map("source_id")
-
-  isRead        Boolean  @default(false) @map("is_read")
-  createdAt     DateTime @default(now()) @map("created_at")
-
-  recipient User @relation(fields: [recipientId], references: [id])
-
-  @@index([recipientId])
-  @@map("notification")
-}
-
-model SchoolUpdate {
-  id          Int      @id @default(autoincrement()) @map("update_id")
-  schoolId    Int      @map("school_id")
-  title       String   @db.VarChar(255)
-  description String?  @db.Text
-  createdAt   DateTime @default(now()) @map("created_at")
-
-  school School @relation(fields: [schoolId], references: [id])
-
-  @@map("school_update")
-}
-
-model Preference {
-  id         Int        @id @default(autoincrement()) @map("preference_id")
-  parentId   Int        @unique @map("parent_id")
-  minBudget  Decimal    @db.Decimal(10,2) @map("min_budget")
-  maxBudget  Decimal    @db.Decimal(10,2) @map("max_budget")
-  curriculum Curriculum
-  distance   Int
-  schoolLevel SchoolLevel?  @map("school_level")    
-  schoolType  SchoolType?   @map("school_type")   
-
-  parent Parent @relation(fields: [parentId], references: [userId])
-
-  @@map("preference")
-}
-
-model RecommendedSchool {
-  recommendationId Int @map("recommendation_id")
-  schoolId         Int @map("school_id")
-  features         Json?
-  interactionResult String?
-
-  recommendation RecommendationHistory @relation(fields: [recommendationId], references: [id])
-  school         School                @relation(fields: [schoolId], references: [id])
-
-  @@id([recommendationId, schoolId]) // Changed to composite primary key for targeted updates
-  @@map("recommended_school")
-}
-
-model RecommendationPreferenceCriteria {
-  id               Int        @id @default(autoincrement()) @map("preference_criteria_id")
-  recommendationId Int        @map("recommendation_id")
-  minBudget        Decimal    @db.Decimal(10,2) @map("min_budget")
-  maxBudget        Decimal    @db.Decimal(10,2) @map("max_budget")
-  curriculum       Curriculum
-  distance         Int
-  schoolType       SchoolType? @map("school_type")
-  schoolLevel      SchoolLevel? @map("school_level")
-
-  recommendation RecommendationHistory @relation(fields: [recommendationId], references: [id])
-
-  @@map("recommendation_preference_criteria")
-}
-
-// ----------------------------------------------------------------------
-// Phase 2 schema hardening: Subscription + VerificationRequest
-// Endpoints for these come in Phase 3 (verification) + Phase 4 (follow).
-// ----------------------------------------------------------------------
-
-model Subscription {
-  id        Int      @id @default(autoincrement()) @map("subscription_id")
-  parentId  Int      @map("parent_id")
-  schoolId  Int      @map("school_id")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  parent User   @relation(fields: [parentId], references: [id])
-  school School @relation(fields: [schoolId], references: [id])
-
-  @@unique([parentId, schoolId])
-  @@index([schoolId])
-  @@map("subscription")
-}
-
-model VerificationRequest {
-  id            Int                       @id @default(autoincrement()) @map("verification_request_id")
-  schoolId      Int                       @map("school_id")
-  submittedById Int                       @map("submitted_by_id")
-  reviewedById  Int?                      @map("reviewed_by_id")
-  status        VerificationRequestStatus @default(PENDING)
-  documents     Json?                     // array of uploaded file URLs
-  notes         String?                   @db.Text
-  reviewNotes   String?                   @map("review_notes") @db.Text
-  submittedAt   DateTime                  @default(now()) @map("submitted_at")
-  reviewedAt    DateTime?                 @map("reviewed_at")
-
-  school      School @relation(fields: [schoolId], references: [id])
-  submittedBy User   @relation("VerificationSubmitter", fields: [submittedById], references: [id])
-  reviewedBy  User?  @relation("VerificationReviewer", fields: [reviewedById], references: [id])
-
-  @@index([schoolId])
-  @@index([status])
-  @@map("verification_request")
-}
-
-model ComparisonSchool {
-  id           Int @id @default(autoincrement()) @map("comparison_school_id")
-  comparisonId Int @map("comparison_id")
-  schoolId     Int @map("school_id")
-
-  comparison Comparison @relation(fields: [comparisonId], references: [id])
-  school     School     @relation(fields: [schoolId], references: [id])
-
-  @@map("comparison_school")
-}
-

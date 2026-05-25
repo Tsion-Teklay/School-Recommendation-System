@@ -1,18 +1,21 @@
-import { Router } from "express";  
-import { authenticate } from "../middlewares/auth.middleware.js";  
+import { Router } from "express";
+import { authenticate } from "../middlewares/auth.middleware.js";
 import { authorizeRoles } from "../middlewares/role.middleware.js";
-import { validate } from "../middlewares/validate.middleware.js";  
-import * as achievementController from "../controllers/achievement.controller.js";  
-import * as achievementSchemas from "../schemas/achievement.schema.js";  
+import { validate } from "../middlewares/validate.middleware.js";
+import { achievementDocumentsUpload } from "../config/uploads.js";
+import * as achievementController from "../controllers/achievement.controller.js";
+import * as achievementSchemas from "../schemas/achievement.schema.js";
+import { schoolIdParamsSchema } from "../schemas/common.schema.js";  
   
 const router = Router();  
   
-// Achievement routes  
+// Achievement routes
 router.post(
-  "/achievements",
+  "/schools/:schoolId/achievements",
   authenticate,
   authorizeRoles("SCHOOL_ADMIN"),
-  validate({ body: achievementSchemas.createAchievementBodySchema }),
+  validate({ params: schoolIdParamsSchema }),
+  achievementDocumentsUpload,
   achievementController.createAchievement
 );  
   

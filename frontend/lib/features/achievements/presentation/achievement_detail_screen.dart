@@ -1,10 +1,12 @@
-import 'package:flutter/material.dart';  
-import 'package:flutter_riverpod/flutter_riverpod.dart';  
-import 'package:go_router/go_router.dart';  
-  
-import '../../../shared/widgets/responsive_shell.dart';  
-import '../../../shared/widgets/loading_button.dart';  
-import '../data/achievement_repository.dart';  
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../../../shared/widgets/responsive_shell.dart';
+import '../../../shared/widgets/loading_button.dart';
+import '../../../core/config.dart';
+import '../data/achievement_repository.dart';
 import '../data/achievement_dtos.dart';  
   
 class AchievementDetailScreen extends ConsumerStatefulWidget {  
@@ -21,7 +23,7 @@ class _AchievementDetailScreenState extends ConsumerState<AchievementDetailScree
   final _title = TextEditingController();  
   final _description = TextEditingController();  
   final _year = TextEditingController();  
-  String _selectedTier = 'BRONZE';  
+  String? _selectedTier;  
   
   bool _loading = false;  
   String? _error;  
@@ -50,11 +52,11 @@ class _AchievementDetailScreenState extends ConsumerState<AchievementDetailScree
       final data = await ref.read(achievementRepositoryProvider).getById(widget.achievementId);  
       setState(() {  
         _achievement = data;  
-        if (data != null) {  
-          _title.text = data.title;  
-          _description.text = data.description ?? '';  
-          _year.text = data.year.toString();  
-          _selectedTier = data.tier;  
+        if (data != null) {
+          _title.text = data.title;
+          _description.text = data.description ?? '';
+          _year.text = data.year.toString();
+          _selectedTier = data.tier;
         }  
       });  
     } catch (e) {  
@@ -71,12 +73,11 @@ class _AchievementDetailScreenState extends ConsumerState<AchievementDetailScree
       _error = null;  
     });  
     try {  
-      await ref.read(achievementRepositoryProvider).update(  
-        id: widget.achievementId,  
-        title: _title.text.trim(),  
-        description: _description.text.trim().isEmpty ? null : _description.text.trim(),  
-        tier: _selectedTier,  
-        year: int.parse(_year.text),  
+      await ref.read(achievementRepositoryProvider).update(
+        id: widget.achievementId,
+        title: _title.text.trim(),
+        description: _description.text.trim().isEmpty ? null : _description.text.trim(),
+        year: int.parse(_year.text),
       );  
       await _load();  
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(  
@@ -170,7 +171,7 @@ class _AchievementDetailScreenState extends ConsumerState<AchievementDetailScree
                           backgroundColor: _getStatusColor(_achievement!.status).withOpacity(0.2),  
                         ),  
                         const SizedBox(width: 8),  
-                        Text('${_achievement!.score} pts', style: const TextStyle(fontWeight: FontWeight.bold)),  
+                        Text('${_achievement!.score ?? 0} pts', style: const TextStyle(fontWeight: FontWeight.bold)),  
                       ],  
                     ),  
                     const SizedBox(height: 16),  
@@ -204,23 +205,12 @@ class _AchievementDetailScreenState extends ConsumerState<AchievementDetailScree
                           decoration: const InputDecoration(labelText: 'Title *'),  
                           validator: (v) => v?.trim().isEmpty ?? true ? 'Required' : null,  
                         ),  
-                        const SizedBox(height: 12),  
-                        TextFormField(  
-                          controller: _description,  
-                          decoration: const InputDecoration(labelText: 'Description (optional)'),  
-                          maxLines: 3,  
-                        ),  
-                        const SizedBox(height: 12),  
-                        DropdownButtonFormField<String>(  
-                          value: _selectedTier,  
-                          decoration: const InputDecoration(labelText: 'Tier *'),  
-                          items: const [  
-                            DropdownMenuItem(value: 'GOLD', child: Text('Gold (100 pts)')),  
-                            DropdownMenuItem(value: 'SILVER', child: Text('Silver (50 pts)')),  
-                            DropdownMenuItem(value: 'BRONZE', child: Text('Bronze (25 pts)')),  
-                          ],  
-                          onChanged: (v) => setState(() => _selectedTier = v!),  
-                        ),  
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _description,
+                          decoration: const InputDecoration(labelText: 'Description (optional)'),
+                          maxLines: 3,
+                        ),
                         const SizedBox(height: 12),  
                         TextFormField(  
                           controller: _year,  
@@ -266,10 +256,39 @@ class _AchievementDetailScreenState extends ConsumerState<AchievementDetailScree
                         Text(_achievement!.description!),  
                         const SizedBox(height: 8),  
                       ],  
-                      Text('Tier: ${_achievement!.tier}'),  
-                      Text('Year: ${_achievement!.year}'),  
-                      Text('Score: ${_achievement!.score} pts'),  
-                      Text('Submitted: ${_achievement!.submittedAt.toLocal().toString().split('.')[0]}'),  
+                      Text('Tier: ${_achievement!.tier ?? "Pending review"}'),
+                      Text('Year: ${_achievement!.year}'),
+                      Text('Score: ${_achievement!.score ?? 0} pts'),
+                      Text('Submitted: ${_achievement!.submittedAt.toLocal().toString().split('.')[0]}'),
+                      if (_achievement!.documents != null && _achievement!.documents!.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        const Text('Documents:', style: TextStyle(fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        ..._achievement!.documents!.map((docUrl) => Padding(
+                          padding: const EdgeInsets.only(bottom: 4.0),
+                          child: InkWell(
+                            onTap: () async {
+                              final fullUrl = '${AppConfig.apiBaseUrl}$docUrl';
+                              final uri = Uri.parse(fullUrl);
+                              if (await canLaunchUrl(uri)) {
+                                await launchUrl(uri, mode: LaunchMode.externalApplication);
+                              }
+                            },
+                            child: Row(
+                              children: [
+                                const Icon(Icons.description, size: 16),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    docUrl.split('/').last,
+                                    style: const TextStyle(color: Colors.blue, decoration: TextDecoration.underline),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )),
+                      ],  
                     ],  
                   ),  
                 ),  

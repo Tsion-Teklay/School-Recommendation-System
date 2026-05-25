@@ -1,9 +1,24 @@
-import { asyncHandler } from "../middlewares/async.middleware.js";  
+import { asyncHandler } from "../middlewares/async.middleware.js";
+import { relativeUrl } from "../config/uploads.js";
 import * as achievementService from "../services/achievement.service.js";  
   
-// Achievement controllers  
-export const createAchievement = asyncHandler(async (req, res) => {  
-  const result = await achievementService.createAchievement(req.body, req.user.id);  
+// Achievement controllers
+export const createAchievement = asyncHandler(async (req, res) => {
+  // multer populates req.files; map to public URLs before persisting.
+  const documents = (req.files || []).map((f) => ({
+    url: relativeUrl(f),
+    originalName: f.originalname,
+    size: f.size,
+    mimeType: f.mimetype,
+  }));
+
+  const result = await achievementService.createAchievement({
+    schoolId: req.params.schoolId,
+    title: req.query.title,
+    description: req.body.description,
+    year: req.query.year,
+    documents,
+  }, req.user.id);  
   res.status(201).json(result);  
 });  
   

@@ -63,3 +63,7 @@ export const listSchoolsQuerySchema = z.object({
   radiusKm: z.coerce.number().positive().max(20000).optional(),
   ...paginationQuery,
 });
+
+export const revokeVerificationBodySchema = z.object({
+  reason: z.string().trim().min(1, "Reason is required").max(500, "Reason must be less than 500 characters"),
+});
