@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/ads/presentation/ad_payment_screen.dart';
+import '../features/ads/presentation/ad_request_screen.dart';
+import '../features/ads/presentation/moderation_ad_queue_screen.dart';
 import '../features/landing/presentation/landing_screen.dart';
 import '../features/schools/presentation/manage_followed_schools_screen.dart';
 import '../features/moderation/presentation/admin_user_create_screen.dart';
@@ -46,7 +49,12 @@ const _publicRoutes = <String>{
   '/reset-password',
   '/verify-email',
   '/verify-phone',
+  '/advertise',
 };
+
+bool _isPublicAdvertiseRoute(String location) {
+  return location.startsWith('/advertise');
+}
 
 final routerProvider = Provider<GoRouter>((ref) {
   // We deliberately `read` rather than `watch` here. The router itself only
@@ -62,8 +70,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (auth.initializing) return null;
 
       final goingPublic = _publicRoutes.any(
-        (p) => state.matchedLocation.startsWith(p),
-      );
+            (p) => state.matchedLocation.startsWith(p),
+          ) ||
+          _isPublicAdvertiseRoute(state.matchedLocation);
 
       if (!auth.isAuthenticated && !goingPublic) {
         return '/landing';
@@ -82,6 +91,22 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       GoRoute(path: '/landing', builder: (_, __) => const LandingScreen()),
+      GoRoute(
+        path: '/advertise',
+        builder: (_, __) => const AdRequestScreen(),
+      ),
+      GoRoute(
+        path: '/advertise/pay/:id',
+        builder: (_, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '');
+          if (id == null) {
+            return const Scaffold(
+              body: Center(child: Text('Invalid advertisement id')),
+            );
+          }
+          return AdPaymentScreen(adId: id);
+        },
+      ),
       GoRoute(path: '/', builder: (_, __) => const HomeScreen()),
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
       GoRoute(path: '/register', builder: (_, __) => const RegisterScreen()),
@@ -258,6 +283,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/moderation/create-user',
         builder: (_, __) => const AdminUserCreateScreen(),
+      ),
+      GoRoute(
+        path: '/moderation/ads',
+        builder: (_, __) => const ModerationAdQueueScreen(),
       ),
     ],
     errorBuilder: (_, state) => Scaffold(

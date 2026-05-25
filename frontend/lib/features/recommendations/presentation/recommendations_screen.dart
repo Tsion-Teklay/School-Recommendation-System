@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../shared/widgets/responsive_shell.dart';
+import '../../ads/presentation/ad_banner_section.dart';
+import '../../ads/data/ad_dtos.dart';
 import '../../../shared/widgets/school_card.dart';
 import '../../auth/state/auth_controller.dart';
 import '../../schools/state/compare_cart.dart';
@@ -55,6 +57,11 @@ class RecommendationsScreen extends ConsumerWidget {
             const SizedBox(height: 12),
             _CriteriaSummary(criteria: state.criteria),
           ],
+          const SizedBox(height: 16),
+          const AdBannerSection(
+            placement: AdPlacementType.featured,
+            limit: 1,
+          ),
           const SizedBox(height: 16),
           if (state.loading)
             const Padding(

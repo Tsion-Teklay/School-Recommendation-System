@@ -109,6 +109,7 @@ app.use(
   (await import("./routes/analytics.routes.js")).default,
 );
 app.use("/api/likes", (await import("./routes/like.routes.js")).default);
+app.use("/api/ads", (await import("./routes/ad.routes.js")).default);
 
 // Phase 3: school-verification workflow. The router registers paths under
 // both /api/schools/:id/verification-requests (submit) and

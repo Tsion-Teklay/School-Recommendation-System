@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/config.dart';
+import '../../ads/presentation/ad_banner_section.dart';
+import '../../ads/data/ad_dtos.dart';
 
 class LandingScreen extends ConsumerWidget {
   const LandingScreen({super.key});
@@ -41,6 +43,13 @@ class LandingScreen extends ConsumerWidget {
                     child: Column(
                       children: [
                         _buildFeaturesSection(theme),
+
+                        const SizedBox(height: 48),
+
+                        const AdBannerSection(
+                          placement: AdPlacementType.banner,
+                          limit: 2,
+                        ),
 
                         const SizedBox(height: 100),
 
@@ -255,6 +264,22 @@ class LandingScreen extends ConsumerWidget {
                                 shape: const StadiumBorder(),
                               ),
                               child: const Text('Sign In'),
+                            ),
+                            OutlinedButton.icon(
+                              onPressed: () => context.go('/advertise'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.white,
+                                side: BorderSide(
+                                  color: Colors.white.withOpacity(0.8),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 20,
+                                ),
+                                shape: const StadiumBorder(),
+                              ),
+                              icon: const Icon(Icons.campaign_outlined),
+                              label: const Text('Advertise with us'),
                             ),
                           ],
                         ),
@@ -569,6 +594,13 @@ class _AppFooter extends StatelessWidget {
         Text(
           '© ${DateTime.now().year} School Recommendation System',
           style: theme.textTheme.bodySmall,
+        ),
+
+        const SizedBox(height: 12),
+
+        TextButton(
+          onPressed: () => context.go('/advertise'),
+          child: const Text('Advertise on this platform'),
         ),
 
         const SizedBox(height: 24),

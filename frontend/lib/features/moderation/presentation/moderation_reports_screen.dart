@@ -137,15 +137,26 @@ class _ModerationReportsScreenState
             ],
           ),
           const SizedBox(height: 16),
-          Card(  
-            child: Padding(  
-              padding: const EdgeInsets.all(16),  
-              child: FilledButton.icon(  
-                onPressed: () => context.go('/moderation/create-user'),  
-                icon: const Icon(Icons.person_add),  
-                label: const Text('Create admin user'),  
-              ),  
-            ),  
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  FilledButton.icon(
+                    onPressed: () => context.go('/moderation/ads'),
+                    icon: const Icon(Icons.ads_click_outlined),
+                    label: const Text('Advertisement queue'),
+                  ),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(
+                    onPressed: () => context.go('/moderation/create-user'),
+                    icon: const Icon(Icons.person_add),
+                    label: const Text('Create admin user'),
+                  ),
+                ],
+              ),
+            ),
           ),
           
           if (_error != null)
