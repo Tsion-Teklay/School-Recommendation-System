@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { db } from "../config/db.js";
 import { sendMail } from "../config/mailer.js";
+import { sendSMS } from "../config/sms.js";
 import { logger } from "../config/logger.js";
 import {
   ConflictError,
@@ -12,6 +13,7 @@ import {
 import {
   EMAIL_VERIFICATION_TTL_MS,
   PASSWORD_RESET_TTL_MS,
+  PHONE_VERIFICATION_TTL_MS,
   expiresAt,
   generateToken,
 } from "../utils/tokens.js";
@@ -26,8 +28,11 @@ function sanitizeUser(user) {
     emailVerificationExpires,
     passwordResetToken,
     passwordResetExpires,
+    phoneVerificationToken,
+    phoneVerificationExpires,
     ...safeUser
   } = user;
+
   return safeUser;
 }
 
@@ -35,7 +40,7 @@ function signToken(user) {
   return jwt.sign(
     { userId: user.id, role: user.role },
     process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || "1d" }
+    { expiresIn: process.env.JWT_EXPIRES_IN || "1d" },
   );
 }
 
@@ -53,6 +58,20 @@ function appBaseUrl() {
   return process.env.APP_URL || "http://localhost:5050";
 }
 
+export function normalizePhone(phone) {
+  const cleaned = phone.replace(/\s+/g, "");
+
+  if (cleaned.startsWith("+251")) {
+    return "0" + cleaned.substring(4);
+  }
+
+  if (cleaned.startsWith("251")) {
+    return "0" + cleaned.substring(3);
+  }
+
+  return cleaned;
+}
+
 // -----------------------------------------------------------------------------
 // Register + verify email
 // -----------------------------------------------------------------------------
@@ -61,6 +80,7 @@ export async function registerUser({ fullName, email, phone, password, role, sub
   if (!fullName || !password || !role) {
     throw new ValidationError("Missing required fields");
   }
+
   if (!email && !phone) {
     throw new ValidationError("Either email or phone is required");
   }
@@ -69,42 +89,93 @@ export async function registerUser({ fullName, email, phone, password, role, sub
     throw new ValidationError("subCity and officerRole are required for MOE_OFFICER role");
   }  
 
-  // Email is unique + serves as the verifiable-handle. Phone is unique +
-  // bypasses the email-verification gate (there is no out-of-band channel for
-  // it yet). Both can coexist on the same account.
   const normalizedEmail = email ? email.toLowerCase() : null;
-  const normalizedPhone = phone ?? null;
+
+  const normalizedPhone = phone ? normalizePhone(phone) : null;
 
   if (normalizedEmail) {
     const existingByEmail = await db.user.findUnique({
-      where: { email: normalizedEmail },
+      where: {
+        email: normalizedEmail,
+      },
     });
-    if (existingByEmail) throw new ConflictError("Email already registered");
+
+    if (existingByEmail) {
+      throw new ConflictError("Email already registered");
+    }
   }
+
+  // Prevent duplicate phone
   if (normalizedPhone) {
     const existingByPhone = await db.user.findUnique({
-      where: { phone: normalizedPhone },
+      where: {
+        phone: normalizedPhone,
+      },
     });
-    if (existingByPhone) throw new ConflictError("Phone already registered");
+
+    if (existingByPhone) {
+      throw new ConflictError("Phone already registered");
+    }
   }
 
   const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-  const verificationToken = normalizedEmail ? generateToken() : null;
+
+  const emailVerificationToken = normalizedEmail ? generateToken() : null;
+
+  const isPhoneSignup = !!normalizedPhone;
+
+  let phoneVerificationToken = null;
+  let phoneVerificationExpires = null;
+
+  if (isPhoneSignup) {
+    phoneVerificationToken = Math.floor(
+      100000 + Math.random() * 900000,
+    ).toString();
+
+    phoneVerificationExpires = expiresAt(PHONE_VERIFICATION_TTL_MS);
+  }
+
+  /*
+   |--------------------------------------------------------------------------
+   | Create user
+   |--------------------------------------------------------------------------
+   */
 
   const user = await db.$transaction(async (tx) => {
   const newUser = await tx.user.create({
     data: {
       fullName,
+
+      // Prisma requires email unique.
+      // Phone-only accounts get placeholder email.
       email: normalizedEmail ?? `phone-${normalizedPhone}@placeholder.invalid`,
+
       phone: normalizedPhone,
+
       password: hashedPassword,
+
       accountStatus: "ACTIVE",
+
       role,
       emailVerified: !normalizedEmail,
-      emailVerificationToken: verificationToken,
-      emailVerificationExpires: verificationToken
+
+      emailVerificationToken,
+
+      emailVerificationExpires: emailVerificationToken
         ? expiresAt(EMAIL_VERIFICATION_TTL_MS)
         : null,
+
+      /*
+       |--------------------------------------------------------------------------
+       | Phone verification
+       |--------------------------------------------------------------------------
+       */
+
+      phoneVerified: !isPhoneSignup ? true : false,
+
+      phoneVerificationToken,
+
+      phoneVerificationExpires,
     },
   });
 
@@ -126,15 +197,33 @@ export async function registerUser({ fullName, email, phone, password, role, sub
     await sendMailSafe(
       {
         to: normalizedEmail,
+
         subject: "Verify your School Recommendation account",
+
         text:
           `Hi ${fullName},\n\n` +
-          `Welcome! Please verify your email by visiting:\n` +
-          `${appBaseUrl()}/verify-email?token=${verificationToken}\n\n` +
-          `Or POST the token to /api/auth/verify-email. The link expires in 24 hours.`,
+          `Welcome! Please verify your email by visiting:\n\n` +
+          `${appBaseUrl()}/verify-email?token=${emailVerificationToken}\n\n` +
+          `The link expires in 24 hours.`,
       },
-      { event: "register", userId: user.id }
+      {
+        event: "register",
+        userId: user.id,
+      },
     );
+  }
+
+  if (normalizedPhone && phoneVerificationToken) {
+    try {
+      await sendSMS({
+        to: normalizedPhone,
+        message: `Your School Recommendation verification code is ${phoneVerificationToken}`,
+      });
+
+      console.log("SMS verification sent to", normalizedPhone);
+    } catch (e) {
+      console.error("SMS failed:", e.message);
+    }
   }
 
   return sanitizeUser(user);
@@ -148,7 +237,10 @@ export async function verifyEmail({ token }) {
   });
   if (!user) throw new ValidationError("Invalid verification token");
 
-  if (user.emailVerificationExpires && user.emailVerificationExpires < new Date()) {
+  if (
+    user.emailVerificationExpires &&
+    user.emailVerificationExpires < new Date()
+  ) {
     throw new ValidationError("Verification token has expired");
   }
 
@@ -170,6 +262,44 @@ export async function verifyEmail({ token }) {
     },
   });
   return { alreadyVerified: false };
+}
+
+export async function verifyPhone({ token }) {
+  if (!token) {
+    throw new ValidationError("Verification token is required");
+  }
+
+  const user = await db.user.findUnique({
+    where: {
+      phoneVerificationToken: token,
+    },
+  });
+
+  if (!user) {
+    throw new ValidationError("Invalid verification token");
+  }
+
+  if (
+    user.phoneVerificationExpires &&
+    user.phoneVerificationExpires < new Date()
+  ) {
+    throw new ValidationError("Verification token expired");
+  }
+
+  await db.user.update({
+    where: {
+      id: user.id,
+    },
+    data: {
+      phoneVerified: true,
+      phoneVerificationToken: null,
+      phoneVerificationExpires: null,
+    },
+  });
+
+  return {
+    success: true,
+  };
 }
 
 export async function resendVerificationEmail({ email }) {
@@ -197,8 +327,48 @@ export async function resendVerificationEmail({ email }) {
         `Here is a fresh verification link (expires in 24 hours):\n` +
         `${appBaseUrl()}/verify-email?token=${verificationToken}`,
     },
-    { event: "resend_verification", userId: user.id }
+    { event: "resend_verification", userId: user.id },
   );
+  return { sent: true };
+}
+
+export async function resendVerificationPhone({ phone }) {
+  if (!phone) throw new ValidationError("Phone is required");
+
+  const normalizedPhone = normalizePhone(phone);
+
+  const user = await db.user.findUnique({ where: { phone: normalizedPhone } });
+
+  // Do not leak whether the phone exists — always return success-shaped payload.
+  if (!user || user.phoneVerified) return { sent: false };
+
+  // Generate a fresh 6-digit OTP
+  const phoneVerificationToken = Math.floor(
+    100000 + Math.random() * 900000,
+  ).toString();
+  const phoneVerificationExpires = expiresAt(PHONE_VERIFICATION_TTL_MS);
+
+  await db.user.update({
+    where: { id: user.id },
+    data: {
+      phoneVerificationToken,
+      phoneVerificationExpires,
+    },
+  });
+
+  try {
+    await sendSMS({
+      to: normalizedPhone,
+      message: `Your School Recommendation verification code is ${phoneVerificationToken}`,
+    });
+    logger.info({ userId: user.id }, "Phone verification SMS resent");
+  } catch (err) {
+    logger.warn(
+      { err, userId: user.id },
+      "Phone verification SMS failed on resend",
+    );
+  }
+
   return { sent: true };
 }
 
@@ -229,25 +399,34 @@ export async function loginUser({ identifier, email, password }) {
 
   if (!user) throw new UnauthorizedError("Invalid credentials");
 
-  if (user.accountStatus !== "ACTIVE") {  
-  if (user.accountStatus === "SELF_DEACTIVATED") {  
-    const err = new UnauthorizedError("Account is self-deactivated");  
-    err.code = "ACCOUNT_SELF_DEACTIVATED";  
-    throw err;  
-  }  
-  throw new UnauthorizedError("Account is deactivated");  
-}
+  if (user.accountStatus !== "ACTIVE") {
+    if (user.accountStatus === "SELF_DEACTIVATED") {
+      const err = new UnauthorizedError("Account is self-deactivated");
+      err.code = "ACCOUNT_SELF_DEACTIVATED";
+      throw err;
+    }
+    throw new UnauthorizedError("Account is deactivated");
+  }
 
   const match = await bcrypt.compare(password, user.password);
   if (!match) throw new UnauthorizedError("Invalid credentials");
+  if (user.phone && !user.phoneVerified) {
+    const err = new UnauthorizedError("Phone not verified");
 
-  if (!user.emailVerified) {
-    // Distinct code so the frontend can prompt "resend verification".
-    const err = new UnauthorizedError("Email not verified");
-    err.code = "EMAIL_NOT_VERIFIED";
+    err.code = "PHONE_NOT_VERIFIED";
+
     throw err;
   }
 
+  const verified = user.emailVerified || user.phoneVerified;
+
+  if (!verified) {
+    const err = new UnauthorizedError("Account not verified");
+
+    err.code = "ACCOUNT_NOT_VERIFIED";
+
+    throw err;
+  }
   return { token: signToken(user), user: sanitizeUser(user) };
 }
 
@@ -282,7 +461,7 @@ export async function requestPasswordReset({ email }) {
         `${appBaseUrl()}/reset-password?token=${resetToken}\n\n` +
         `If you didn't request this, ignore this email.`,
     },
-    { event: "forgot_password", userId: user.id }
+    { event: "forgot_password", userId: user.id },
   );
   return { sent: true };
 }
@@ -292,7 +471,9 @@ export async function resetPassword({ token, newPassword }) {
     throw new ValidationError("Token and newPassword are required");
   }
 
-  const user = await db.user.findUnique({ where: { passwordResetToken: token } });
+  const user = await db.user.findUnique({
+    where: { passwordResetToken: token },
+  });
   if (!user) throw new ValidationError("Invalid reset token");
   if (user.passwordResetExpires && user.passwordResetExpires < new Date()) {
     throw new ValidationError("Reset token has expired");
@@ -331,34 +512,33 @@ export async function changePassword({ userId, currentPassword, newPassword }) {
   await db.user.update({ where: { id: userId }, data: { password: hashed } });
 }
 
+export async function reactivateAccount({ identifier, password }) {
+  const raw = identifier.trim();
+  if (!raw || !password) {
+    throw new ValidationError("identifier and password are required");
+  }
 
-export async function reactivateAccount({ identifier, password }) {  
-  const raw = identifier.trim();  
-  if (!raw || !password) {  
-    throw new ValidationError("identifier and password are required");  
-  }  
-  
-  let user;  
-  if (raw.includes("@")) {  
-    const normalizedEmail = raw.toLowerCase();  
-    user = await db.user.findUnique({ where: { email: normalizedEmail } });  
-  } else {  
-    user = await db.user.findUnique({ where: { phone: raw } });  
-  }  
-  
-  if (!user) throw new UnauthorizedError("Invalid credentials");  
-  
-  if (user.accountStatus !== "SELF_DEACTIVATED") {  
-    throw new UnauthorizedError("Account cannot be reactivated");  
-  }  
-  
-  const match = await bcrypt.compare(password, user.password);  
-  if (!match) throw new UnauthorizedError("Invalid credentials");  
-  
-  await db.user.update({  
-    where: { id: user.id },  
-    data: { accountStatus: "ACTIVE", deactivatedAt: null },  
-  });  
-  
-  return { token: signToken(user), user: sanitizeUser(user) };  
+  let user;
+  if (raw.includes("@")) {
+    const normalizedEmail = raw.toLowerCase();
+    user = await db.user.findUnique({ where: { email: normalizedEmail } });
+  } else {
+    user = await db.user.findUnique({ where: { phone: raw } });
+  }
+
+  if (!user) throw new UnauthorizedError("Invalid credentials");
+
+  if (user.accountStatus !== "SELF_DEACTIVATED") {
+    throw new UnauthorizedError("Account cannot be reactivated");
+  }
+
+  const match = await bcrypt.compare(password, user.password);
+  if (!match) throw new UnauthorizedError("Invalid credentials");
+
+  await db.user.update({
+    where: { id: user.id },
+    data: { accountStatus: "ACTIVE", deactivatedAt: null },
+  });
+
+  return { token: signToken(user), user: sanitizeUser(user) };
 }

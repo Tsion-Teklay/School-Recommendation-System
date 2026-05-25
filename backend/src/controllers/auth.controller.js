@@ -3,7 +3,9 @@ import {
   registerUser,
   loginUser,
   verifyEmail,
+  verifyPhone as verifyPhoneService,
   resendVerificationEmail,
+  resendVerificationPhone,
   requestPasswordReset,
   resetPassword,
   changePassword,
@@ -33,12 +35,29 @@ export const verify = asyncHandler(async (req, res) => {
   });
 });
 
+export const verifyPhone = asyncHandler(async (req, res) => {
+  await verifyPhoneService(req.body);
+
+  res.json({
+    message: "Phone verified successfully",
+  });
+});
+
 export const resend = asyncHandler(async (req, res) => {
   await resendVerificationEmail(req.body);
   // Always 200 — do not leak whether the email exists.
   res.json({
     message:
       "If that email belongs to an unverified account, a new verification link was sent.",
+  });
+});
+
+export const resendPhone = asyncHandler(async (req, res) => {
+  await resendVerificationPhone(req.body);
+  // Always 200 — do not leak whether the phone exists.
+  res.json({
+    message:
+      "If that phone belongs to an unverified account, a new verification code was sent.",
   });
 });
 
@@ -60,7 +79,7 @@ export const changePasswordHandler = asyncHandler(async (req, res) => {
   res.json({ message: "Password changed successfully" });
 });
 
-export const reactivate = asyncHandler(async (req, res) => {  
-  const result = await reactivateAccount(req.body);  
-  res.json(result);  
-});  
+export const reactivate = asyncHandler(async (req, res) => {
+  const result = await reactivateAccount(req.body);
+  res.json(result);
+});
