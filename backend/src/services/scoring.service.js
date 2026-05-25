@@ -7,18 +7,20 @@ export const RECOMMENDATION_WEIGHTS = Object.freeze({
   verification: 10,  
 });  
   
-// You can define specific MoE weights here if you want them to differ  
-export const MOE_RANKING_WEIGHTS = Object.freeze({  
-  curriculum: 10,  
-  budget: 5,  
-  distance: 0, // No distance preference for MoE ranking  
-  rating: 30,  
-  facilities: 25,  
-  verification: 30,  
-  schoolLevel: 5,      // New  
-  schoolType: 5,       // New  
-  passingRate: 5,      // New  
-  nationalExamScore: 0,
+// You can define specific MoE weights here if you want them to differ
+export const MOE_RANKING_WEIGHTS = Object.freeze({
+  rating: 25,           // Rating: 25%
+  verification: 20,     // Verification: 20%
+  facilities: 15,       // Facilities: 15%
+  achievement: 15,      // Achievement score: 15%
+  genderBalance: 10,    // Gender balance index: 10%
+  passingRate: 10,      // Passing rate: 10%
+  nationalExam: 5,      // National exam score: 5%
+  curriculum: 0,        // Not used for MOE ranking
+  budget: 0,            // Not used for MOE ranking
+  distance: 0,          // No distance preference for MOE ranking
+  schoolLevel: 0,       // Not used for MOE ranking
+  schoolType: 0,        // Not used for MOE ranking
 });  
   
 const EARTH_RADIUS_KM = 6371;  
@@ -120,29 +122,47 @@ export function scorePassingRate(school) {
   return Number(school.passingRate) / 100;  
 }  
   
-export function scoreNationalExamScore(school) {  
-  // Linear scaling: 0-100% maps to 0-1  
-  if (!school.nationalExamScore) return 0;  
-  return Number(school.nationalExamScore) / 100;  
+export function scoreNationalExamScore(school) {
+  // Linear scaling: 0-100% maps to 0-1
+  if (!school.nationalExamScore) return 0;
+  return Number(school.nationalExamScore) / 100;
+}
+
+export function scoreAchievement(school) {
+  // Normalize achievement score (0-500 maps to 0-1)
+  if (!school.achievementScore) return 0;
+  return Math.min(1, school.achievementScore / 500);
+}
+
+export function scoreGenderBalance(school) {
+  // Gender balance index: 1 = perfectly balanced, 0 = completely imbalanced
+  if (!school.genderBalanceIndex) return 0;
+  return school.genderBalanceIndex;
 }
   
-/**  
- * Score a single school against resolved criteria.  
- * Returns a number in [0..100] and a per-signal breakdown.  
- */  
-export function scoreSchool(school, criteria, weights) {  
-  const signals = {  
-    curriculum: scoreCurriculum(school, criteria),  
-    budget: scoreBudget(school, criteria),  
-    distance: scoreDistance(school, criteria),  
-    rating: scoreRating(school),  
-    facilities: scoreFacilities(school),  
-    verification: scoreVerification(school),   
-  };  
-  
-  const score = Object.entries(weights).reduce((sum, [key, weight]) => {  
-    return sum + (signals[key] || 0) * weight;  
-  }, 0);  
-  
-  return { score, signals };  
+/**
+ * Score a single school against resolved criteria.
+ * Returns a number in [0..100] and a per-signal breakdown.
+ */
+export function scoreSchool(school, criteria, weights) {
+  const signals = {
+    curriculum: scoreCurriculum(school, criteria),
+    budget: scoreBudget(school, criteria),
+    distance: scoreDistance(school, criteria),
+    rating: scoreRating(school),
+    facilities: scoreFacilities(school),
+    verification: scoreVerification(school),
+    schoolLevel: scoreSchoolLevel(school, criteria),
+    schoolType: scoreSchoolType(school, criteria),
+    passingRate: scorePassingRate(school),
+    nationalExamScore: scoreNationalExamScore(school),
+    achievement: scoreAchievement(school),
+    genderBalance: scoreGenderBalance(school),
+  };
+
+  const score = Object.entries(weights).reduce((sum, [key, weight]) => {
+    return sum + (signals[key] || 0) * weight;
+  }, 0);
+
+  return { score, signals };
 }

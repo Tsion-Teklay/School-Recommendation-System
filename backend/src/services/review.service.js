@@ -3,7 +3,7 @@ import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from ".
 import { validateContent } from "./moderation.service.js";
 
 
-async function recomputeSchoolRating(schoolId) {
+export async function recomputeSchoolRating(schoolId) {
   const id = Number(schoolId);
   const agg = await db.review.aggregate({
     where: { schoolId: id },
@@ -25,11 +25,21 @@ async function recomputeSchoolRating(schoolId) {
 
 // ✅ Create review
 export async function createReview(userId, schoolId, data) {
-  const parent = await db.parent.findUnique({
+  let parent = await db.parent.findUnique({
     where: { userId },
   });
 
-  if (!parent) throw new NotFoundError("Parent profile not found");
+  // Create parent profile if it doesn't exist (lazy creation)
+  if (!parent) {
+    parent = await db.parent.create({
+      data: {
+        userId,
+        address: "Default Address",
+        latitude: 0,
+        longitude: 0,
+      },
+    });
+  }
 
   const existing = await db.review.findFirst({
     where: {

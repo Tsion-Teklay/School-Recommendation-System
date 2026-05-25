@@ -145,6 +145,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ),
       child: Form(
         key: _form,
+         autovalidateMode: AutovalidateMode.onUserInteraction,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -217,6 +218,83 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               icon: const Icon(Icons.delete_outline),
               label: const Text('Deactivate account'),
             ),
+            const SizedBox(height: 12),
+
+ElevatedButton(
+  onPressed: () async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Account Permanently'),
+        content: const Text(
+          'This action cannot be undone. All your data will be permanently deleted.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      final passwordController = TextEditingController();
+
+      final passwordConfirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Confirm Password'),
+          content: TextField(
+            controller: passwordController,
+            obscureText: true,
+            decoration: const InputDecoration(
+              hintText: 'Enter your password',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Confirm'),
+            ),
+          ],
+        ),
+      );
+
+      if (passwordConfirmed == true &&
+          passwordController.text.isNotEmpty) {
+        try {
+          await ref
+              .read(authControllerProvider.notifier)
+              .deletePermanently(passwordController.text);
+
+          if (mounted) {
+            context.go('/login');
+          }
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: ${e.toString()}')),
+          );
+        }
+      }
+    }
+  },
+  style: ElevatedButton.styleFrom(
+    backgroundColor: Colors.red,
+  ),
+  child: const Text('Delete Account Permanently'),
+),
           ],
         ),
       ),

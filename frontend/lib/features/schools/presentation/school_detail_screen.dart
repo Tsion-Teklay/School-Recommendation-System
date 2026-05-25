@@ -99,33 +99,63 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
 }
 
   Future<void> _showRevokeConfirmationDialog() async {
-    final confirmed = await showDialog<bool>(
+    final reasonController = TextEditingController();
+    
+    final result = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Revoke Verification'),
-        content: const Text(
-          'This will revoke the school\'s verification status. '
-          'The school will not be able to make announcements. '
-          'Are you sure?',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'This will revoke the school\'s verification status. '
+              'The school will not be able to make announcements. '
+              'Please provide a reason for this action.',
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: reasonController,
+              decoration: const InputDecoration(
+                labelText: 'Reason for revocation *',
+                hintText: 'Explain why the verification is being revoked',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
+              maxLength: 500,
+            ),
+          ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
             child: const Text('Cancel'),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
+          FilledButton(
+            onPressed: () {
+              if (reasonController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(ctx).showSnackBar(
+                  const SnackBar(content: Text('Please provide a reason')),
+                );
+                return;
+              }
+              Navigator.pop(ctx, true);
+            },
             child: const Text('Revoke'),
           ),
         ],
       ),
     );
 
-    if (confirmed == true) {
+    final reason = reasonController.text.trim();
+    reasonController.dispose();
+
+    if (result == true) {
       try {
         await ref
             .read(schoolRepositoryProvider)
-            .revokeVerification(widget.schoolId);
+            .revokeVerification(widget.schoolId, reason);
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Verification revoked successfully')),
@@ -278,7 +308,7 @@ class _DetailBody extends StatelessWidget {
               children: [
                 Text(school.schoolName, style: theme.textTheme.headlineSmall),
                 const SizedBox(height: 4),
-                Text(school.address, style: theme.textTheme.bodyMedium),
+                Text(school.subCity != null ? '${school.subCity} - ${school.woreda ?? 'N/A'}' : 'No location info', style: theme.textTheme.bodyMedium),
                 const SizedBox(height: 16),
                 Wrap(
                   spacing: 8,
@@ -295,7 +325,7 @@ class _DetailBody extends StatelessWidget {
                       ),
                     _Badge(
                       icon: Icons.payments_outlined,
-                      label: 'Fee: ${school.tuitionFee}',
+                      label: 'Fee: ${school.tuitionFee ?? 'Not specified'}',
                     ),
                     if ((school.rating ?? 0) > 0)
                       _Badge(
@@ -322,7 +352,7 @@ class _DetailBody extends StatelessWidget {
                 const SizedBox(height: 20),
                 _ContactRow(
                   icon: Icons.email_outlined,
-                  label: school.contactEmail,
+                  label: school.contactEmail ?? 'Not specified',
                 ),
                 if (school.contactPhone != null &&
                     school.contactPhone!.isNotEmpty) ...[
@@ -374,6 +404,12 @@ class _DetailBody extends StatelessWidget {
                             : Icons.compare_arrows_outlined),
                         label:
                             Text(inCart ? 'In compare cart' : 'Add to compare'),
+                      ),
+                    if (isParent)
+                      OutlinedButton.icon(
+                        onPressed: () => context.go('/schools/${school.id}/analytics'),
+                        icon: const Icon(Icons.bar_chart_outlined),
+                        label: const Text('Analytics'),
                       ),
                     if (onRevokeVerification != null &&
                         school.verificationStatus ==

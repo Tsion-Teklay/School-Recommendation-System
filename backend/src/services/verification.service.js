@@ -49,36 +49,53 @@ async function loadSchoolForOwner(schoolId, userId) {
 // Submit (SCHOOL_ADMIN)
 // -----------------------------------------------------------------------------
 
-export async function submitVerificationRequest({
-  schoolId,
-  userId,
-  documents,
-  notes,
-}) {
-  const school = await loadSchoolForOwner(schoolId, userId);
-
-  if (!Array.isArray(documents) || documents.length === 0) {
-    throw new ValidationError("At least one supporting document is required");
-  }
-
-  // Enforce one open request per school at a time.
-  const existingPending = await db.verificationRequest.findFirst({
-    where: { schoolId: school.id, status: "PENDING" },
-  });
-  if (existingPending) {
-    throw new ConflictError(
-      "A verification request for this school is already pending review"
-    );
-  }
-
-  return db.verificationRequest.create({
-    data: {
-      schoolId: school.id,
-      submittedById: userId,
-      documents,
-      notes: notes || null,
-    },
-  });
+export async function submitVerificationRequest({  
+  schoolId,  
+  userId,  
+  documents,  
+  notes,  
+}) {  
+  const school = await loadSchoolForOwner(schoolId, userId);  
+  
+  if (!Array.isArray(documents) || documents.length === 0) {  
+    throw new ValidationError("At least one supporting document is required");  
+  }  
+  
+  const existingPending = await db.verificationRequest.findFirst({  
+    where: { schoolId: school.id, status: "PENDING" },  
+  });  
+  if (existingPending) {  
+    throw new ConflictError(  
+      "A verification request for this school is already pending review"  
+    );  
+  }  
+  
+  const request = await db.verificationRequest.create({  
+    data: {  
+      schoolId: school.id,  
+      submittedById: userId,  
+      documents,  
+      notes: notes || null,  
+    },  
+  });  
+  
+  // Notify MOE officer based on subcity  
+  try {  
+    const assignedOfficer = await assignVerificationRequest(request.id);  
+    if (assignedOfficer) {  
+      await createNotification({  
+        recipientId: assignedOfficer.userId,  
+        recipientType: "MOE",  
+        message: `New verification request for school "${school.schoolName}" in ${school.subCity || 'your assigned area'}.`,  
+        sourceType: "SCHOOL",  
+        sourceId: school.id,  
+      });  
+    }  
+  } catch (err) {  
+    logger.warn({ err, requestId: request.id }, "Failed to notify MOE officer of verification request");  
+  }  
+  
+  return request;  
 }
 
 // -----------------------------------------------------------------------------
@@ -224,4 +241,26 @@ export async function reviewVerificationRequest({
   }
 
   return updated;
+}
+
+
+export async function assignVerificationRequest(requestId) {  
+  const request = await db.verificationRequest.findUnique({  
+    where: { id: requestId },  
+    include: { school: true }  
+  });  
+    
+  if (!request) throw new NotFoundError("Verification request not found");  
+    
+  // Try to find MoE officer for the school's sub-city  
+  const assignedOfficer = await db.moeOfficer.findFirst({  
+    where: { subCity: request.school.subCity }  
+  });  
+    
+  // Fallback to any available MoE officer if no sub-city match  
+  if (!assignedOfficer) {  
+    return db.moeOfficer.findFirst();  
+  }  
+    
+  return assignedOfficer;  
 }

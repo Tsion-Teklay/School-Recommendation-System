@@ -42,7 +42,9 @@ class SchoolCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      school.address,
+                      school.subCity != null
+                          ? '${school.subCity} - ${school.woreda ?? 'N/A'}'
+                          : 'No location info',
                       style: theme.textTheme.bodySmall,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -96,7 +98,8 @@ class SchoolCard extends StatelessWidget {
   }
 }
 
-String _formatFee(num fee) {
+String _formatFee(num? fee) {
+  if (fee == null) return 'Not specified';
   if (fee >= 1000) {
     final k = fee / 1000;
     final str = k % 1 == 0 ? k.toStringAsFixed(0) : k.toStringAsFixed(1);

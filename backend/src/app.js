@@ -14,6 +14,9 @@ import {
 
 import trainingRoutes from "./routes/training.routes.js";
 
+import demographicsRoutes from "./routes/demographics.routes.js";
+import analyticsRoutes from "./routes/analytics.routes.js";  
+
 const app = express();
 
 // --- Security + infra middleware ---------------------------------------------
@@ -21,6 +24,24 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json({ limit: "1mb" }));
 app.use(httpLogger);
+
+app.use((req, res, next) => {
+  const originalJson = res.json;
+
+  res.json = function (body) {
+    req.log.info(
+      {
+        statusCode: res.statusCode,
+        responseBody: body,
+      },
+      "Outgoing response"
+    );
+
+    return originalJson.call(this, body);
+  };
+
+  next();
+});
 
 // Basic global rate limit to protect against brute-force + accidental loops.
 const globalLimiter = rateLimit({
@@ -68,7 +89,7 @@ app.use("/uploads", express.static(UPLOAD_DIR, { fallthrough: true }));
 app.use("/api/auth", (await import("./routes/auth.routes.js")).default);
 app.use("/api/users", (await import("./routes/user.routes.js")).default);
 app.use("/api/schools", (await import("./routes/school.routes.js")).default);
-
+app.use("/api/demographics", demographicsRoutes);
 // Phase 4: follow/subscribe + my-follows. Mounted under two paths so the
 // URL structure mirrors the conceptual model.
 const subscriptionRoutes = await import("./routes/subscription.routes.js");
@@ -109,6 +130,9 @@ app.use(
   (await import("./routes/analytics.routes.js")).default,
 );
 app.use("/api/likes", (await import("./routes/like.routes.js")).default);
+
+app.use("/api", (await import("./routes/achievement.routes.js")).default);
+app.use("/api", analyticsRoutes);
 
 // Phase 3: school-verification workflow. The router registers paths under
 // both /api/schools/:id/verification-requests (submit) and

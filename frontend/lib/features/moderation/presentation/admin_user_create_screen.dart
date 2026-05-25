@@ -6,6 +6,7 @@ import '../../../shared/widgets/loading_button.dart';
 import '../../../shared/widgets/responsive_shell.dart';  
 import '../../auth/data/auth_dtos.dart';  
 import '../../auth/state/auth_controller.dart';  
+import '../../schools/data/school_dtos.dart';
   
 class AdminUserCreateScreen extends ConsumerStatefulWidget {  
   const AdminUserCreateScreen({super.key});  
@@ -21,7 +22,9 @@ class _AdminUserCreateScreenState extends ConsumerState<AdminUserCreateScreen> {
   final _email = TextEditingController();  
   final _phone = TextEditingController();  
   final _password = TextEditingController();  
+  final _officerRole = TextEditingController(); // New field  
   UserRole _role = UserRole.moeOfficer;  
+  SubCity? _subCity; // New field  
   bool _loading = false;  
   String? _error;  
   bool _success = false;  
@@ -32,11 +35,23 @@ class _AdminUserCreateScreenState extends ConsumerState<AdminUserCreateScreen> {
     _email.dispose();  
     _phone.dispose();  
     _password.dispose();  
+    _officerRole.dispose(); // Dispose new field  
     super.dispose();  
   }  
   
   Future<void> _submit() async {  
     if (!_form.currentState!.validate()) return;  
+      
+    // Validate MOE officer specific fields  
+    if (_role == UserRole.moeOfficer && _subCity == null) {  
+      setState(() => _error = 'Sub-city is required for MoE officers');  
+      return;  
+    }  
+    if (_role == UserRole.moeOfficer && _officerRole.text.trim().isEmpty) {  
+      setState(() => _error = 'Officer role is required for MoE officers');  
+      return;  
+    }  
+      
     setState(() {  
       _loading = true;  
       _error = null;  
@@ -48,6 +63,8 @@ class _AdminUserCreateScreenState extends ConsumerState<AdminUserCreateScreen> {
             phone: _phone.text.trim().isEmpty ? null : _phone.text.trim(),  
             password: _password.text,  
             role: _role,  
+            subCity: _subCity?.toWire(),  
+            officerRole: _role == UserRole.moeOfficer ? _officerRole.text.trim() : null,  
           );  
       if (mounted) setState(() => _success = true);  
     } catch (e) {  
@@ -156,6 +173,29 @@ class _AdminUserCreateScreenState extends ConsumerState<AdminUserCreateScreen> {
               ],  
               onChanged: (v) => setState(() => _role = v ?? UserRole.moeOfficer),  
             ),  
+            const SizedBox(height: 12),  
+            // Show subcity dropdown only for MOE officers  
+            if (_role == UserRole.moeOfficer) ...[  
+              DropdownButtonFormField<SubCity>(  
+                decoration: const InputDecoration(labelText: 'Sub-city *'),  
+                value: _subCity,  
+                items: SubCity.values.map((subCity) {  
+                  return DropdownMenuItem(value: subCity, child: Text(subCity.label));  
+                }).toList(),  
+                onChanged: (v) => setState(() => _subCity = v),  
+                validator: (v) => v == null ? 'Required' : null,  
+              ),  
+              const SizedBox(height: 12),  
+              TextFormField(  
+                controller: _officerRole,  
+                decoration: const InputDecoration(  
+                  labelText: 'Officer Role *',  
+                  helperText: 'e.g., Senior Inspector, Regional Officer',  
+                ),  
+                validator: (v) => (v ?? '').trim().isEmpty ? 'Required' : null,  
+              ),  
+              const SizedBox(height: 12),  
+            ],  
             if (_error != null) ...[  
               const SizedBox(height: 12),  
               Text(_error!,  

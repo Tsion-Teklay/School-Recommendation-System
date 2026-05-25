@@ -68,12 +68,16 @@ class ForumListController extends ChangeNotifier {
 
   Future<bool> create(String content) async {
     try {
-      final p = await _repo.create(content);
-      _items.insert(0, p);
-      notifyListeners();
+      await _repo.create(content);
+      // Refresh to get the latest data from server
+      await refresh();
       return true;
     } on ApiException catch (e) {
       _error = e.message;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _error = e.toString();
       notifyListeners();
       return false;
     }

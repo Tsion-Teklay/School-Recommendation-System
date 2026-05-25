@@ -26,6 +26,8 @@ class _SchoolsListScreenState extends ConsumerState<SchoolsListScreen> {
   final _maxFeeCtl = TextEditingController();
   Curriculum? _curriculum;
   SchoolLevel? _schoolLevel;
+  SchoolType? _schoolType;
+  SubCity? _subCity;
   // Min rating, 1-5 scale. 0 means "no minimum".
   double _minRating = 0;
 
@@ -61,6 +63,8 @@ class _SchoolsListScreenState extends ConsumerState<SchoolsListScreen> {
       maxFee: num.tryParse(_maxFeeCtl.text.trim()),
       minRating: _minRating > 0 ? _minRating : null,
       schoolLevel: _schoolLevel,
+      schoolType: _schoolType,
+      subCity: _subCity,
       // We deliberately don't carry `near` here — proximity search needs a
       // browser geolocation prompt which we'll wire as a separate IconButton
       // in a future iteration.
@@ -74,11 +78,99 @@ class _SchoolsListScreenState extends ConsumerState<SchoolsListScreen> {
     setState(() {
       _curriculum = null;
       _schoolLevel = null;
+      _schoolType = null;
+      _subCity = null;
       _minRating = 0;
     });
     ref
         .read(schoolsListControllerProvider)
         .applyFilters(const SchoolListFilters());
+  }
+
+  void _showFilterDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Advanced Filters'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('School Level'),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children: SchoolLevel.values.map((level) => 
+                    ChoiceChip(
+                      label: Text(level.label()),
+                      selected: _schoolLevel == level,
+                      onSelected: (selected) {
+                        setState(() {
+                          _schoolLevel = selected ? level : null;
+                        });
+                        setDialogState(() {});
+                      },
+                    ),
+                  ).toList(),
+                ),
+                const SizedBox(height: 16),
+                const Text('School Type'),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  children: SchoolType.values.map((type) => 
+                    ChoiceChip(
+                      label: Text(type.label()),
+                      selected: _schoolType == type,
+                      onSelected: (selected) {
+                        setState(() {
+                          _schoolType = selected ? type : null;
+                        });
+                        setDialogState(() {});
+                      },
+                    ),
+                  ).toList(),
+                ),
+                const SizedBox(height: 16),
+                const Text('Subcity'),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: SubCity.values.map((subcity) => 
+                    ChoiceChip(
+                      label: Text(subcity.label),
+                      selected: _subCity == subcity,
+                      onSelected: (selected) {
+                        setState(() {
+                          _subCity = selected ? subcity : null;
+                        });
+                        setDialogState(() {});
+                      },
+                    ),
+                  ).toList(),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _applyFilters();
+              },
+              child: const Text('Apply'),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -106,10 +198,8 @@ class _SchoolsListScreenState extends ConsumerState<SchoolsListScreen> {
             minFeeCtl: _minFeeCtl,
             maxFeeCtl: _maxFeeCtl,
             curriculum: _curriculum,
-            schoolLevel: _schoolLevel,
             minRating: _minRating,
             onCurriculumChanged: (c) => setState(() => _curriculum = c),
-            onSchoolLevelChanged: (l) => setState(() => _schoolLevel = l),
             onMinRatingChanged: (r) => setState(() => _minRating = r),
             onApply: _applyFilters,
             onClear: _clearFilters,
@@ -150,10 +240,8 @@ class _Filters extends StatelessWidget {
   final TextEditingController minFeeCtl;
   final TextEditingController maxFeeCtl;
   final Curriculum? curriculum;
-  final SchoolLevel? schoolLevel;
   final double minRating;
   final ValueChanged<Curriculum?> onCurriculumChanged;
-  final ValueChanged<SchoolLevel?> onSchoolLevelChanged;
   final ValueChanged<double> onMinRatingChanged;
   final VoidCallback onApply;
   final VoidCallback onClear;
@@ -163,10 +251,8 @@ class _Filters extends StatelessWidget {
     required this.minFeeCtl,
     required this.maxFeeCtl,
     required this.curriculum,
-    required this.schoolLevel,
     required this.minRating,
     required this.onCurriculumChanged,
-    required this.onSchoolLevelChanged,
     required this.onMinRatingChanged,
     required this.onApply,
     required this.onClear,
@@ -193,8 +279,8 @@ class _Filters extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Wrap(
-              spacing: 12,
-              runSpacing: 12,
+              spacing: 8,
+              runSpacing: 8,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 ChoiceChip(
@@ -214,49 +300,39 @@ class _Filters extends StatelessWidget {
                           : Curriculum.international),
                 ),
                 SizedBox(
-                  width: 130,
+                  width: 80,
                   child: TextField(
                     controller: minFeeCtl,
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
-                      labelText: 'Min fee',
+                      labelText: 'Min',
                       border: OutlineInputBorder(),
                       isDense: true,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                     ),
                   ),
                 ),
                 SizedBox(
-                  width: 130,
+                  width: 80,
                   child: TextField(
                     controller: maxFeeCtl,
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
-                      labelText: 'Max fee',
+                      labelText: 'Max',
                       border: OutlineInputBorder(),
                       isDense: true,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                     ),
                   ),
                 ),
-                // Phase 11 — school level filter (Pre-primary / Primary /
-                // Secondary).
-                SizedBox(
-                  width: 180,
-                  child: DropdownButtonFormField<SchoolLevel?>(
-                    value: schoolLevel,
-                    isDense: true,
-                    decoration: const InputDecoration(
-                      labelText: 'School level',
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                    ),
-                    items: [
-                      const DropdownMenuItem(
-                          value: null, child: Text('Any level')),
-                      for (final l in SchoolLevel.values)
-                        DropdownMenuItem(value: l, child: Text(l.label())),
-                    ],
-                    onChanged: onSchoolLevelChanged,
-                  ),
+                IconButton(
+                  onPressed: () {
+                    // Find the parent widget to call _showFilterDialog
+                    final parentState = context.findAncestorStateOfType<_SchoolsListScreenState>();
+                    parentState?._showFilterDialog();
+                  },
+                  icon: const Icon(Icons.tune),
+                  tooltip: 'More filters',
                 ),
               ],
             ),

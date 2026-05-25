@@ -273,10 +273,9 @@ void _startEdit() {
     _editing = true;  
     _saveError = null;  
     _editSchoolName.text = _school!.schoolName;  
-    _editAddress.text = _school!.address;  
-    _editContactEmail.text = _school!.contactEmail;  
+    _editContactEmail.text = _school!.contactEmail ?? '';  
     _editContactPhone.text = _school!.contactPhone ?? '';  
-    _editTuitionFee.text = _school!.tuitionFee.toString();  
+    _editTuitionFee.text = _school!.tuitionFee?.toString() ?? '';  
     _editFacilities.text = _school!.facilities ?? '';  
     _editLatitude.text = _school!.latitude?.toString() ?? '';  
     _editLongitude.text = _school!.longitude?.toString() ?? '';  
@@ -313,9 +312,6 @@ Future<void> _saveEdit() async {
           schoolName: _editSchoolName.text.trim().isEmpty  
               ? null  
               : _editSchoolName.text.trim(),  
-          address: _editAddress.text.trim().isEmpty  
-              ? null  
-              : _editAddress.text.trim(),  
           contactEmail: _editContactEmail.text.trim().isEmpty  
               ? null  
               : _editContactEmail.text.trim(),  
@@ -452,6 +448,72 @@ onPinChanged: (latLng) {
                         onAdd: _pickAndUploadFacilityImage,
                         onDelete: _deleteFacilityImage,
                       ),
+                      const SizedBox(height: 16),  
+Card(  
+  child: Padding(  
+    padding: const EdgeInsets.all(16),  
+    child: Column(  
+      crossAxisAlignment: CrossAxisAlignment.start,  
+      children: [  
+        Text('School Demographics', style: theme.textTheme.titleLarge),  
+        const SizedBox(height: 8),  
+        const Text(  
+          'Manage yearly academic performance data including student counts, passing rates, and exam scores.',  
+        ),  
+        const SizedBox(height: 12),  
+        FilledButton.icon(  
+          onPressed: () => context.go('/admin/schools/${widget.schoolId}/demographics'),  
+          icon: const Icon(Icons.bar_chart_outlined),  
+          label: const Text('Manage Demographics'),  
+        ),  
+        const SizedBox(height: 16),  
+Card(  
+  child: Padding(  
+    padding: const EdgeInsets.all(16),  
+    child: Column(  
+      crossAxisAlignment: CrossAxisAlignment.start,  
+      children: [  
+        Text('School Achievements', style: theme.textTheme.titleLarge),  
+        const SizedBox(height: 8),  
+        const Text(  
+          'Submit and manage school achievements (Gold/Silver/Bronze) for MoE verification.',  
+        ),  
+        const SizedBox(height: 12),  
+        FilledButton.icon(  
+          onPressed: () => context.go('/admin/schools/${widget.schoolId}/achievements'),  
+          icon: const Icon(Icons.emoji_events_outlined),  
+          label: const Text('Manage Achievements'),  
+        ),  
+      ],  
+    ),  
+  ),  
+),  
+const SizedBox(height: 16),  
+Card(  
+  child: Padding(  
+    padding: const EdgeInsets.all(16),  
+    child: Column(  
+      crossAxisAlignment: CrossAxisAlignment.start,  
+      children: [  
+        Text('Staff Breakdown', style: theme.textTheme.titleLarge),  
+        const SizedBox(height: 8),  
+        const Text(  
+          'Manage staff qualification breakdown by education level (PhD, Masters, Degree, etc.).',  
+        ),  
+        const SizedBox(height: 12),  
+        FilledButton.icon(  
+          onPressed: () => context.go('/admin/schools/${widget.schoolId}/staff-breakdown'),  
+          icon: const Icon(Icons.people_outline),  
+          label: const Text('Manage Staff Breakdown'),  
+        ),  
+      ],  
+    ),  
+  ),  
+),
+      ],  
+    ),  
+  ),  
+),
                     const SizedBox(height: 16),
                     if (_school != null && _school!.verificationStatus != VerificationStatus.verified)  
                     Card(
@@ -773,7 +835,7 @@ class _SchoolSummary extends StatelessWidget {
             ),  
             if (!editing) ...[  
               const SizedBox(height: 4),  
-              Text(school.address, style: theme.textTheme.bodyMedium),  
+                
               const SizedBox(height: 12),  
               Wrap(  
                 spacing: 8,  
@@ -781,7 +843,7 @@ class _SchoolSummary extends StatelessWidget {
                 children: [  
                   Chip(label: Text(school.curriculum.label())),  
                   Chip(label: Text(school.verificationStatus.label())),  
-                  if (school.tuitionFee > 0)  
+                  if ((school.tuitionFee ?? 0) > 0)  
                     Chip(  
                       avatar: const Icon(Icons.payments_outlined, size: 18),  
                       label: Text('${school.tuitionFee} / year'),  
