@@ -44,18 +44,22 @@ class _AdminSchoolManageScreenState
   bool _saving = false;  
   String? _saveError;  
 
-  // Add controllers for edit form  
-  final _editSchoolName = TextEditingController();  
-  final _editAddress = TextEditingController();  
-  final _editContactEmail = TextEditingController();  
-  final _editContactPhone = TextEditingController();  
-  final _editTuitionFee = TextEditingController();  
-  final _editFacilities = TextEditingController();  
-  final _editLatitude = TextEditingController();  
-  final _editLongitude = TextEditingController();  
-  
-  Curriculum? _editCurriculum;  
-  SchoolLevel? _editSchoolLevel; 
+  // Add controllers for edit form
+  final _editSchoolName = TextEditingController();
+  final _editAddress = TextEditingController();
+  final _editContactEmail = TextEditingController();
+  final _editContactPhone = TextEditingController();
+  final _editTuitionFee = TextEditingController();
+  final _editFacilities = TextEditingController();
+  final _editLatitude = TextEditingController();
+  final _editLongitude = TextEditingController();
+  final _editWoreda = TextEditingController();
+  final _editStreetName = TextEditingController();
+
+  Curriculum? _editCurriculum;
+  SchoolLevel? _editSchoolLevel;
+  SchoolType? _editSchoolType;
+  SubCity? _editSubCity; 
 
   bool _fetchingLocation = false;
   LatLng? _pin;
@@ -74,14 +78,16 @@ class _AdminSchoolManageScreenState
   @override
   void dispose() {
     _notesCtrl.dispose();
-    _editSchoolName.dispose();  
-    _editAddress.dispose();  
-    _editContactEmail.dispose();  
-    _editContactPhone.dispose();  
-    _editTuitionFee.dispose();  
-    _editFacilities.dispose();  
-    _editLatitude.dispose();  
-    _editLongitude.dispose();  
+    _editSchoolName.dispose();
+    _editAddress.dispose();
+    _editContactEmail.dispose();
+    _editContactPhone.dispose();
+    _editTuitionFee.dispose();
+    _editFacilities.dispose();
+    _editLatitude.dispose();
+    _editLongitude.dispose();
+    _editWoreda.dispose();
+    _editStreetName.dispose();
     super.dispose();
   }
 
@@ -267,18 +273,20 @@ class _AdminSchoolManageScreenState
     }
   }
 
-void _startEdit() {  
-  if (_school == null) return;  
-  setState(() {  
-    _editing = true;  
-    _saveError = null;  
-    _editSchoolName.text = _school!.schoolName;  
-    _editContactEmail.text = _school!.contactEmail ?? '';  
-    _editContactPhone.text = _school!.contactPhone ?? '';  
-    _editTuitionFee.text = _school!.tuitionFee?.toString() ?? '';  
-    _editFacilities.text = _school!.facilities ?? '';  
-    _editLatitude.text = _school!.latitude?.toString() ?? '';  
-    _editLongitude.text = _school!.longitude?.toString() ?? '';  
+void _startEdit() {
+  if (_school == null) return;
+  setState(() {
+    _editing = true;
+    _saveError = null;
+    _editSchoolName.text = _school!.schoolName;
+    _editContactEmail.text = _school!.contactEmail ?? '';
+    _editContactPhone.text = _school!.contactPhone ?? '';
+    _editTuitionFee.text = _school!.tuitionFee?.toString() ?? '';
+    _editFacilities.text = _school!.facilities ?? '';
+    _editLatitude.text = _school!.latitude?.toString() ?? '';
+    _editLongitude.text = _school!.longitude?.toString() ?? '';
+    _editWoreda.text = _school!.woreda ?? '';
+    _editStreetName.text = _school!.streetName ?? '';
     if (_school!.latitude != null &&
     _school!.longitude != null) {
   _pin = LatLng(
@@ -286,9 +294,11 @@ void _startEdit() {
     _school!.longitude!,
   );
 }
-    _editCurriculum = _school!.curriculum;  
-    _editSchoolLevel = _school!.schoolLevel;  
-  });  
+    _editCurriculum = _school!.curriculum;
+    _editSchoolLevel = _school!.schoolLevel;
+    _editSchoolType = _school!.schoolType;
+    _editSubCity = _school!.subCity;
+  });
 }  
   
 // Add this method to cancel edit  
@@ -299,55 +309,63 @@ void _cancelEdit() {
   });  
 }  
   
-// Add this method to save changes  
-Future<void> _saveEdit() async {  
-  if (_school == null) return;  
-  setState(() {  
-    _saving = true;  
-    _saveError = null;  
-  });  
-  try {  
-    final updated = await ref.read(schoolRepositoryProvider).update(  
-          id: _school!.id,  
-          schoolName: _editSchoolName.text.trim().isEmpty  
-              ? null  
-              : _editSchoolName.text.trim(),  
-          contactEmail: _editContactEmail.text.trim().isEmpty  
-              ? null  
-              : _editContactEmail.text.trim(),  
-          contactPhone: _editContactPhone.text.trim().isEmpty  
-              ? null  
-              : _editContactPhone.text.trim(),  
-          curriculum: _editCurriculum,  
-          schoolLevel: _editSchoolLevel,  
-          tuitionFee: _editTuitionFee.text.trim().isEmpty  
-              ? null  
-              : num.tryParse(_editTuitionFee.text.trim()),  
-          facilities: _editFacilities.text.trim().isEmpty  
-              ? null  
-              : _editFacilities.text.trim(),  
-          latitude: _editLatitude.text.trim().isEmpty  
-              ? null  
-              : double.tryParse(_editLatitude.text.trim()),  
-          longitude: _editLongitude.text.trim().isEmpty  
-              ? null  
-              : double.tryParse(_editLongitude.text.trim()),  
-        );  
-    if (!mounted) return;  
-    setState(() {  
-      _school = updated;  
-      _editing = false;  
-    });  
-    ScaffoldMessenger.of(context).showSnackBar(  
-      const SnackBar(content: Text('School updated successfully')),  
-    );  
-  } on ApiException catch (e) {  
-    setState(() => _saveError = e.message);  
-  } catch (e) {  
-    setState(() => _saveError = e.toString());  
-  } finally {  
-    if (mounted) setState(() => _saving = false);  
-  }  
+// Add this method to save changes
+Future<void> _saveEdit() async {
+  if (_school == null) return;
+  setState(() {
+    _saving = true;
+    _saveError = null;
+  });
+  try {
+    final updated = await ref.read(schoolRepositoryProvider).update(
+          id: _school!.id,
+          schoolName: _editSchoolName.text.trim().isEmpty
+              ? null
+              : _editSchoolName.text.trim(),
+          contactEmail: _editContactEmail.text.trim().isEmpty
+              ? null
+              : _editContactEmail.text.trim(),
+          contactPhone: _editContactPhone.text.trim().isEmpty
+              ? null
+              : _editContactPhone.text.trim(),
+          curriculum: _editCurriculum,
+          schoolLevel: _editSchoolLevel,
+          schoolType: _editSchoolType,
+          subCity: _editSubCity,
+          woreda: _editWoreda.text.trim().isEmpty
+              ? null
+              : _editWoreda.text.trim(),
+          streetName: _editStreetName.text.trim().isEmpty
+              ? null
+              : _editStreetName.text.trim(),
+          tuitionFee: _editTuitionFee.text.trim().isEmpty
+              ? null
+              : num.tryParse(_editTuitionFee.text.trim()),
+          facilities: _editFacilities.text.trim().isEmpty
+              ? null
+              : _editFacilities.text.trim(),
+          latitude: _editLatitude.text.trim().isEmpty
+              ? null
+              : double.tryParse(_editLatitude.text.trim()),
+          longitude: _editLongitude.text.trim().isEmpty
+              ? null
+              : double.tryParse(_editLongitude.text.trim()),
+        );
+    if (!mounted) return;
+    setState(() {
+      _school = updated;
+      _editing = false;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('School updated successfully')),
+    );
+  } on ApiException catch (e) {
+    setState(() => _saveError = e.message);
+  } catch (e) {
+    setState(() => _saveError = e.toString());
+  } finally {
+    if (mounted) setState(() => _saving = false);
+  }
 }
 
 Future<void> _fetchLocation() async {
@@ -402,28 +420,34 @@ Future<void> _fetchLocation() async {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     if (_school != null)  
-                    _SchoolSummary(  
-                      school: _school!,  
-                      editing: _editing,  
-                      saving: _saving,  
-                      saveError: _saveError,  
-                      onEdit: _startEdit,  
-                      onCancel: _cancelEdit,  
-                      onSave: _saveEdit,  
-                      controllers: [  
-                        _editSchoolName,  
-                        _editAddress,  
-                        _editContactEmail,  
-                        _editContactPhone,  
-                        _editTuitionFee,  
-                        _editFacilities,  
-                        _editLatitude,  
-                        _editLongitude,  
-                      ],  
-                      editCurriculum: _editCurriculum,  
-                      editSchoolLevel: _editSchoolLevel,  
-                      onCurriculumChanged: (v) => setState(() => _editCurriculum = v),  
-                      onSchoolLevelChanged: (v) => setState(() => _editSchoolLevel = v), 
+                    _SchoolSummary(
+                      school: _school!,
+                      editing: _editing,
+                      saving: _saving,
+                      saveError: _saveError,
+                      onEdit: _startEdit,
+                      onCancel: _cancelEdit,
+                      onSave: _saveEdit,
+                      controllers: [
+                        _editSchoolName,
+                        _editAddress,
+                        _editContactEmail,
+                        _editContactPhone,
+                        _editTuitionFee,
+                        _editFacilities,
+                        _editLatitude,
+                        _editLongitude,
+                        _editWoreda,
+                        _editStreetName,
+                      ],
+                      editCurriculum: _editCurriculum,
+                      editSchoolLevel: _editSchoolLevel,
+                      editSchoolType: _editSchoolType,
+                      editSubCity: _editSubCity,
+                      onCurriculumChanged: (v) => setState(() => _editCurriculum = v),
+                      onSchoolLevelChanged: (v) => setState(() => _editSchoolLevel = v),
+                      onSchoolTypeChanged: (v) => setState(() => _editSchoolType = v),
+                      onSubCityChanged: (v) => setState(() => _editSubCity = v),
                       fetchingLocation: _fetchingLocation,
 onFetchLocation: _fetchLocation,
 pin: _pin,
@@ -779,16 +803,20 @@ class _SchoolSummary extends StatelessWidget {
 
   final Curriculum? editCurriculum;
   final SchoolLevel? editSchoolLevel;
+  final SchoolType? editSchoolType;
+  final SubCity? editSubCity;
 
   final ValueChanged<Curriculum?> onCurriculumChanged;
   final ValueChanged<SchoolLevel?> onSchoolLevelChanged;
+  final ValueChanged<SchoolType?> onSchoolTypeChanged;
+  final ValueChanged<SubCity?> onSubCityChanged;
 
   final bool fetchingLocation;
   final VoidCallback onFetchLocation;
 
   final LatLng? pin;
-  final ValueChanged<LatLng> onPinChanged; 
-  
+  final ValueChanged<LatLng> onPinChanged;
+
   const _SchoolSummary({
   required this.school,
   required this.editing,
@@ -800,8 +828,12 @@ class _SchoolSummary extends StatelessWidget {
   required this.controllers,
   this.editCurriculum,
   this.editSchoolLevel,
+  this.editSchoolType,
+  this.editSubCity,
   required this.onCurriculumChanged,
   required this.onSchoolLevelChanged,
+  required this.onSchoolTypeChanged,
+  required this.onSubCityChanged,
   required this.fetchingLocation,
   required this.onFetchLocation,
   required this.pin,
@@ -904,16 +936,45 @@ class _SchoolSummary extends StatelessWidget {
                 ),  
                 keyboardType: TextInputType.emailAddress,  
               ),  
-              const SizedBox(height: 12),  
-              TextFormField(  
-                controller: controllers[3],  
-                decoration: const InputDecoration(  
-                  labelText: 'Contact phone',  
-                  border: OutlineInputBorder(),  
-                ),  
-                keyboardType: TextInputType.phone,  
-              ),  
-              const SizedBox(height: 12),  
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: controllers[3],
+                decoration: const InputDecoration(
+                  labelText: 'Contact phone',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.phone,
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<SubCity>(
+                decoration: const InputDecoration(
+                  labelText: 'Sub-city',
+                  border: OutlineInputBorder(),
+                ),
+                value: editSubCity,
+                items: SubCity.values.map((subCity) {
+                  return DropdownMenuItem(value: subCity, child: Text(subCity.label));
+                }).toList(),
+                onChanged: onSubCityChanged,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: controllers[8],
+                decoration: const InputDecoration(
+                  labelText: 'Woreda',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: controllers[9],
+                decoration: const InputDecoration(
+                  labelText: 'Street Name',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
               DropdownButtonFormField<Curriculum>(  
                 decoration: const InputDecoration(  
                   labelText: 'Curriculum',  
@@ -928,22 +989,37 @@ class _SchoolSummary extends StatelessWidget {
                     .toList(),  
                 onChanged: onCurriculumChanged,  
               ),  
-              const SizedBox(height: 12),  
-              DropdownButtonFormField<SchoolLevel>(  
-                decoration: const InputDecoration(  
-                  labelText: 'School level',  
-                  border: OutlineInputBorder(),  
-                ),  
-                value: editSchoolLevel,  
-                items: SchoolLevel.values  
-                    .map((l) => DropdownMenuItem(  
-                          value: l,  
-                          child: Text(l.label()),  
-                        ))  
-                    .toList(),  
-                onChanged: onSchoolLevelChanged,  
-              ),  
-              const SizedBox(height: 12),  
+              const SizedBox(height: 12),
+              DropdownButtonFormField<SchoolLevel>(
+                decoration: const InputDecoration(
+                  labelText: 'School level',
+                  border: OutlineInputBorder(),
+                ),
+                value: editSchoolLevel,
+                items: SchoolLevel.values
+                    .map((l) => DropdownMenuItem(
+                          value: l,
+                          child: Text(l.label()),
+                        ))
+                    .toList(),
+                onChanged: onSchoolLevelChanged,
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<SchoolType>(
+                decoration: const InputDecoration(
+                  labelText: 'School type',
+                  border: OutlineInputBorder(),
+                ),
+                value: editSchoolType,
+                items: SchoolType.values
+                    .map((t) => DropdownMenuItem(
+                          value: t,
+                          child: Text(t.label()),
+                        ))
+                    .toList(),
+                onChanged: onSchoolTypeChanged,
+              ),
+              const SizedBox(height: 12),
               TextFormField(  
                 controller: controllers[4],  
                 decoration: const InputDecoration(  

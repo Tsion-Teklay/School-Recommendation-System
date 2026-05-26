@@ -227,6 +227,7 @@ class SchoolRepository {
     String? contactPhone,
     Curriculum? curriculum,
     SchoolLevel? schoolLevel,
+    SchoolType? schoolType,
     num? tuitionFee,
     String? facilities,
     double? latitude,
@@ -241,6 +242,7 @@ class SchoolRepository {
     if (contactPhone != null) data['contactPhone'] = contactPhone;
     if (curriculum != null) data['curriculum'] = curriculum.toWire();
     if (schoolLevel != null) data['schoolLevel'] = schoolLevel.toWire();
+    if (schoolType != null) data['schoolType'] = schoolType.toWire();
     if (tuitionFee != null) data['tuitionFee'] = tuitionFee;
     if (facilities != null) data['facilities'] = facilities;
     if (latitude != null) data['latitude'] = latitude;
