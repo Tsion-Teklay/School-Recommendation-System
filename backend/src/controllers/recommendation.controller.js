@@ -1,7 +1,8 @@
 import axios from "axios";
 import { asyncHandler } from "../middlewares/async.middleware.js";
 import { db as prisma } from "../config/db.js";
-import { getAllSchools } from "../services/school.service.js";
+import { getAllSchoolsWithRecommendationData } from "../services/school.service.js";
+
 import { getRecommendations } from "../services/recommendation.service.js";
 
 /**
@@ -19,7 +20,7 @@ export const recommend = asyncHandler(async (req, res) => {
   res.set("Cache-Control", "no-store");
 
   // Fetch candidate pool
-  const result = await getAllSchools({
+  const result = await getAllSchoolsWithRecommendationData({
     ...req.query,
     page: 1,
     limit: RECOMMENDATION_CANDIDATE_POOL,
