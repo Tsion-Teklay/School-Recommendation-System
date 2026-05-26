@@ -1,16 +1,15 @@
 import { db } from "../config/db.js";
-import { scoreSchool, MOE_RANKING_WEIGHTS } from "./scoring.service.js"; 
-  
+import { scoreSchool, MOE_RANKING_WEIGHTS } from "./scoring.service.js";
 
-// Neutral criteria for system-wide ranking (no parent preferences)  
-const NEUTRAL_CRITERIA = {  
-  curriculum: null,  
-  minBudget: null,  
-  maxBudget: null,  
-  lat: null,  
-  lng: null,  
-  preferredRadiusKm: 25,  
-};  
+// Neutral criteria for system-wide ranking (no parent preferences)
+const NEUTRAL_CRITERIA = {
+  curriculum: null,
+  minBudget: null,
+  maxBudget: null,
+  lat: null,
+  lng: null,
+  preferredRadiusKm: 25,
+};
 
 // ✅ Add analytics data
 export async function createAnalytics(data) {
@@ -89,7 +88,7 @@ export async function getDashboard() {
       db.review.aggregate({ _avg: { rating: true } }),
     ]);
 
-    console.log('Basic queries completed');
+    console.log("Basic queries completed");
 
     const flattenGroup = (rows, key) =>
       rows.reduce((acc, row) => {
@@ -156,22 +155,34 @@ export async function getDashboard() {
 
     const moeRanking = await Promise.all(
       allSchools.map(async (school) => {
-        const achievementScore = school.achievements.reduce((sum, a) => sum + (a.score || 0), 0);
+        const achievementScore = school.achievements.reduce(
+          (sum, a) => sum + (a.score || 0),
+          0,
+        );
         const latestDemographics = school.demographics[0];
 
         // Calculate gender balance index
         let genderBalanceIndex = 0;
         if (latestDemographics && latestDemographics.totalStudents > 0) {
-          const girlsRatio = latestDemographics.girlsCount / latestDemographics.totalStudents;
-          const boysRatio = latestDemographics.boysCount / latestDemographics.totalStudents;
-          genderBalanceIndex = Math.max(0, 1 - Math.abs(girlsRatio - boysRatio));
+          const girlsRatio =
+            latestDemographics.girlsCount / latestDemographics.totalStudents;
+          const boysRatio =
+            latestDemographics.boysCount / latestDemographics.totalStudents;
+          genderBalanceIndex = Math.max(
+            0,
+            1 - Math.abs(girlsRatio - boysRatio),
+          );
         }
 
         // Calculate passing rate score
-        const passingRateScore = latestDemographics ? (latestDemographics.passingRate || 0) / 100 : 0;
+        const passingRateScore = latestDemographics
+          ? (latestDemographics.passingRate || 0) / 100
+          : 0;
 
         // Calculate national exam score
-        const nationalExamScore = latestDemographics ? (latestDemographics.nationalExamScore || 0) / 100 : 0;
+        const nationalExamScore = latestDemographics
+          ? (latestDemographics.nationalExamScore || 0) / 100
+          : 0;
 
         // Calculate rating score
         const ratingScore = (school.rating || 0) / 5;
@@ -193,7 +204,9 @@ export async function getDashboard() {
         }
 
         // Calculate facilities score
-        const facilities = school.facilities ? school.facilities.split(",").length : 0;
+        const facilities = school.facilities
+          ? school.facilities.split(",").length
+          : 0;
         const facilitiesScore = Math.min(1, facilities / 5);
 
         // Calculate achievement score (normalized to 0-1)
@@ -201,13 +214,13 @@ export async function getDashboard() {
 
         // MOE Ranking weights (updated based on user requirements)
         const weights = {
-          rating: 25,           // Rating: 25%
-          verification: 20,     // Verification: 20%
-          facilities: 15,       // Facilities: 15%
-          achievement: 15,      // Achievement score: 15%
-          genderBalance: 10,    // Gender balance index: 10%
-          passingRate: 10,      // Passing rate: 10%
-          nationalExam: 5,      // National exam score: 5%
+          rating: 25, // Rating: 25%
+          verification: 20, // Verification: 20%
+          facilities: 15, // Facilities: 15%
+          achievement: 15, // Achievement score: 15%
+          genderBalance: 10, // Gender balance index: 10%
+          passingRate: 10, // Passing rate: 10%
+          nationalExam: 5, // National exam score: 5%
         };
 
         const totalScore =
@@ -227,13 +240,17 @@ export async function getDashboard() {
             rating: Math.round(ratingScore * weights.rating),
             verification: Math.round(verificationScore * weights.verification),
             facilities: Math.round(facilitiesScore * weights.facilities),
-            achievement: Math.round(achievementScoreNormalized * weights.achievement),
-            genderBalance: Math.round(genderBalanceIndex * weights.genderBalance),
+            achievement: Math.round(
+              achievementScoreNormalized * weights.achievement,
+            ),
+            genderBalance: Math.round(
+              genderBalanceIndex * weights.genderBalance,
+            ),
             passingRate: Math.round(passingRateScore * weights.passingRate),
             nationalExam: Math.round(nationalExamScore * weights.nationalExam),
           },
         };
-      })
+      }),
     );
 
     // Sort by total score descending
@@ -253,7 +270,7 @@ export async function getDashboard() {
       usersByRole: flattenGroup(usersByRoleRaw, "role"),
       schoolsByVerification: flattenGroup(
         schoolsByVerificationRaw,
-        "verificationStatus"
+        "verificationStatus",
       ),
       schoolsBySubcity: flattenGroup(schoolsBySubcityRaw, "subCity"),
       reportsByStatus: flattenGroup(reportsByStatusRaw, "status"),
@@ -263,11 +280,10 @@ export async function getDashboard() {
       moeRanking,
     };
   } catch (error) {
-    console.error('Dashboard error:', error);
+    console.error("Dashboard error:", error);
     throw error;
   }
 }
-
 
 function csvEscape(value) {
   if (value == null) return "";
@@ -308,7 +324,7 @@ export async function getDashboardCsv() {
         s.rating,
         s.reviewCount,
         s.verificationStatus,
-      ])
+      ]),
     );
   }
 
@@ -322,172 +338,333 @@ export async function getDashboardCsv() {
   return lines.join("\n") + "\n";
 }
 
+export async function calculateAchievementScore(schoolId) {
+  const achievements = await db.achievement.findMany({
+    where: { schoolId, status: "APPROVED" },
+    select: { score: true },
+  });
 
-export async function calculateAchievementScore(schoolId) {  
-  const achievements = await db.achievement.findMany({  
-    where: { schoolId, status: "APPROVED" },  
-    select: { score: true }  
-  });  
-    
-  return achievements.reduce((sum, a) => sum + a.score, 0);  
-}  
-  
-/**  
- * Calculate gender balance index (ratio closer to 1 = more balanced)  
- */  
-export async function calculateGenderBalanceIndex(schoolId) {  
-  const latestDemographics = await db.schoolDemographics.findFirst({  
-    where: { schoolId },  
-    orderBy: { academicYear: 'desc' }  
-  });  
-    
-  if (!latestDemographics || latestDemographics.totalStudents === 0) return 0;  
-    
-  const girlsRatio = latestDemographics.girlsCount / latestDemographics.totalStudents;  
-  const boysRatio = latestDemographics.boysCount / latestDemographics.totalStudents;  
-    
-  // Index: 1 - |girlsRatio - boysRatio| (1 = perfectly balanced, 0 = completely imbalanced)  
-  return Math.max(0, 1 - Math.abs(girlsRatio - boysRatio));  
-}  
-  
-/**  
- * Calculate year-over-year growth in passing rate  
- */  
-export async function calculateYearOverYearGrowth(schoolId) {  
-  const demographics = await db.schoolDemographics.findMany({  
-    where: { schoolId },  
-    orderBy: { academicYear: 'desc' },  
-    take: 2  
-  });  
-    
-  if (demographics.length < 2) return 0;  
-    
-  const current = demographics[0].passingRate;  
-  const previous = demographics[1].passingRate;  
-    
-  if (previous === 0) return 0;  
-  return ((current - previous) / previous) * 100;  
-}  
-  
-/**  
- * Calculate percentile ranking based on national exam score  
- */  
-export async function calculatePercentileRanking(schoolId) {  
-  const school = await db.school.findUnique({  
-    where: { id: schoolId },  
-    include: {  
-      demographics: {  
-        orderBy: { academicYear: 'desc' },  
-        take: 1  
-      }  
-    }  
-  });  
-    
-  if (!school || school.demographics.length === 0) return 0;  
-    
-  const currentScore = school.demographics[0].nationalExamScore;  
-    
-  // Get all schools with demographics for the same year  
-  const allSchools = await db.schoolDemographics.findMany({  
-    where: { academicYear: school.demographics[0].academicYear },  
-    select: { nationalExamScore: true }  
-  });  
-    
-  if (allSchools.length === 0) return 0;  
-    
-  const schoolsBelow = allSchools.filter(s => s.nationalExamScore < currentScore).length;  
-  return (schoolsBelow / allSchools.length) * 100;  
-}  
-  
-/**  
- * Calculate parent engagement score (based on subscriptions, reviews, forum participation)  
- */  
-export async function calculateParentEngagementScore(schoolId) {  
-  const [subscriberCount, reviewCount, forumPostCount] = await Promise.all([  
-    db.subscription.count({ where: { schoolId } }),  
-    db.review.count({ where: { schoolId } }),  
-    db.discussionForum.count({ where: { schoolId } })  
-  ]);  
-    
-  // Weighted score: subscribers (40%), reviews (30%), forum posts (30%)  
-  // Normalize against reasonable max values  
-  const subscriberScore = Math.min(subscriberCount / 100, 1) * 40;  
-  const reviewScore = Math.min(reviewCount / 50, 1) * 30;  
-  const forumScore = Math.min(forumPostCount / 20, 1) * 30;  
-    
-  return subscriberScore + reviewScore + forumScore;  
-}  
-  
-/**  
- * Calculate community trust score (based on rating, verification status, report count)  
- */  
-export async function calculateCommunityTrustScore(schoolId) {  
-  const school = await db.school.findUnique({  
-    where: { id: schoolId },  
-    include: {  
-      _count: {  
-        select: { reports: true }  
-      }  
-    }  
-  });  
-    
-  if (!school) return 0;  
-    
-  // Rating component (0-50 points)  
-  const ratingScore = (school.rating / 5) * 50;  
-    
-  // Verification bonus (0-30 points)  
-  const verificationBonus = school.verificationStatus === "VERIFIED" ? 30 : 0;  
-    
-  // Report penalty (0-20 points deducted)  
-  const reportPenalty = Math.min(school._count.reports * 5, 20);  
-    
-  return Math.max(0, ratingScore + verificationBonus - reportPenalty);  
-}  
-  
-/**  
- * Get comprehensive school analytics for parents  
- */  
-export async function getSchoolCompositeAnalytics(schoolId) {  
+  return achievements.reduce((sum, a) => sum + a.score, 0);
+}
+
+/**
+ * Calculate gender balance index (ratio closer to 1 = more balanced)
+ */
+export async function calculateGenderBalanceIndex(schoolId) {
+  const latestDemographics = await db.schoolDemographics.findFirst({
+    where: { schoolId },
+    orderBy: { academicYear: "desc" },
+  });
+
+  if (!latestDemographics || latestDemographics.totalStudents === 0) return 0;
+
+  const girlsRatio =
+    latestDemographics.girlsCount / latestDemographics.totalStudents;
+  const boysRatio =
+    latestDemographics.boysCount / latestDemographics.totalStudents;
+
+  // Index: 1 - |girlsRatio - boysRatio| (1 = perfectly balanced, 0 = completely imbalanced)
+  return Math.max(0, 1 - Math.abs(girlsRatio - boysRatio));
+}
+
+/**
+ * Calculate year-over-year growth in passing rate
+ */
+export async function calculateYearOverYearGrowth(schoolId) {
+  const demographics = await db.schoolDemographics.findMany({
+    where: { schoolId },
+    orderBy: { academicYear: "desc" },
+    take: 2,
+  });
+
+  if (demographics.length < 2) return 0;
+
+  const current = demographics[0].passingRate;
+  const previous = demographics[1].passingRate;
+
+  if (previous === 0) return 0;
+  return ((current - previous) / previous) * 100;
+}
+
+/**
+ * Calculate percentile ranking based on national exam score
+ */
+export async function calculatePercentileRanking(schoolId) {
+  const school = await db.school.findUnique({
+    where: { id: schoolId },
+    include: {
+      demographics: {
+        orderBy: { academicYear: "desc" },
+        take: 1,
+      },
+    },
+  });
+
+  if (!school || school.demographics.length === 0) return 0;
+
+  const currentScore = school.demographics[0].nationalExamScore;
+
+  // Get all schools with demographics for the same year
+  const allSchools = await db.schoolDemographics.findMany({
+    where: { academicYear: school.demographics[0].academicYear },
+    select: { nationalExamScore: true },
+  });
+
+  if (allSchools.length === 0) return 0;
+
+  const schoolsBelow = allSchools.filter(
+    (s) => s.nationalExamScore < currentScore,
+  ).length;
+  return (schoolsBelow / allSchools.length) * 100;
+}
+
+/**
+ * Calculate parent engagement score (based on subscriptions, reviews, forum participation)
+ */
+export async function calculateParentEngagementScore(schoolId) {
+  const [subscriberCount, reviewCount, forumPostCount] = await Promise.all([
+    db.subscription.count({ where: { schoolId } }),
+    db.review.count({ where: { schoolId } }),
+    db.discussionForum.count({ where: { schoolId } }),
+  ]);
+
+  // Weighted score: subscribers (40%), reviews (30%), forum posts (30%)
+  // Normalize against reasonable max values
+  const subscriberScore = Math.min(subscriberCount / 100, 1) * 40;
+  const reviewScore = Math.min(reviewCount / 50, 1) * 30;
+  const forumScore = Math.min(forumPostCount / 20, 1) * 30;
+
+  return subscriberScore + reviewScore + forumScore;
+}
+
+/**
+ * Calculate community trust score (based on rating, verification status, report count)
+ */
+export async function calculateCommunityTrustScore(schoolId) {
+  const school = await db.school.findUnique({
+    where: { id: schoolId },
+    include: {
+      _count: {
+        select: { reports: true },
+      },
+    },
+  });
+
+  if (!school) return 0;
+
+  // Rating component (0-50 points)
+  const ratingScore = (school.rating / 5) * 50;
+
+  // Verification bonus (0-30 points)
+  const verificationBonus = school.verificationStatus === "VERIFIED" ? 30 : 0;
+
+  // Report penalty (0-20 points deducted)
+  const reportPenalty = Math.min(school._count.reports * 5, 20);
+
+  return Math.max(0, ratingScore + verificationBonus - reportPenalty);
+}
+
+/**
+ * Batch calculate analytics metrics for multiple schools
+ * Optimized to reduce N+1 query problems
+ */
+export async function batchCalculateSchoolAnalytics(schoolIds) {
+  if (!schoolIds || schoolIds.length === 0) return {};
+
+  const results = {};
+
+  // Fetch all necessary data in batch
+  const [allDemographics, allAchievements, allStaffBreakdowns, allSchools] =
+    await Promise.all([
+      db.schoolDemographics.findMany({
+        where: { schoolId: { in: schoolIds } },
+        orderBy: { academicYear: "desc" },
+      }),
+      db.achievement.findMany({
+        where: {
+          schoolId: { in: schoolIds },
+          status: "APPROVED",
+        },
+      }),
+      db.staffBreakdown.findMany({
+        where: { schoolId: { in: schoolIds } },
+      }),
+      db.school.findMany({
+        where: { id: { in: schoolIds } },
+        include: {
+          _count: {
+            select: {
+              subscribers: true,
+              reviews: true,
+              reports: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+  // Group data by schoolId
+  const demographicsBySchool = {};
+  allDemographics.forEach((d) => {
+    if (!demographicsBySchool[d.schoolId]) {
+      demographicsBySchool[d.schoolId] = [];
+    }
+    demographicsBySchool[d.schoolId].push(d);
+  });
+
+  const achievementsBySchool = {};
+  allAchievements.forEach((a) => {
+    if (!achievementsBySchool[a.schoolId]) {
+      achievementsBySchool[a.schoolId] = [];
+    }
+    achievementsBySchool[a.schoolId].push(a);
+  });
+
+  const staffBySchool = {};
+  allStaffBreakdowns.forEach((s) => {
+    if (!staffBySchool[s.schoolId]) {
+      staffBySchool[s.schoolId] = [];
+    }
+    staffBySchool[s.schoolId].push(s);
+  });
+
+  const schoolsById = {};
+  allSchools.forEach((s) => {
+    schoolsById[s.id] = s;
+  });
+
+  // Calculate metrics for each school
+  for (const schoolId of schoolIds) {
+    const school = schoolsById[schoolId];
+    if (!school) continue;
+
+    const demographics = demographicsBySchool[schoolId] || [];
+    const achievements = achievementsBySchool[schoolId] || [];
+    const staffBreakdowns = staffBySchool[schoolId] || [];
+
+    // Achievement score
+    const achievementScore = achievements.reduce(
+      (sum, a) => sum + (a.score || 0),
+      0,
+    );
+
+    // Gender balance index
+    let genderBalanceIndex = 0;
+    const latestDemographics = demographics[0];
+    if (latestDemographics && latestDemographics.totalStudents > 0) {
+      const girlsRatio =
+        latestDemographics.girlsCount / latestDemographics.totalStudents;
+      const boysRatio =
+        latestDemographics.boysCount / latestDemographics.totalStudents;
+      genderBalanceIndex = Math.max(0, 1 - Math.abs(girlsRatio - boysRatio));
+    }
+
+    // Year-over-year growth
+    let yearOverYearGrowth = 0;
+    if (demographics.length >= 2) {
+      const current = demographics[0].passingRate;
+      const previous = demographics[1].passingRate;
+      if (previous !== 0) {
+        yearOverYearGrowth = ((current - previous) / previous) * 100;
+      }
+    }
+
+    // Staff quality score
+    let staffQualityScore = 0;
+    if (staffBreakdowns.length > 0) {
+      const phdCount =
+        staffBreakdowns.find((s) => s.educationLevel === "PHD")?.count || 0;
+      const mastersCount =
+        staffBreakdowns.find((s) => s.educationLevel === "MASTERS")?.count || 0;
+      const degreeCount =
+        staffBreakdowns.find((s) => s.educationLevel === "DEGREE")?.count || 0;
+      const totalStaff = staffBreakdowns.reduce((sum, s) => sum + s.count, 0);
+
+      if (totalStaff > 0) {
+        staffQualityScore =
+          (phdCount * 4 + mastersCount * 3 + degreeCount * 2) /
+          (totalStaff * 4);
+      }
+    }
+
+    // Parent engagement score
+    const subscriberCount = school._count?.subscribers || 0;
+    const reviewCount = school._count?.reviews || 0;
+    const subscriberScore = Math.min(subscriberCount / 100, 1) * 70;
+    const reviewScore = Math.min(reviewCount / 50, 1) * 30;
+    const parentEngagementScore = subscriberScore + reviewScore;
+
+    // Community trust score
+    const ratingScore = (school.rating / 5) * 60;
+
+    const verificationBonus = school.verificationStatus === "VERIFIED" ? 30 : 0;
+    const reportPenalty = Math.min((school._count?.reports || 0) * 5, 20);
+    const communityTrustScore = Math.max(
+      0,
+      ratingScore + verificationBonus - reportPenalty,
+    );
+
+    results[schoolId] = {
+      achievementScore,
+      genderBalanceIndex,
+      yearOverYearGrowth,
+      staffQualityScore,
+      parentEngagementScore,
+      communityTrustScore,
+      totalStudents: latestDemographics?.totalStudents || 0,
+      followerCount: subscriberCount,
+      reviewCount: reviewCount,
+      academicYear: latestDemographics?.academicYear || null,
+    };
+  }
+
+  return results;
+}
+
+/**
+ * Get comprehensive school analytics for parents
+ */
+export async function getSchoolCompositeAnalytics(schoolId) {
   try {
-    console.log('Fetching analytics for school:', schoolId);
-    
+    console.log("Fetching analytics for school:", schoolId);
+
     // TEMP: Add back calculations one by one
     const achievementScore = await calculateAchievementScore(schoolId);
     const genderBalanceIndex = await calculateGenderBalanceIndex(schoolId);
     const yearOverYearGrowth = await calculateYearOverYearGrowth(schoolId);
     const percentileRanking = await calculatePercentileRanking(schoolId);
-    
-    // TEMP: Disable problematic calculations
-    const parentEngagementScore = 0;
-    const communityTrustScore = 0;
-    
-    const [demographics, achievements] = await Promise.all([  
-      db.schoolDemographics.findMany({  
-        where: { schoolId },  
-        orderBy: { academicYear: 'desc' }  
-      }),  
-      db.achievement.findMany({  
-        where: { schoolId, status: "APPROVED" },  
-        orderBy: { year: 'desc' }  
-      })  
-    ]);  
-    
-    console.log('Basic queries completed');
-    
+
+    // Re-enable calculations with batch optimization
+    const parentEngagementScore =
+      await calculateParentEngagementScore(schoolId);
+    const communityTrustScore = await calculateCommunityTrustScore(schoolId);
+
+    const [demographics, achievements] = await Promise.all([
+      db.schoolDemographics.findMany({
+        where: { schoolId },
+        orderBy: { academicYear: "desc" },
+      }),
+      db.achievement.findMany({
+        where: { schoolId, status: "APPROVED" },
+        orderBy: { year: "desc" },
+      }),
+    ]);
+
+    console.log("Basic queries completed");
+
     // Return with all calculations
-    return {  
-      achievementScore,  
-      genderBalanceIndex,  
-      yearOverYearGrowth,  
-      percentileRanking,  
-      parentEngagementScore,  
-      communityTrustScore,  
-      demographics,  
-      achievements  
-    };  
+    return {
+      achievementScore,
+      genderBalanceIndex,
+      yearOverYearGrowth,
+      percentileRanking,
+      parentEngagementScore,
+      communityTrustScore,
+      demographics,
+      achievements,
+    };
   } catch (error) {
-    console.error('School analytics error:', error);
+    console.error("School analytics error:", error);
     throw error;
   }
 }
