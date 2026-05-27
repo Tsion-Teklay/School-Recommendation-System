@@ -419,14 +419,16 @@ export async function calculatePercentileRanking(schoolId) {
 }
 
 /**
- * Calculate parent engagement score (based on subscriptions, reviews, forum participation)
+ * Calculate parent engagement score (based on subscriptions, reviews)
  */
 export async function calculateParentEngagementScore(schoolId) {
-  const [subscriberCount, reviewCount, forumPostCount] = await Promise.all([
+  const [subscriberCount, reviewCount] = await Promise.all([
     db.subscription.count({ where: { schoolId } }),
     db.review.count({ where: { schoolId } }),
-    db.discussionForum.count({ where: { schoolId } }),
   ]);
+
+  // Forum posts are not directly associated with schools in current schema
+  const forumPostCount = 0;
 
   // Weighted score: subscribers (40%), reviews (30%), forum posts (30%)
   // Normalize against reasonable max values
@@ -443,25 +445,17 @@ export async function calculateParentEngagementScore(schoolId) {
 export async function calculateCommunityTrustScore(schoolId) {
   const school = await db.school.findUnique({
     where: { id: schoolId },
-    include: {
-      _count: {
-        select: { reports: true },
-      },
-    },
   });
 
   if (!school) return 0;
 
-  // Rating component (0-50 points)
-  const ratingScore = (school.rating / 5) * 50;
+  // Rating component (0-70 points)
+  const ratingScore = (school.rating / 5) * 70;
 
   // Verification bonus (0-30 points)
   const verificationBonus = school.verificationStatus === "VERIFIED" ? 30 : 0;
 
-  // Report penalty (0-20 points deducted)
-  const reportPenalty = Math.min(school._count.reports * 5, 20);
-
-  return Math.max(0, ratingScore + verificationBonus - reportPenalty);
+  return Math.max(0, ratingScore + verificationBonus);
 }
 
 /**
