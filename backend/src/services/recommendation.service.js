@@ -286,7 +286,7 @@ export async function getRecommendations(schools, query = {}, userId = null) {
             recommendedSchools: {
               create: rankedFromAI.map((r) => ({
                 schoolId: r.school_id || r.id,
-                features: r.features,
+                features: JSON.stringify(r.features),
                 interactionResult: "IGNORED",
               })),
             },
@@ -299,6 +299,7 @@ export async function getRecommendations(schools, query = {}, userId = null) {
                   curriculum: criteria.curriculum,
                   distance: criteria.distance,
                   schoolType: criteria.schoolType || null,
+                  schoolLevel: criteria.schoolLevel || null,
                 },
               ],
             },

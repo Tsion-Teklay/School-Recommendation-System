@@ -55,9 +55,11 @@ export async function createSchool(data, userId) {
 }
 
 const EARTH_RADIUS_KM = 6371;
+
 function toRad(deg) {
   return (deg * Math.PI) / 180;
 }
+
 function haversineKm(lat1, lng1, lat2, lng2) {
   const dLat = toRad(lat2 - lat1);
   const dLng = toRad(lng2 - lng1);
@@ -68,7 +70,7 @@ function haversineKm(lat1, lng1, lat2, lng2) {
 }
 
 // ✅ Get All Schools with Recommendation Data (for ML service)
-export async function getAllSchoolsWithRecommendationData(query) {
+export async function getAllSchools(query) {
   const {
     adminId,
     search,
@@ -126,8 +128,13 @@ export async function getAllSchoolsWithRecommendationData(query) {
     if (maxFee) filters.tuitionFee.lte = Number(maxFee);
   }
 
-  // Filter by rating
-  if (minRating !== undefined && minRating !== null && Number(minRating) > 0) {
+  // Filter by rating (Fixed verification condition logic)
+  if (
+    minRating !== undefined &&
+    minRating !== null &&
+    !isNaN(Number(minRating)) &&
+    Number(minRating) > 0
+  ) {
     filters.rating = { gte: Number(minRating) };
   }
 
@@ -137,6 +144,7 @@ export async function getAllSchoolsWithRecommendationData(query) {
     const [latStr, lngStr] = String(near).split(",");
     const lat = Number(latStr);
     const lng = Number(lngStr);
+
     if (
       Number.isNaN(lat) ||
       Number.isNaN(lng) ||
@@ -145,17 +153,21 @@ export async function getAllSchoolsWithRecommendationData(query) {
       lng < -180 ||
       lng > 180
     ) {
-      throw new ValidationError(
-        "near must be 'lat,lng' with valid coordinates",
-      );
+      throw new Error("near must be 'lat,lng' with valid coordinates");
     }
+
     const r = radiusKm ? Number(radiusKm) : 25;
     if (!Number.isFinite(r) || r <= 0) {
-      throw new ValidationError("radiusKm must be a positive number");
+      throw new Error("radiusKm must be a positive number");
     }
+
     const latRange = r / 111;
     const cosLat = Math.cos(toRad(lat));
-    const lngRange = cosLat === 0 ? 360 : r / (111 * Math.abs(cosLat));
+
+    // FIX: Guard against division-by-zero or massive values near the Earth poles
+    const lngRange =
+      Math.abs(cosLat) < 0.001 ? 360 : r / (111 * Math.abs(cosLat));
+
     filters.latitude = {
       gte: lat - latRange,
       lte: lat + latRange,
@@ -167,27 +179,30 @@ export async function getAllSchoolsWithRecommendationData(query) {
     geo = { lat, lng, radiusKm: r };
   }
 
+  // Extracted identical relational schema include queries
+  const includeRelations = {
+    demographics: {
+      orderBy: { academicYear: "desc" },
+      take: 1,
+    },
+    achievements: {
+      where: { status: "APPROVED" },
+      orderBy: { year: "desc" },
+    },
+    staffBreakdowns: true,
+    _count: {
+      select: {
+        subscribers: true,
+        reviews: true,
+      },
+    },
+  };
+
   if (geo) {
     // Fetch bounding-box candidates with recommendation data
     const candidates = await db.school.findMany({
       where: filters,
-      include: {
-        demographics: {
-          orderBy: { academicYear: "desc" },
-          take: 1,
-        },
-        achievements: {
-          where: { status: "APPROVED" },
-          orderBy: { year: "desc" },
-        },
-        staffBreakdown: true,
-        _count: {
-          select: {
-            subscribers: true,
-            reviews: true,
-          },
-        },
-      },
+      include: includeRelations,
     });
 
     const enriched = candidates
@@ -206,6 +221,7 @@ export async function getAllSchoolsWithRecommendationData(query) {
     const total = enriched.length;
     const start = (Number(page) - 1) * Number(limit);
     const data = enriched.slice(start, start + Number(limit));
+
     return {
       data,
       meta: {
@@ -228,23 +244,7 @@ export async function getAllSchoolsWithRecommendationData(query) {
       orderBy: {
         createdAt: "desc",
       },
-      include: {
-        demographics: {
-          orderBy: { academicYear: "desc" },
-          take: 1,
-        },
-        achievements: {
-          where: { status: "APPROVED" },
-          orderBy: { year: "desc" },
-        },
-        staffBreakdown: true,
-        _count: {
-          select: {
-            subscribers: true,
-            reviews: true,
-          },
-        },
-      },
+      include: includeRelations,
     }),
     db.school.count({ where: filters }),
   ]);
@@ -255,7 +255,7 @@ export async function getAllSchoolsWithRecommendationData(query) {
       total,
       page: Number(page),
       limit: Number(limit),
-      totalPages: Math.ceil(total / limit),
+      totalPages: Math.ceil(total / Number(limit)),
     },
   };
 }
