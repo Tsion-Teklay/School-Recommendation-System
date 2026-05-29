@@ -108,7 +108,7 @@ export async function submitVerificationRequest({
 // -----------------------------------------------------------------------------
 
 /**
- * MOE_OFFICER → all requests (filterable by status / school).
+ * MOE_OFFICER → requests filtered by subcity assignment, or all if no assignment.
  * SCHOOL_ADMIN → only requests for schools they own.
  */
 export async function listVerificationRequests({ user, query }) {
@@ -120,43 +120,64 @@ export async function listVerificationRequests({ user, query }) {
 
   if (user.role === "SCHOOL_ADMIN") {
     where.school = { adminId: user.id };
-  } else if (user.role !== "MOE_OFFICER") {
+  } else if (user.role === "MOE_OFFICER") {
+    // Get the MOE officer's subcity assignment
+    try {
+      const officer = await db.moeOfficer.findUnique({
+        where: { userId: user.id }
+      });
+
+      // If officer has a subcity assignment, filter by it
+      if (officer && officer.subCity) {
+        where.school = { subCity: officer.subCity };
+      }
+      // If no subcity assignment, show all requests (fallback behavior)
+    } catch (error) {
+      // If officer lookup fails, log but don't block the request
+      logger.warn({ error, userId: user.id }, "Failed to lookup MOE officer subcity assignment, showing all requests");
+    }
+  } else {
     // Defence-in-depth — route-layer authorize() already blocks this.
     throw new ForbiddenError("Not authorized to list verification requests");
   }
 
   const skip = (Number(page) - 1) * Number(limit);
 
-  const [data, total] = await Promise.all([
-    db.verificationRequest.findMany({
-      where,
-      skip,
-      take: Number(limit),
-      orderBy: { submittedAt: "desc" },
-      include: {
-        school: { select: { id: true, schoolName: true, adminId: true } },
-        submittedBy: { select: { id: true, fullName: true, email: true } },
-        reviewedBy: { select: { id: true, fullName: true, email: true } },
+  try {
+    const [data, total] = await Promise.all([
+      db.verificationRequest.findMany({
+        where,
+        skip,
+        take: Number(limit),
+        orderBy: { submittedAt: "desc" },
+        include: {
+          school: { select: { id: true, schoolName: true, adminId: true, subCity: true } },
+          submittedBy: { select: { id: true, fullName: true, email: true } },
+          reviewedBy: { select: { id: true, fullName: true, email: true } },
+        },
+      }),
+      db.verificationRequest.count({ where }),
+    ]);
+
+  // Parse documents JSON strings back to arrays
+  const parsedData = data.map(request => ({
+    ...request,
+    documents: request.documents ? JSON.parse(request.documents) : null,
+  }));
+
+    return {
+      data: parsedData,
+      meta: {
+        total,
+        page: Number(page),
+        limit: Number(limit),
+        totalPages: Math.ceil(total / Number(limit)),
       },
-    }),
-    db.verificationRequest.count({ where }),
-  ]);
-
-// Parse documents JSON strings back to arrays
-const parsedData = data.map(request => ({
-  ...request,
-  documents: request.documents ? JSON.parse(request.documents) : null,
-}));
-
-  return {
-    data: parsedData,
-    meta: {
-      total,
-      page: Number(page),
-      limit: Number(limit),
-      totalPages: Math.ceil(total / Number(limit)),
-    },
-  };
+    };
+  } catch (error) {
+    logger.error({ error, where }, "Failed to fetch verification requests");
+    throw error;
+  }
 }
 
 // -----------------------------------------------------------------------------
