@@ -5,15 +5,15 @@ import {
   ValidationError,
 } from "../utils/errors.js";
 
-import {createNotification} from "./notification.service.js";
+import { createNotification } from "./notification.service.js";
 
 // ✅ Create School
 export async function createSchool(data, userId) {
   const {
     schoolName,
-    subCity,  
-    woreda,  
-    streetName,  
+    subCity,
+    woreda,
+    streetName,
     contactEmail,
     contactPhone,
     curriculum,
@@ -26,21 +26,16 @@ export async function createSchool(data, userId) {
   } = data;
 
   // Basic validation (also enforced at route level via Zod)
-  if (
-    !schoolName ||
-    !contactEmail ||
-    !curriculum ||
-    tuitionFee === undefined
-  ) {
+  if (!schoolName || !contactEmail || !curriculum || tuitionFee === undefined) {
     throw new ValidationError("Missing required fields");
   }
 
   const school = await db.school.create({
     data: {
       schoolName,
-     ...(subCity ? { subCity } : {}),  
-      ...(woreda ? { woreda } : {}),  
-      ...(streetName ? { streetName } : {}),  
+      ...(subCity ? { subCity } : {}),
+      ...(woreda ? { woreda } : {}),
+      ...(streetName ? { streetName } : {}),
       contactEmail,
       ...(contactPhone ? { contactPhone } : {}),
       curriculum,
@@ -59,11 +54,12 @@ export async function createSchool(data, userId) {
   return school;
 }
 
-
 const EARTH_RADIUS_KM = 6371;
+
 function toRad(deg) {
   return (deg * Math.PI) / 180;
 }
+
 function haversineKm(lat1, lng1, lat2, lng2) {
   const dLat = toRad(lat2 - lat1);
   const dLng = toRad(lng2 - lng1);
@@ -73,7 +69,7 @@ function haversineKm(lat1, lng1, lat2, lng2) {
   return 2 * EARTH_RADIUS_KM * Math.asin(Math.sqrt(a));
 }
 
-// ✅ Get All Schools (PUBLIC)
+// ✅ Get All Schools with Recommendation Data (for ML service)
 export async function getAllSchools(query) {
   const {
     adminId,
@@ -88,67 +84,67 @@ export async function getAllSchools(query) {
     near,
     radiusKm,
     page = 1,
-    limit = 10,
+    limit = 50, // Default to 50 for recommendation candidate pool
   } = query;
 
   const filters = {};
 
-  //filter by owner adminId (for admin dashboard listing)
+  // Filter by owner adminId (for admin dashboard listing)
   if (adminId) {
     filters.adminId = Number(adminId);
   }
 
-  // 🔍 Search by school name
+  // Search by school name
   if (search) {
     filters.schoolName = {
       contains: search,
     };
   }
 
-  // 🎓 Filter by curriculum
+  // Filter by curriculum
   if (curriculum) {
     filters.curriculum = curriculum;
   }
 
-  // 📚 Phase 11 — filter by education level (PRE_PRIMARY / PRIMARY / SECONDARY).
-  // Schools that never had a level set are intentionally excluded when the
-  // filter is on; the matching enum equality also rejects nulls.
+  // Filter by education level
   if (schoolLevel) {
     filters.schoolLevel = schoolLevel;
   }
 
-  // 🏫 Filter by school type if provided
+  // Filter by school type
   if (schoolType) {
     filters.schoolType = schoolType;
   }
 
-  // 🏙️ Filter by subcity if provided
+  // Filter by subcity
   if (subCity) {
     filters.subCity = subCity;
   }
 
-  // 💰 Filter by fee range
+  // Filter by fee range
   if (minFee || maxFee) {
     filters.tuitionFee = {};
     if (minFee) filters.tuitionFee.gte = Number(minFee);
     if (maxFee) filters.tuitionFee.lte = Number(maxFee);
   }
 
-  // ⭐ Phase 11 — "stars and up" filter. `rating` is an aggregate maintained
-  // on review CRUD; schools with no reviews have rating=0 so they correctly
-  // drop out when minRating > 0.
-  if (minRating !== undefined && minRating !== null && Number(minRating) > 0) {
+  // Filter by rating (Fixed verification condition logic)
+  if (
+    minRating !== undefined &&
+    minRating !== null &&
+    !isNaN(Number(minRating)) &&
+    Number(minRating) > 0
+  ) {
     filters.rating = { gte: Number(minRating) };
   }
 
-  // 📍 Proximity pre-filter (bounding box). When `near` is set we ignore the
-  // DB-level skip/take below and paginate the post-filtered list in JS,
-  // because the actual radius check has to run after fetching candidates.
+  // Proximity pre-filter (bounding box)
   let geo = null;
   if (near) {
     const [latStr, lngStr] = String(near).split(",");
     const lat = Number(latStr);
     const lng = Number(lngStr);
+
     if (
       Number.isNaN(lat) ||
       Number.isNaN(lng) ||
@@ -157,20 +153,21 @@ export async function getAllSchools(query) {
       lng < -180 ||
       lng > 180
     ) {
-      throw new ValidationError(
-        "near must be 'lat,lng' with valid coordinates",
-      );
+      throw new Error("near must be 'lat,lng' with valid coordinates");
     }
+
     const r = radiusKm ? Number(radiusKm) : 25;
     if (!Number.isFinite(r) || r <= 0) {
-      throw new ValidationError("radiusKm must be a positive number");
+      throw new Error("radiusKm must be a positive number");
     }
-    // 1 degree latitude ≈ 111 km. Longitude shrinks as we approach the poles.
+
     const latRange = r / 111;
     const cosLat = Math.cos(toRad(lat));
-    const lngRange = cosLat === 0 ? 360 : r / (111 * Math.abs(cosLat));
-    // lat/lng are non-nullable on School, so we don't need a `not: null`
-    // guard here — the bounding-box range alone is enough.
+
+    // FIX: Guard against division-by-zero or massive values near the Earth poles
+    const lngRange =
+      Math.abs(cosLat) < 0.001 ? 360 : r / (111 * Math.abs(cosLat));
+
     filters.latitude = {
       gte: lat - latRange,
       lte: lat + latRange,
@@ -182,10 +179,32 @@ export async function getAllSchools(query) {
     geo = { lat, lng, radiusKm: r };
   }
 
+  // Extracted identical relational schema include queries
+  const includeRelations = {
+    demographics: {
+      orderBy: { academicYear: "desc" },
+      take: 1,
+    },
+    achievements: {
+      where: { status: "APPROVED" },
+      orderBy: { year: "desc" },
+    },
+    staffBreakdowns: true,
+    _count: {
+      select: {
+        subscribers: true,
+        reviews: true,
+      },
+    },
+  };
+
   if (geo) {
-    // Fetch the bounding-box candidates (without paging), refine with the
-    // exact Haversine distance, then page in memory.
-    const candidates = await db.school.findMany({ where: filters });
+    // Fetch bounding-box candidates with recommendation data
+    const candidates = await db.school.findMany({
+      where: filters,
+      include: includeRelations,
+    });
+
     const enriched = candidates
       .map((s) => ({
         ...s,
@@ -202,6 +221,7 @@ export async function getAllSchools(query) {
     const total = enriched.length;
     const start = (Number(page) - 1) * Number(limit);
     const data = enriched.slice(start, start + Number(limit));
+
     return {
       data,
       meta: {
@@ -213,7 +233,7 @@ export async function getAllSchools(query) {
     };
   }
 
-  // 📄 Pagination (non-proximity path)
+  // Pagination (non-proximity path) with recommendation data
   const skip = (Number(page) - 1) * Number(limit);
 
   const [schools, total] = await Promise.all([
@@ -224,6 +244,7 @@ export async function getAllSchools(query) {
       orderBy: {
         createdAt: "desc",
       },
+      include: includeRelations,
     }),
     db.school.count({ where: filters }),
   ]);
@@ -234,7 +255,7 @@ export async function getAllSchools(query) {
       total,
       page: Number(page),
       limit: Number(limit),
-      totalPages: Math.ceil(total / limit),
+      totalPages: Math.ceil(total / Number(limit)),
     },
   };
 }
@@ -295,28 +316,28 @@ export async function updateSchool(id, data, userId) {
     data,
   });
 
-  try {  
-    const subs = await db.subscription.findMany({  
-      where: { schoolId: Number(id) },  
-      select: { parentId: true },  
-    });  
-    const recipientIds = subs.map((s) => s.parentId);  
-  
-    await Promise.all(  
-      recipientIds.map((id) =>  
-        createNotification({  
-          recipientId: id,  
-          recipientType: "PARENT",  
-          message: `${updated.schoolName} updated their school information`,  
-          sourceId: updated.id,  
-          sourceType: "SCHOOL",  
-        })  
-      )  
-    );  
-  } catch (error) {  
-    logger.warn({ err: error }, "School update notification fan-out failed");  
-    // Update succeeded — don't fail the request if notifications did.  
-  }  
+  try {
+    const subs = await db.subscription.findMany({
+      where: { schoolId: Number(id) },
+      select: { parentId: true },
+    });
+    const recipientIds = subs.map((s) => s.parentId);
+
+    await Promise.all(
+      recipientIds.map((id) =>
+        createNotification({
+          recipientId: id,
+          recipientType: "PARENT",
+          message: `${updated.schoolName} updated their school information`,
+          sourceId: updated.id,
+          sourceType: "SCHOOL",
+        }),
+      ),
+    );
+  } catch (error) {
+    logger.warn({ err: error }, "School update notification fan-out failed");
+    // Update succeeded — don't fail the request if notifications did.
+  }
 
   return updated;
 }
@@ -340,7 +361,6 @@ export async function deleteSchool(id, userId) {
 
   return { message: "School deleted successfully" };
 }
-
 
 export async function revokeVerification(schoolId, userId, reason) {
   const school = await db.school.findUnique({
@@ -367,14 +387,17 @@ export async function revokeVerification(schoolId, userId, reason) {
     await createNotification({
       recipientId: school.adminId,
       recipientType: "SCHOOL_ADMIN",
-      message: `Your school "${school.schoolName}" verification has been revoked by the Ministry of Education.${reason ? ` Reason: ${reason}` : ''}`,
+      message: `Your school "${school.schoolName}" verification has been revoked by the Ministry of Education.${reason ? ` Reason: ${reason}` : ""}`,
       sourceType: "SCHOOL",
       sourceId: school.id,
     });
   } catch (error) {
-    console.error("Failed to notify school admin of verification revocation:", error);
+    console.error(
+      "Failed to notify school admin of verification revocation:",
+      error,
+    );
     // Don't fail the revocation if notification fails
   }
-  
-  return updated;  
+
+  return updated;
 }
