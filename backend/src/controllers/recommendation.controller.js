@@ -2,6 +2,7 @@ import axios from "axios";
 import { asyncHandler } from "../middlewares/async.middleware.js";
 import { db as prisma } from "../config/db.js";
 import { getAllSchools } from "../services/school.service.js";
+
 import { getRecommendations } from "../services/recommendation.service.js";
 
 /**
