@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/config.dart';
 import '../../../shared/widgets/responsive_shell.dart';
 import '../../auth/data/auth_repository.dart';
+import '../../auth/state/auth_controller.dart';
 import '../data/announcement_dtos.dart';
 import '../data/announcement_repository.dart';
 
@@ -97,14 +98,15 @@ class _AnnouncementDetailScreenState
                 )
               : a == null
                   ? const SizedBox.shrink()
-                  : _Body(announcement: a),
+                  : _Body(announcement: a, onRefresh: _load),
     );
   }
 }
 
 class _Body extends ConsumerStatefulWidget {
   final Announcement announcement;
-  const _Body({required this.announcement});
+  final VoidCallback? onRefresh;
+  const _Body({required this.announcement, this.onRefresh});
 
   @override
   ConsumerState<_Body> createState() => _BodyState();
@@ -114,11 +116,98 @@ class _BodyState extends ConsumerState<_Body> {
   final _commentCtrl = TextEditingController();
   bool _posting = false;
   int _commentRefreshKey = 0;
+  bool _isOwner = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkOwnership();
+  }
+
+  void _checkOwnership() {
+    final authState = ref.read(authControllerProvider);
+    final user = authState.user;
+    if (user != null) {
+      setState(() {
+        _isOwner = user.id == widget.announcement.publisherId;
+      });
+    }
+  }
 
   @override
   void dispose() {
     _commentCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _deleteAnnouncement() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Announcement'),
+        content: const Text('Are you sure you want to delete this announcement?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await ref
+            .read(announcementRepositoryProvider)
+            .delete(widget.announcement.id);
+        if (mounted) {
+          context.pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Announcement deleted successfully')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to delete: $e')),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _showEditDialog() async {
+    final result = await showDialog<AnnouncementInput>(
+      context: context,
+      builder: (context) => _EditAnnouncementDialog(
+        announcement: widget.announcement,
+      ),
+    );
+
+    if (result != null) {
+      try {
+        await ref
+            .read(announcementRepositoryProvider)
+            .update(widget.announcement.id, result);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Announcement updated successfully')),
+          );
+          // Reload the announcement to show updated content
+          widget.onRefresh?.call();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to update: $e')),
+          );
+        }
+      }
+    }
   }
 
   Future<void> _postComment() async {
@@ -191,26 +280,45 @@ class _BodyState extends ConsumerState<_Body> {
                 // --- ACTION BAR ---
                 const SizedBox(height: 24),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    LikeAction(
-                        targetType: LikeTargetType.announcement,
-                        targetId: a.id),
-                    ShareAction(
-                      title: a.title,
-                      content: a.content,
-                      url: 'https://yourapp.com/announcements/${a.id}',
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.flag_outlined),
-                      onPressed: () => showDialog(
-                        context: context,
-                        builder: (_) => ReportDialog(
-                          targetType: ReportTargetType.announcement,
-                          targetId: a.id,
-                        ),
+                    if (_isOwner)
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined),
+                            onPressed: _showEditDialog,
+                            tooltip: 'Edit',
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outlined),
+                            onPressed: _deleteAnnouncement,
+                            tooltip: 'Delete',
+                          ),
+                        ],
                       ),
-                      tooltip: 'Report',
+                    Row(
+                      children: [
+                        LikeAction(
+                            targetType: LikeTargetType.announcement,
+                            targetId: a.id),
+                        ShareAction(
+                          title: a.title,
+                          content: a.content,
+                          url: 'https://yourapp.com/announcements/${a.id}',
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.flag_outlined),
+                          onPressed: () => showDialog(
+                            context: context,
+                            builder: (_) => ReportDialog(
+                              targetType: ReportTargetType.announcement,
+                              targetId: a.id,
+                            ),
+                          ),
+                          tooltip: 'Report',
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -301,4 +409,150 @@ String _absoluteImage(String url) {
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
   if (url.startsWith('/')) return '${AppConfig.apiBaseUrl}$url';
   return '${AppConfig.apiBaseUrl}/$url';
+}
+
+class _EditAnnouncementDialog extends StatefulWidget {
+  final Announcement announcement;
+  const _EditAnnouncementDialog({required this.announcement});
+
+  @override
+  State<_EditAnnouncementDialog> createState() => _EditAnnouncementDialogState();
+}
+
+class _EditAnnouncementDialogState extends State<_EditAnnouncementDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _titleController;
+  late final TextEditingController _contentController;
+  late AnnouncementCategory _selectedCategory;
+  late UrgencyLevel _selectedUrgency;
+  final bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController = TextEditingController(text: widget.announcement.title);
+    _contentController = TextEditingController(text: widget.announcement.content);
+    _selectedCategory = widget.announcement.category;
+    _selectedUrgency = widget.announcement.urgencyLevel;
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _contentController.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (_formKey.currentState!.validate()) {
+      final input = AnnouncementInput(
+        title: _titleController.text.trim(),
+        content: _contentController.text.trim(),
+        category: _selectedCategory,
+        urgencyLevel: _selectedUrgency,
+        schoolId: widget.announcement.schoolId,
+      );
+      Navigator.pop(context, input);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Edit Announcement'),
+      content: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextFormField(
+                controller: _titleController,
+                decoration: const InputDecoration(
+                  labelText: 'Title',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Title is required';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _contentController,
+                maxLines: 5,
+                decoration: const InputDecoration(
+                  labelText: 'Content',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Content is required';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<AnnouncementCategory>(
+                initialValue: _selectedCategory,
+                decoration: const InputDecoration(
+                  labelText: 'Category',
+                  border: OutlineInputBorder(),
+                ),
+                items: AnnouncementCategory.values.map((category) {
+                  return DropdownMenuItem(
+                    value: category,
+                    child: Text(category.label()),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _selectedCategory = value);
+                  }
+                },
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<UrgencyLevel>(
+                initialValue: _selectedUrgency,
+                decoration: const InputDecoration(
+                  labelText: 'Urgency Level',
+                  border: OutlineInputBorder(),
+                ),
+                items: UrgencyLevel.values.map((level) {
+                  return DropdownMenuItem(
+                    value: level,
+                    child: Text(level.name.toUpperCase()),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() => _selectedUrgency = value);
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _isSubmitting ? null : _submit,
+          child: _isSubmitting
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Save Changes'),
+        ),
+      ],
+    );
+  }
 }

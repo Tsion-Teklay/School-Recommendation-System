@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../shared/widgets/responsive_shell.dart';
@@ -17,10 +16,10 @@ class MoeAchievementReviewScreen extends ConsumerStatefulWidget {
   ConsumerState<MoeAchievementReviewScreen> createState() => _MoeAchievementReviewScreenState();  
 }  
   
-class _MoeAchievementReviewScreenState extends ConsumerState<MoeAchievementReviewScreen> {  
-  bool _loading = false;  
-  String? _error;  
-  List<Achievement> _achievements = [];  
+class _MoeAchievementReviewScreenState extends ConsumerState<MoeAchievementReviewScreen> {
+  bool _loading = false;
+  String? _error;
+  List<Achievement> _achievements = [];
   String? _statusFilter;  
   
   @override  
@@ -29,19 +28,19 @@ class _MoeAchievementReviewScreenState extends ConsumerState<MoeAchievementRevie
     WidgetsBinding.instance.addPostFrameCallback((_) => _load());  
   }  
   
-  Future<void> _load() async {  
-    setState(() {  
-      _loading = true;  
-      _error = null;  
-    });  
-    try {  
-      if (_statusFilter == null) {  
-        // Load pending achievements for review  
-        final data = await ref.read(achievementRepositoryProvider).getPendingAchievements();  
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      if (_statusFilter == null) {
+        // Load pending achievements for review
+        final data = await ref.read(achievementRepositoryProvider).getPendingAchievements();
         setState(() => _achievements = data);
-      } else {  
-        // For other filters, we'd need a backend endpoint - for now show all pending  
-        final data = await ref.read(achievementRepositoryProvider).getPendingAchievements();  
+      } else {
+        // Load achievements by status (APPROVED or REJECTED)
+        final data = await ref.read(achievementRepositoryProvider).getAchievementsByStatus(_statusFilter!);
         setState(() => _achievements = data);
       }
     } on ApiException catch (e) {
@@ -57,11 +56,11 @@ class _MoeAchievementReviewScreenState extends ConsumerState<MoeAchievementRevie
         errorMessage = 'Validation error: ${e.message}';
       }
       setState(() => _error = errorMessage);
-    } catch (e) {  
-      setState(() => _error = 'An unexpected error occurred: ${e.toString()}');  
-    } finally {  
-      if (mounted) setState(() => _loading = false);  
-    }  
+    } catch (e) {
+      setState(() => _error = 'An unexpected error occurred: ${e.toString()}');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }  
   
   Future<void> _review(Achievement achievement) async {  
@@ -131,16 +130,16 @@ class _MoeAchievementReviewScreenState extends ConsumerState<MoeAchievementRevie
           Row(  
             children: [  
               Expanded(  
-                child: SegmentedButton<String?>(  
-                  segments: const [  
-                    ButtonSegment(value: null, label: Text('Pending')),  
-                    ButtonSegment(value: 'APPROVED', label: Text('Approved')),  
-                    ButtonSegment(value: 'REJECTED', label: Text('Rejected')),  
-                  ],  
-                  selected: {_statusFilter},  
-                  onSelectionChanged: (s) {  
-                    setState(() => _statusFilter = s.first);  
-                    _load();  
+                child: SegmentedButton<String?>(
+                  segments: const [
+                    ButtonSegment(value: null, label: Text('Pending')),
+                    ButtonSegment(value: 'APPROVED', label: Text('Approved')),
+                    ButtonSegment(value: 'REJECTED', label: Text('Rejected')),
+                  ],
+                  selected: {_statusFilter},
+                  onSelectionChanged: (s) {
+                    setState(() => _statusFilter = s.first);
+                    _load();
                   },  
                 ),  
               ),  
@@ -166,10 +165,16 @@ class _MoeAchievementReviewScreenState extends ConsumerState<MoeAchievementRevie
               padding: EdgeInsets.symmetric(vertical: 48),  
               child: Center(child: CircularProgressIndicator()),  
             )  
-          else if (_achievements.isEmpty)  
-            const Padding(  
-              padding: EdgeInsets.symmetric(vertical: 48),  
-              child: Center(child: Text('No achievements to review')),  
+          else if (_achievements.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 48),
+              child: Center(
+                child: Text(_statusFilter == null
+                    ? 'No pending achievements to review'
+                    : _statusFilter == 'APPROVED'
+                        ? 'No approved achievements'
+                        : 'No rejected achievements'),
+              ),
             )  
           else  
             ..._achievements.map((a) => Card(  

@@ -67,11 +67,18 @@ class AchievementRepository {
     return data.map((e) => Achievement.fromJson(e as Map<String, dynamic>)).toList();  
   }  
 
-  Future<List<Achievement>> getPendingAchievements() async {  
-  final res = await _dio.get('/api/achievements/pending');  
-  if (res.statusCode != 200) throw _toApiException(res);  
-  final List<dynamic> data = res.data as List<dynamic>;  
-  return data.map((e) => Achievement.fromJson(e as Map<String, dynamic>)).toList();  
+  Future<List<Achievement>> getPendingAchievements() async {
+  final res = await _dio.get('/api/achievements/pending');
+  if (res.statusCode != 200) throw _toApiException(res);
+  final List<dynamic> data = res.data as List<dynamic>;
+  return data.map((e) => Achievement.fromJson(e as Map<String, dynamic>)).toList();
+}
+
+Future<List<Achievement>> getAchievementsByStatus(String status) async {
+  final res = await _dio.get('/api/achievements', queryParameters: {'status': status});
+  if (res.statusCode != 200) throw _toApiException(res);
+  final List<dynamic> data = res.data as List<dynamic>;
+  return data.map((e) => Achievement.fromJson(e as Map<String, dynamic>)).toList();
 }
   
   Future<Achievement?> getById(int id) async {  

@@ -25,11 +25,6 @@ export async function createSchool(data, userId) {
     longitude,
   } = data;
 
-  // Basic validation (also enforced at route level via Zod)
-  if (!schoolName || !contactEmail || !curriculum || tuitionFee === undefined) {
-    throw new ValidationError("Missing required fields");
-  }
-
   const school = await db.school.create({
     data: {
       schoolName,

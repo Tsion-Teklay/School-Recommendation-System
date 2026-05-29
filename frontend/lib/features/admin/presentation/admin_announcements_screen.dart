@@ -201,51 +201,55 @@ class _AnnouncementTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(announcement.title,
-                      style: theme.textTheme.titleMedium),
-                ),
-                PopupMenuButton<String>(
-                  onSelected: (v) {
-                    if (v == 'delete') onDelete();
-                  },
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(value: 'delete', child: Text('Delete')),
-                  ],
-                ),
-              ],
-            ),
-            Wrap(
-              spacing: 6,
-              children: [
-                Chip(
-                    label: Text(announcement.category.label()),
-                    visualDensity: VisualDensity.compact),
-                Chip(
-                    label: Text(announcement.urgencyLevel.label()),
-                    visualDensity: VisualDensity.compact),
-                Chip(
-                  label: Text(announcement.publisherType.label()),
-                  visualDensity: VisualDensity.compact,
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(announcement.content),
-            const SizedBox(height: 8),
-            Text(
-              announcement.datePosted.toIso8601String().substring(0, 16),
-              style: theme.textTheme.bodySmall,
-            ),
-          ],
+    return InkWell(
+      onTap: () => context.push('/announcements/${announcement.id}'),
+      borderRadius: BorderRadius.circular(12),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(announcement.title,
+                        style: theme.textTheme.titleMedium),
+                  ),
+                  PopupMenuButton<String>(
+                    onSelected: (v) {
+                      if (v == 'delete') onDelete();
+                    },
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(value: 'delete', child: Text('Delete')),
+                    ],
+                  ),
+                ],
+              ),
+              Wrap(
+                spacing: 6,
+                children: [
+                  Chip(
+                      label: Text(announcement.category.label()),
+                      visualDensity: VisualDensity.compact),
+                  Chip(
+                      label: Text(announcement.urgencyLevel.label()),
+                      visualDensity: VisualDensity.compact),
+                  Chip(
+                    label: Text(announcement.publisherType.label()),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(announcement.content),
+              const SizedBox(height: 8),
+              Text(
+                announcement.datePosted.toIso8601String().substring(0, 16),
+                style: theme.textTheme.bodySmall,
+              ),
+            ],
+          ),
         ),
       ),
     );

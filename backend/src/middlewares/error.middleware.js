@@ -41,7 +41,7 @@ function mapPrismaError(err) {
 export function errorHandler(err, req, res, next) {
   if (err instanceof ZodError) {
     return res.status(400).json({
-      error: "Invalid request",
+      error: "Validation failed. Please check your input.",
       code: "VALIDATION_ERROR",
       details: err.issues.map((i) => ({
         path: i.path.join("."),

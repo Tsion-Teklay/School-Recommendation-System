@@ -153,15 +153,26 @@ class _ComparisonTable extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         child: Column(
                           children: [
-                            Text(
-                              school.schoolName,
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                              textAlign: TextAlign.center,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    school.schoolName,
+                                    style: theme.textTheme.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (school.rating != null && school.rating! > 0) ...[
+                                  const SizedBox(width: 4),
+                                  _StarRating(rating: school.rating!.toDouble()),
+                                ],
+                              ],
                             ),
                             const SizedBox(height: 4),
                             Container(
@@ -376,6 +387,40 @@ class _ErrorRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _StarRating extends StatelessWidget {
+  final double rating;
+  const _StarRating({required this.rating});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(5, (index) {
+        if (index < rating.floor()) {
+          return Icon(
+            Icons.star,
+            size: 14,
+            color: theme.colorScheme.primary,
+          );
+        } else if (index < rating && rating % 1 >= 0.5) {
+          return Icon(
+            Icons.star_half,
+            size: 14,
+            color: theme.colorScheme.primary,
+          );
+        } else {
+          return Icon(
+            Icons.star_border,
+            size: 14,
+            color: theme.colorScheme.onSurfaceVariant,
+          );
+        }
+      }),
     );
   }
 }

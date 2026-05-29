@@ -177,6 +177,8 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
     final state = ctl.state;
     final auth = ref.watch(authControllerProvider);
     final isParent = auth.user?.role == UserRole.parent;
+    final isOwnSchool = auth.user?.role == UserRole.schoolAdmin &&
+        auth.user?.id == state.school?.adminId;
     final cart = ref.watch(compareCartProvider);
 
     Widget body;
@@ -194,6 +196,7 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
       body = _DetailBody(
         school: state.school!,
         isParent: isParent,
+        isOwnSchool: isOwnSchool,
         userRole: auth.user?.role,
         isFollowing: state.isFollowing,
         followBusy: state.followBusy,
@@ -241,6 +244,7 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
 class _DetailBody extends StatelessWidget {
   final School school;
   final bool isParent;
+  final bool isOwnSchool;
   final UserRole? userRole;
   final bool isFollowing;
   final bool followBusy;
@@ -255,6 +259,7 @@ class _DetailBody extends StatelessWidget {
   const _DetailBody({
     required this.school,
     required this.isParent,
+    required this.isOwnSchool,
     required this.userRole,
     required this.isFollowing,
     required this.followBusy,
@@ -306,7 +311,17 @@ class _DetailBody extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(school.schoolName, style: theme.textTheme.headlineSmall),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(school.schoolName, style: theme.textTheme.headlineSmall),
+                    ),
+                    if (school.rating != null && school.rating! > 0) ...[
+                      const SizedBox(width: 8),
+                      _StarRating(rating: school.rating!.toDouble()),
+                    ],
+                  ],
+                ),
                 const SizedBox(height: 4),
                 Text(school.subCity != null ? '${school.subCity} - ${school.woreda ?? 'N/A'}' : 'No location info', style: theme.textTheme.bodyMedium),
                 const SizedBox(height: 16),
@@ -405,7 +420,7 @@ class _DetailBody extends StatelessWidget {
                         label:
                             Text(inCart ? 'In compare cart' : 'Add to compare'),
                       ),
-                    if (isParent)
+                    if (isParent || isOwnSchool)
                       OutlinedButton.icon(
                         onPressed: () => context.go('/schools/${school.id}/analytics'),
                         icon: const Icon(Icons.bar_chart_outlined),
@@ -771,4 +786,38 @@ String _absoluteImage(String url) {
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
   if (url.startsWith('/')) return '${AppConfig.apiBaseUrl}$url';
   return '${AppConfig.apiBaseUrl}/$url';
+}
+
+class _StarRating extends StatelessWidget {
+  final double rating;
+  const _StarRating({required this.rating});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(5, (index) {
+        if (index < rating.floor()) {
+          return Icon(
+            Icons.star,
+            size: 18,
+            color: theme.colorScheme.primary,
+          );
+        } else if (index < rating && rating % 1 >= 0.5) {
+          return Icon(
+            Icons.star_half,
+            size: 18,
+            color: theme.colorScheme.primary,
+          );
+        } else {
+          return Icon(
+            Icons.star_border,
+            size: 18,
+            color: theme.colorScheme.onSurfaceVariant,
+          );
+        }
+      }),
+    );
+  }
 }

@@ -25,11 +25,18 @@ router.get(
   achievementController.getSchoolAchievements
 );  
   
-router.get(  
-  "/achievements/pending",  
-  authenticate,  
-  authorizeRoles("MOE_OFFICER"),  
-  achievementController.getPendingAchievements  
+router.get(
+  "/achievements/pending",
+  authenticate,
+  authorizeRoles("MOE_OFFICER"),
+  achievementController.getPendingAchievements
+);
+
+router.get(
+  "/achievements",
+  authenticate,
+  authorizeRoles("MOE_OFFICER"),
+  achievementController.getAchievementsByStatus
 );  
   
 router.post(  

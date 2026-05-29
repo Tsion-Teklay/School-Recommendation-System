@@ -472,153 +472,153 @@ onPinChanged: (latLng) {
                         onAdd: _pickAndUploadFacilityImage,
                         onDelete: _deleteFacilityImage,
                       ),
-                      const SizedBox(height: 16),  
-Card(  
-  child: Padding(  
-    padding: const EdgeInsets.all(16),  
-    child: Column(  
-      crossAxisAlignment: CrossAxisAlignment.start,  
-      children: [  
-        Text('School Demographics', style: theme.textTheme.titleLarge),  
-        const SizedBox(height: 8),  
-        const Text(  
-          'Manage yearly academic performance data including student counts, passing rates, and exam scores.',  
-        ),  
-        const SizedBox(height: 12),  
-        FilledButton.icon(  
-          onPressed: () => context.go('/admin/schools/${widget.schoolId}/demographics'),  
-          icon: const Icon(Icons.bar_chart_outlined),  
-          label: const Text('Manage Demographics'),  
-        ),  
-        const SizedBox(height: 16),  
-Card(  
-  child: Padding(  
-    padding: const EdgeInsets.all(16),  
-    child: Column(  
-      crossAxisAlignment: CrossAxisAlignment.start,  
-      children: [  
-        Text('School Achievements', style: theme.textTheme.titleLarge),  
-        const SizedBox(height: 8),  
-        const Text(  
-          'Submit and manage school achievements (Gold/Silver/Bronze) for MoE verification.',  
-        ),  
-        const SizedBox(height: 12),  
-        FilledButton.icon(  
-          onPressed: () => context.go('/admin/schools/${widget.schoolId}/achievements'),  
-          icon: const Icon(Icons.emoji_events_outlined),  
-          label: const Text('Manage Achievements'),  
-        ),  
-      ],  
-    ),  
-  ),  
-),  
-const SizedBox(height: 16),  
-Card(  
-  child: Padding(  
-    padding: const EdgeInsets.all(16),  
-    child: Column(  
-      crossAxisAlignment: CrossAxisAlignment.start,  
-      children: [  
-        Text('Staff Breakdown', style: theme.textTheme.titleLarge),  
-        const SizedBox(height: 8),  
-        const Text(  
-          'Manage staff qualification breakdown by education level (PhD, Masters, Degree, etc.).',  
-        ),  
-        const SizedBox(height: 12),  
-        FilledButton.icon(  
-          onPressed: () => context.go('/admin/schools/${widget.schoolId}/staff-breakdown'),  
-          icon: const Icon(Icons.people_outline),  
-          label: const Text('Manage Staff Breakdown'),  
-        ),  
-      ],  
-    ),  
-  ),  
-),
-      ],  
-    ),  
-  ),  
-),
                     const SizedBox(height: 16),
-                    if (_school != null && _school!.verificationStatus != VerificationStatus.verified)  
                     Card(
                       child: Padding(
                         padding: const EdgeInsets.all(16),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Submit verification request',
-                                style: theme.textTheme.titleLarge),
+                            Text('School Demographics', style: theme.textTheme.titleLarge),
                             const SizedBox(height: 8),
                             const Text(
-                              "Attach proof-of-license documents (PDF/PNG/JPEG, "
-                              "≤10MB each, up to 5 files). The MoE will review "
-                              "and approve or reject the request.",
+                              'Manage yearly academic performance data including student counts, passing rates, and exam scores.',
                             ),
                             const SizedBox(height: 12),
-                            if (_picked.isNotEmpty)
-                              Wrap(
-                                spacing: 6,
-                                runSpacing: 6,
-                                children: [
-                                  for (final f in _picked)
-                                    InputChip(
-                                      label: Text(f.filename),
-                                      onDeleted: () =>
-                                          setState(() => _picked.remove(f)),
-                                    ),
-                                ],
-                              ),
-                            const SizedBox(height: 8),
-                            TextField(
-                              controller: _notesCtrl,
-                              decoration: const InputDecoration(
-                                labelText: 'Notes for reviewer (optional)',
-                              ),
-                              minLines: 1,
-                              maxLines: 3,
-                            ),
-                            if (_submitError != null) ...[
-                              const SizedBox(height: 8),
-                              Text(_submitError!,
-                                  style: TextStyle(
-                                      color: theme.colorScheme.error)),
-                            ],
-                            const SizedBox(height: 12),
-                            // We use `Wrap` rather than `Row + Spacer +
-                            // FilledButton.icon` because the latter combo
-                            // silently drops the trailing button on the
-                            // Flutter web release build (see Phase 9 PR
-                            // #22 review thread).
-                            Wrap(
-                              alignment: WrapAlignment.spaceBetween,
-                              spacing: 12,
-                              runSpacing: 8,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              children: [
-                                OutlinedButton.icon(
-                                  onPressed: _submitting ? null : _addStubFile,
-                                  icon: const Icon(Icons.attach_file),
-                                  label: const Text('Attach document'),
-                                ),
-                                FilledButton.icon(
-                                  onPressed:
-                                      _submitting ? null : _submitVerification,
-                                  icon: _submitting
-                                      ? const SizedBox(
-                                          width: 16,
-                                          height: 16,
-                                          child: CircularProgressIndicator(
-                                              strokeWidth: 2),
-                                        )
-                                      : const Icon(Icons.send),
-                                  label: const Text('Submit'),
-                                ),
-                              ],
+                            FilledButton.icon(
+                              onPressed: () => context.go('/admin/schools/${widget.schoolId}/demographics'),
+                              icon: const Icon(Icons.bar_chart_outlined),
+                              label: const Text('Manage Demographics'),
                             ),
                           ],
                         ),
                       ),
                     ),
+                    const SizedBox(height: 24),
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('School Achievements', style: theme.textTheme.titleLarge),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Submit and manage school achievements (Gold/Silver/Bronze) for MoE verification.',
+                            ),
+                            const SizedBox(height: 12),
+                            FilledButton.icon(
+                              onPressed: () => context.go('/admin/schools/${widget.schoolId}/achievements'),
+                              icon: const Icon(Icons.emoji_events_outlined),
+                              label: const Text('Manage Achievements'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Staff Breakdown', style: theme.textTheme.titleLarge),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Manage staff qualification breakdown by education level (PhD, Masters, Degree, etc.).',
+                            ),
+                            const SizedBox(height: 12),
+                            FilledButton.icon(
+                              onPressed: () => context.go('/admin/schools/${widget.schoolId}/staff-breakdown'),
+                              icon: const Icon(Icons.people_outline),
+                              label: const Text('Manage Staff Breakdown'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    if (_school != null && _school!.verificationStatus != VerificationStatus.verified)
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Submit verification request',
+                                  style: theme.textTheme.titleLarge),
+                              const SizedBox(height: 8),
+                              const Text(
+                                "Attach proof-of-license documents (PDF/PNG/JPEG, "
+                                "≤10MB each, up to 5 files). The MoE will review "
+                                "and approve or reject the request.",
+                              ),
+                              const SizedBox(height: 12),
+                              if (_picked.isNotEmpty)
+                                Wrap(
+                                  spacing: 6,
+                                  runSpacing: 6,
+                                  children: [
+                                    for (final f in _picked)
+                                      InputChip(
+                                        label: Text(f.filename),
+                                        onDeleted: () =>
+                                            setState(() => _picked.remove(f)),
+                                      ),
+                                  ],
+                                ),
+                              const SizedBox(height: 8),
+                              TextField(
+                                controller: _notesCtrl,
+                                decoration: const InputDecoration(
+                                  labelText: 'Notes for reviewer (optional)',
+                                ),
+                                minLines: 1,
+                                maxLines: 3,
+                              ),
+                              if (_submitError != null) ...[
+                                const SizedBox(height: 8),
+                                Text(_submitError!,
+                                    style: TextStyle(
+                                        color: theme.colorScheme.error)),
+                              ],
+                              const SizedBox(height: 12),
+                              // We use `Wrap` rather than `Row + Spacer +
+                              // FilledButton.icon` because the latter combo
+                              // silently drops the trailing button on the
+                              // Flutter web release build (see Phase 9 PR
+                              // #22 review thread).
+                              Wrap(
+                                alignment: WrapAlignment.spaceBetween,
+                                spacing: 12,
+                                runSpacing: 8,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  OutlinedButton.icon(
+                                    onPressed: _submitting ? null : _addStubFile,
+                                    icon: const Icon(Icons.attach_file),
+                                    label: const Text('Attach document'),
+                                  ),
+                                  FilledButton.icon(
+                                    onPressed:
+                                        _submitting ? null : _submitVerification,
+                                    icon: _submitting
+                                        ? const SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: CircularProgressIndicator(
+                                                strokeWidth: 2),
+                                          )
+                                        : const Icon(Icons.send),
+                                    label: const Text('Submit'),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     const SizedBox(height: 16),
                     Text('Past verification requests',
                         style: theme.textTheme.titleLarge),
