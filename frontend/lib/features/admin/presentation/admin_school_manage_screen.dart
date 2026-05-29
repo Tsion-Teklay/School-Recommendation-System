@@ -46,7 +46,6 @@ class _AdminSchoolManageScreenState
 
   // Add controllers for edit form
   final _editSchoolName = TextEditingController();
-  final _editAddress = TextEditingController();
   final _editContactEmail = TextEditingController();
   final _editContactPhone = TextEditingController();
   final _editTuitionFee = TextEditingController();
@@ -79,7 +78,6 @@ class _AdminSchoolManageScreenState
   void dispose() {
     _notesCtrl.dispose();
     _editSchoolName.dispose();
-    _editAddress.dispose();
     _editContactEmail.dispose();
     _editContactPhone.dispose();
     _editTuitionFee.dispose();
@@ -430,7 +428,6 @@ Future<void> _fetchLocation() async {
                       onSave: _saveEdit,
                       controllers: [
                         _editSchoolName,
-                        _editAddress,
                         _editContactEmail,
                         _editContactPhone,
                         _editTuitionFee,
@@ -918,27 +915,19 @@ class _SchoolSummary extends StatelessWidget {
                   labelText: 'School name',  
                   border: OutlineInputBorder(),  
                 ),  
-              ),  
-              const SizedBox(height: 12),  
-              TextFormField(  
-                controller: controllers[1],  
-                decoration: const InputDecoration(  
-                  labelText: 'Address',  
-                  border: OutlineInputBorder(),  
-                ),  
-              ),  
-              const SizedBox(height: 12),  
-              TextFormField(  
-                controller: controllers[2],  
-                decoration: const InputDecoration(  
-                  labelText: 'Contact email',  
-                  border: OutlineInputBorder(),  
-                ),  
-                keyboardType: TextInputType.emailAddress,  
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: controllers[1],
+                decoration: const InputDecoration(
+                  labelText: 'Contact email',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.emailAddress,
               ),  
               const SizedBox(height: 12),
               TextFormField(
-                controller: controllers[3],
+                controller: controllers[2],
                 decoration: const InputDecoration(
                   labelText: 'Contact phone',
                   border: OutlineInputBorder(),
@@ -959,7 +948,7 @@ class _SchoolSummary extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               TextFormField(
-                controller: controllers[8],
+                controller: controllers[7],
                 decoration: const InputDecoration(
                   labelText: 'Woreda',
                   border: OutlineInputBorder(),
@@ -968,7 +957,7 @@ class _SchoolSummary extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               TextFormField(
-                controller: controllers[9],
+                controller: controllers[8],
                 decoration: const InputDecoration(
                   labelText: 'Street Name',
                   border: OutlineInputBorder(),
@@ -1020,21 +1009,21 @@ class _SchoolSummary extends StatelessWidget {
                 onChanged: onSchoolTypeChanged,
               ),
               const SizedBox(height: 12),
-              TextFormField(  
-                controller: controllers[4],  
-                decoration: const InputDecoration(  
-                  labelText: 'Tuition fee',  
-                  border: OutlineInputBorder(),  
-                  prefixText: 'ETB ',  
-                ),  
-                keyboardType: TextInputType.number,  
-              ),  
-              const SizedBox(height: 12),  
-              TextFormField(  
-                controller: controllers[5],  
-                decoration: const InputDecoration(  
-                  labelText: 'Facilities',  
-                  border: OutlineInputBorder(),  
+              TextFormField(
+                controller: controllers[3],
+                decoration: const InputDecoration(
+                  labelText: 'Tuition fee',
+                  border: OutlineInputBorder(),
+                  prefixText: 'ETB ',
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: controllers[4],
+                decoration: const InputDecoration(
+                  labelText: 'Facilities',
+                  border: OutlineInputBorder(),
                 ),  
                 maxLines: 3,  
               ),  
@@ -1079,7 +1068,7 @@ class _SchoolSummary extends StatelessWidget {
       children: [
         Expanded(
           child: TextFormField(
-            controller: controllers[6],
+            controller: controllers[5],
             decoration: const InputDecoration(
               labelText: 'Latitude',
               border: OutlineInputBorder(),
@@ -1088,7 +1077,7 @@ class _SchoolSummary extends StatelessWidget {
             onChanged: (value) {
               final lat = double.tryParse(value);
               final lng = double.tryParse(
-                controllers[7].text,
+                controllers[6].text,
               );
 
               if (lat != null && lng != null) {
@@ -1102,7 +1091,7 @@ class _SchoolSummary extends StatelessWidget {
 
         Expanded(
           child: TextFormField(
-            controller: controllers[7],
+            controller: controllers[6],
             decoration: const InputDecoration(
               labelText: 'Longitude',
               border: OutlineInputBorder(),
@@ -1110,7 +1099,7 @@ class _SchoolSummary extends StatelessWidget {
             keyboardType: TextInputType.number,
             onChanged: (value) {
               final lat = double.tryParse(
-                controllers[6].text,
+                controllers[5].text,
               );
 
               final lng = double.tryParse(value);
