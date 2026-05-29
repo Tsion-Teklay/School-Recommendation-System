@@ -415,7 +415,7 @@ class _SchoolsBySubcityChart extends StatelessWidget {
                               ),
                               // Foreground bar (proportional width, blue color)
                               FractionallySizedBox(
-                                widthFactor: percentage > 0 ? percentage : 0.05, // Minimum 5% for visibility
+                                widthFactor: (percentage > 0 ? percentage : 0.05).toDouble(), // Minimum 5% for visibility
                                 child: Container(
                                   height: 40,
                                   decoration: BoxDecoration(
