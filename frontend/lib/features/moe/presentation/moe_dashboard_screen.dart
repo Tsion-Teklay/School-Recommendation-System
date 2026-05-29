@@ -405,13 +405,26 @@ class _SchoolsBySubcityChart extends StatelessWidget {
                         Expanded(
                           child: Stack(
                             children: [
+                              // Background bar (full width, light color)
                               Container(
                                 height: 40,
                                 decoration: BoxDecoration(
-                                  color: theme.colorScheme.primary,
+                                  color: theme.colorScheme.surfaceContainerHighest,
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                               ),
+                              // Foreground bar (proportional width, blue color)
+                              FractionallySizedBox(
+                                widthFactor: percentage > 0 ? percentage : 0.05, // Minimum 5% for visibility
+                                child: Container(
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.primary,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                              ),
+                              // Text overlay (positioned on top of the blue bar)
                               Positioned.fill(
                                 child: Padding(
                                   padding: const EdgeInsets.symmetric(horizontal: 12),
