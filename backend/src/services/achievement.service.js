@@ -52,14 +52,25 @@ export async function getSchoolAchievements(schoolId) {
   return achievements;  
 }  
   
-export async function getPendingAchievements() {  
-  const achievements = await db.achievement.findMany({  
-    where: { status: "PENDING" },  
-    include: { school: true },  
-    orderBy: { submittedAt: 'asc' },  
-  });  
-    
-  return achievements;  
+export async function getPendingAchievements() {
+  const achievements = await db.achievement.findMany({
+    where: { status: "PENDING" },
+    include: { school: true },
+    orderBy: { submittedAt: 'asc' },
+  });
+
+  return achievements;
+}
+
+export async function getAchievementsByStatus(status) {
+  const whereClause = status ? { status } : {};
+  const achievements = await db.achievement.findMany({
+    where: whereClause,
+    include: { school: true },
+    orderBy: { reviewedAt: 'desc' },
+  });
+
+  return achievements;
 }  
   
 export async function reviewAchievement(id, data, userId) {

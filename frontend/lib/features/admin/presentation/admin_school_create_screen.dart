@@ -97,6 +97,20 @@ final _streetName = TextEditingController();
     });
 
     try {
+      // Validate curriculum is selected
+      if (_curriculum == null) {
+        setState(() => _error = 'Please select a curriculum');
+        return;
+      }
+
+      // Parse tuition fee safely
+      final tuitionFeeText = _tuitionFee.text.trim();
+      final tuitionFee = num.tryParse(tuitionFeeText);
+      if (tuitionFee == null) {
+        setState(() => _error = 'Please enter a valid tuition fee');
+        return;
+      }
+
       final school =
           await ref.read(schoolRepositoryProvider).create(
                 schoolName: _schoolName.text.trim(),
@@ -112,8 +126,7 @@ final _streetName = TextEditingController();
                 curriculum: _curriculum!,
                 schoolLevel: _schoolLevel,
                 schoolType: _schoolType,
-                tuitionFee:
-                    num.parse(_tuitionFee.text.trim()),
+                tuitionFee: tuitionFee,
                 facilities:
                     _facilities.text.trim().isEmpty
                         ? null
@@ -126,7 +139,20 @@ final _streetName = TextEditingController();
 
       context.go('/admin/schools/${school.id}');
     } on ApiException catch (e) {
-      setState(() => _error = e.message);
+      // Show detailed error message if available
+      String errorMessage = e.message;
+      if (e.details != null && e.details!.isNotEmpty) {
+        final detailMessages = e.details!.map((d) {
+          if (d is Map && d.containsKey('message')) {
+            return '- ${d['message']}';
+          }
+          return '';
+        }).where((msg) => msg.isNotEmpty).join('\n');
+        if (detailMessages.isNotEmpty) {
+          errorMessage = '$errorMessage\n\n$detailMessages';
+        }
+      }
+      setState(() => _error = errorMessage);
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
@@ -284,6 +310,7 @@ TextFormField(
                           const InputDecoration(
                         labelText: 'Curriculum *',
                         border: OutlineInputBorder(),
+                        hintText: 'Select curriculum',
                       ),
                       value: _curriculum,
                       items: Curriculum.values
@@ -298,7 +325,7 @@ TextFormField(
                           .toList(),
                       validator: (v) =>
                           v == null
-                              ? 'Required'
+                              ? 'Please select a curriculum'
                               : null,
                       onChanged: (v) =>
                           setState(

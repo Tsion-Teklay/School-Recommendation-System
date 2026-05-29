@@ -28,9 +28,15 @@ export const getSchoolAchievements = asyncHandler(async (req, res) => {
   res.json(result);  
 });  
   
-export const getPendingAchievements = asyncHandler(async (req, res) => {  
-  const result = await achievementService.getPendingAchievements();  
-  res.json(result);  
+export const getPendingAchievements = asyncHandler(async (req, res) => {
+  const result = await achievementService.getPendingAchievements();
+  res.json(result);
+});
+
+export const getAchievementsByStatus = asyncHandler(async (req, res) => {
+  const { status } = req.query;
+  const result = await achievementService.getAchievementsByStatus(status);
+  res.json(result);
 });  
   
 export const reviewAchievement = asyncHandler(async (req, res) => {  

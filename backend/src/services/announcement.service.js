@@ -54,18 +54,28 @@ export async function createAnnouncement(data, user) {
   // 🚀 Targeted fan-out
   try {
     let recipientIds;
+    let publisherName;
+    
     if (publisherType === "MOE") {
       const parents = await db.user.findMany({
         where: { role: "PARENT" },
         select: { id: true },
       });
       recipientIds = parents.map((p) => p.id);
+      publisherName = "MOE";
     } else {
       const subs = await db.subscription.findMany({
         where: { schoolId },
         select: { parentId: true },
       });
       recipientIds = subs.map((s) => s.parentId);
+      
+      // Get school name for school announcements
+      const school = await db.school.findUnique({
+        where: { id: schoolId },
+        select: { schoolName: true },
+      });
+      publisherName = school ? school.schoolName : "a school";
     }
 
     await Promise.all(
@@ -73,7 +83,7 @@ export async function createAnnouncement(data, user) {
         createNotification({
           recipientId: id,
           recipientType: "PARENT",
-          message: `New announcement: ${announcement.title}`,
+          message: `New announcement from ${publisherName}`,
           sourceId: announcement.id,
           sourceType: "ANNOUNCEMENT",
         })
@@ -87,39 +97,41 @@ export async function createAnnouncement(data, user) {
   return announcement;
 }
 
-export async function getAllAnnouncements(query, user) {  
-  const {  
-    category,  
-    urgencyLevel,  
-    schoolId,  
-    followedOnly,  
-    page = 1,  
-    limit = 10,  
-  } = query;  
-  
-  // 1. Identify schools the parent follows  
-  let followedIds = [];  
-  if (user && user.role === "PARENT") {  
-    const subs = await db.subscription.findMany({  
-      where: { parentId: user.id },  
-      select: { schoolId: true },  
-    });  
-    followedIds = subs.map((s) => s.schoolId);  
-  }  
-  
-  // 2. Build the base filter  
-  const where = {  
-    ...(category && { category }),  
-    ...(urgencyLevel && { urgencyLevel }),  
-    ...(schoolId && { schoolId: Number(schoolId) }),  
-  };  
-  
-  // If the user explicitly requested "followed only", apply the filter here  
-  if (followedOnly && user && user.role === "PARENT") {  
-    if (followedIds.length === 0) {  
-      return { data: [], meta: { total: 0, page: Number(page), totalPages: 0 } };  
-    }  
-    where.schoolId = { in: followedIds };  
+export async function getAllAnnouncements(query, user) {
+  const {
+    category,
+    urgencyLevel,
+    schoolId,
+    followedOnly,
+    publisherType,
+    page = 1,
+    limit = 10,
+  } = query;
+
+  // 1. Identify schools the parent follows
+  let followedIds = [];
+  if (user && user.role === "PARENT") {
+    const subs = await db.subscription.findMany({
+      where: { parentId: user.id },
+      select: { schoolId: true },
+    });
+    followedIds = subs.map((s) => s.schoolId);
+  }
+
+  // 2. Build the base filter
+  const where = {
+    ...(category && { category }),
+    ...(urgencyLevel && { urgencyLevel }),
+    ...(schoolId && { schoolId: Number(schoolId) }),
+    ...(publisherType && { publisherType }),
+  };
+
+  // If the user explicitly requested "followed only", apply the filter here
+  if (followedOnly && user && user.role === "PARENT") {
+    if (followedIds.length === 0) {
+      return { data: [], meta: { total: 0, page: Number(page), totalPages: 0 } };
+    }
+    where.schoolId = { in: followedIds };
   }  
   
   // 3. Fetch announcements  

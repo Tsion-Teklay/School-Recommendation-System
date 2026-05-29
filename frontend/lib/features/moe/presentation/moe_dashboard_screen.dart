@@ -225,8 +225,26 @@ class _UsersByRoleChart extends StatelessWidget {
               child: BarChart(  
                 BarChartData(  
                   alignment: BarChartAlignment.spaceAround,  
-                  maxY: maxValue > 0 ? maxValue * 1.2 : 10,  
-                  barTouchData: BarTouchData(enabled: true),  
+                  maxY: maxValue > 0 ? maxValue * 1.2 : 10,
+                  barTouchData: BarTouchData(
+                    enabled: true,
+                    touchTooltipData: BarTouchTooltipData(
+                      tooltipBgColor: Colors.black87,
+                      tooltipRoundedRadius: 8,
+                      getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                        final role = entries[groupIndex.toInt()].key;
+                        final value = entries[groupIndex.toInt()].value;
+                        return BarTooltipItem(
+                          '$role: $value users',
+                          TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
                   titlesData: FlTitlesData(  
                     leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),  
                     rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),  
@@ -352,7 +370,7 @@ class _SchoolsByVerificationChart extends StatelessWidget {
   }  
 }  
   
-// 4. Schools by Subcity Bar Chart
+// 4. Schools by Subcity Horizontal Bar Chart
 class _SchoolsBySubcityChart extends StatelessWidget {
   final Map<String, int> data;
   const _SchoolsBySubcityChart({required this.data});
@@ -363,10 +381,10 @@ class _SchoolsBySubcityChart extends StatelessWidget {
     if (data.isEmpty) {
       return const Card(child: Padding(padding: EdgeInsets.all(16), child: Text('No subcity data available')));
     }
-      
+
     final entries = data.entries.toList();
     final maxValue = entries.map((e) => e.value).reduce((a, b) => a > b ? a : b);
-      
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -375,53 +393,66 @@ class _SchoolsBySubcityChart extends StatelessWidget {
           children: [
             Text('Schools by Subcity', style: theme.textTheme.titleMedium),
             const SizedBox(height: 16),
-            SizedBox(
-              height: 200,
-              child: BarChart(
-                BarChartData(
-                  alignment: BarChartAlignment.spaceAround,
-                  maxY: maxValue > 0 ? maxValue * 1.2 : 10,
-                  barTouchData: BarTouchData(enabled: true),
-                  titlesData: FlTitlesData(
-                    leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        getTitlesWidget: (value, meta) {
-                          final index = value.toInt();
-                          if (index >= 0 && index < entries.length) {
-                            return Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Text(
-                                entries[index].key,
-                                style: theme.textTheme.bodySmall,
+            ...entries.map((entry) {
+              final percentage = maxValue > 0 ? entry.value / maxValue : 0;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Stack(
+                            children: [
+                              Container(
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.primary,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
                               ),
-                            );
-                          }
-                          return const SizedBox();
-                        },
-                      ),
-                    ),
-                  ),
-                  borderData: FlBorderData(show: false),
-                  barGroups: entries.asMap().entries.map((entry) {
-                    return BarChartGroupData(
-                      x: entry.key,
-                      barRods: [
-                        BarChartRodData(
-                          toY: entry.value.value.toDouble(),
-                          color: theme.colorScheme.primary,
-                          width: 20,
-                          borderRadius: BorderRadius.circular(4),
+                              Positioned.fill(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                                  child: Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(
+                                      entry.key,
+                                      style: theme.textTheme.bodyMedium?.copyWith(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Container(
+                          width: 60,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${entry.value}',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
                         ),
                       ],
-                    );
-                  }).toList(),
+                    ),
+                  ],
                 ),
-              ),
-            ),
+              );
+            }).toList(),
           ],
         ),
       ),
@@ -456,9 +487,26 @@ class _TopSchoolsByRatingChart extends StatelessWidget {
               child: BarChart(  
                 BarChartData(  
                   alignment: BarChartAlignment.spaceAround,  
-                  minY: 0,  
-                  maxY: 5,  
-                  barTouchData: BarTouchData(enabled: true),  
+                  minY: 0,
+                  maxY: 5,
+                  barTouchData: BarTouchData(
+                    enabled: true,
+                    touchTooltipData: BarTouchTooltipData(
+                      tooltipBgColor: Colors.black87,
+                      tooltipRoundedRadius: 8,
+                      getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                        final school = schools[groupIndex.toInt()];
+                        return BarTooltipItem(
+                          '${school.schoolName}: ${school.rating.toStringAsFixed(1)}★',
+                          TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
                   titlesData: FlTitlesData(  
                     leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),  
                     rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),  

@@ -20,6 +20,7 @@ class AnnouncementRepository {
     UrgencyLevel? urgencyLevel,
     int? schoolId,
     bool? followedOnly,
+    PublisherType? publisherType,
   }) async {
     final res = await _dio.get(
       '/api/announcements',
@@ -30,6 +31,7 @@ class AnnouncementRepository {
         if (urgencyLevel != null) 'urgencyLevel': urgencyLevel.toWire(),
         if (schoolId != null) 'schoolId': schoolId.toString(),
         if (followedOnly == true) 'followedOnly': 'true',
+        if (publisherType != null) 'publisherType': publisherType.toWire(),
       },
     );
     if (res.statusCode != 200) throw _toApiException(res);
@@ -84,6 +86,18 @@ class AnnouncementRepository {
     if (res.statusCode != 200 && res.statusCode != 204) {
       throw _toApiException(res);
     }
+  }
+
+  Future<Announcement> update(int id, AnnouncementInput input) async {
+    final res = await _dio.put(
+      '/api/announcements/$id',
+      data: input.toJson(),
+    );
+    if (res.statusCode != 200) throw _toApiException(res);
+    return Announcement.fromJson(
+      (res.data as Map<String, dynamic>)['announcement']
+          as Map<String, dynamic>,
+    );
   }
 
   /// Phase 11 — fetch a single announcement (used by the deep-linkable

@@ -22,7 +22,7 @@ export class AppError extends Error {
 }
 
 export class ValidationError extends AppError {
-  constructor(message = "Invalid request", details) {
+  constructor(message = "Validation failed. Please check your input.", details) {
     super(message, { statusCode: 400, code: "VALIDATION_ERROR", details });
   }
 }

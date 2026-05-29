@@ -30,6 +30,7 @@ class AnnouncementsFeedController extends ChangeNotifier {
   UrgencyLevel? _urgency;
   bool _followedOnly = false;
   int? _schoolId;
+  PublisherType? _publisherType;
 
   final List<Announcement> _items = [];
   int _page = 1;
@@ -47,6 +48,7 @@ class AnnouncementsFeedController extends ChangeNotifier {
   UrgencyLevel? get urgency => _urgency;
   bool get followedOnly => _followedOnly;
   int? get schoolId => _schoolId;
+  PublisherType? get publisherType => _publisherType;
 
   /// Convenience — the followedOnly filter is parent-only.
   bool get canFollowedOnly =>
@@ -64,6 +66,7 @@ class AnnouncementsFeedController extends ChangeNotifier {
     Object? urgency = _sentinel,
     bool? followedOnly,
     Object? schoolId = _sentinel,
+    Object? publisherType = _sentinel,
   }) async {
     if (!identical(category, _sentinel)) {
       _category = category as AnnouncementCategory?;
@@ -74,6 +77,9 @@ class AnnouncementsFeedController extends ChangeNotifier {
     if (followedOnly != null) _followedOnly = followedOnly;
     if (!identical(schoolId, _sentinel)) {
       _schoolId = schoolId as int?;
+    }
+    if (!identical(publisherType, _sentinel)) {
+      _publisherType = publisherType as PublisherType?;
     }
     if (!canFollowedOnly) _followedOnly = false;
     await _load(reset: true);
@@ -92,6 +98,7 @@ class AnnouncementsFeedController extends ChangeNotifier {
         urgencyLevel: _urgency,
         schoolId: _schoolId,
         followedOnly: _followedOnly ? true : null,
+        publisherType: _publisherType,
       );
       _items.addAll(result.items);
       _page = result.page;
@@ -120,6 +127,7 @@ class AnnouncementsFeedController extends ChangeNotifier {
         urgencyLevel: _urgency,
         schoolId: _schoolId,
         followedOnly: _followedOnly ? true : null,
+        publisherType: _publisherType,
       );
       _items
         ..clear()
