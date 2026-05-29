@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/config.dart';
-
 class LandingScreen extends ConsumerWidget {
   const LandingScreen({super.key});
 
@@ -16,6 +14,7 @@ class LandingScreen extends ConsumerWidget {
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
           child: Column(
             children: [
               // =========================================================
@@ -40,19 +39,45 @@ class LandingScreen extends ConsumerWidget {
                     ),
                     child: Column(
                       children: [
-                        _buildFeaturesSection(theme),
+                        _FadeInSection(
+                          child: _buildFeaturesSection(theme),
+                        ),
 
                         const SizedBox(height: 100),
 
-                        _buildMissionSection(theme),
+                        _FadeInSection(
+                          child: _buildMissionSection(theme),
+                        ),
+
+                        const SizedBox(height: 80),
+
+                        _FadeInSection(
+                          child: _buildStatsSection(theme),
+                        ),
+
+                        const SizedBox(height: 80),
+
+                        _FadeInSection(
+                          child: _buildHowItWorksSection(theme),
+                        ),
 
                         const SizedBox(height: 100),
 
-                        _buildFAQSection(theme),
+                        _FadeInSection(
+                          child: _buildFAQSection(theme),
+                        ),
+
+                        const SizedBox(height: 80),
+
+                        _FadeInSection(
+                          child: _buildTestimonialsSection(theme),
+                        ),
 
                         const SizedBox(height: 100),
 
-                        _buildCTASection(context, theme),
+                        _FadeInSection(
+                          child: _buildCTASection(context, theme),
+                        ),
 
                         const SizedBox(height: 80),
 
@@ -295,31 +320,49 @@ class LandingScreen extends ConsumerWidget {
 
         const SizedBox(height: 40),
 
-        GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: 4, // Number of features
-        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-          maxCrossAxisExtent: 500, // Maximum width of a single card
-          mainAxisSpacing: 20,
-          crossAxisSpacing: 20,
-          mainAxisExtent: 220, // Forces a healthy, static height instead of a shrinking ratio
-        ),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            // Determine number of columns based on screen width
+            int crossAxisCount;
+            double mainAxisExtent;
+            
+            if (constraints.maxWidth > 1000) {
+              crossAxisCount = 4;
+              mainAxisExtent = 180;
+            } else if (constraints.maxWidth > 700) {
+              crossAxisCount = 2;
+              mainAxisExtent = 180;
+            } else {
+              crossAxisCount = 1;
+              mainAxisExtent = 160;
+            }
+            
+            return GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: 4, // Number of features
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+                mainAxisExtent: mainAxisExtent,
+              ),
         itemBuilder: (context, index) {
-          // Put your list of card data here and map it
-          final features = [
-            _featureCard(theme, Icons.auto_awesome_outlined, 'School Recommendations', 'Tailored school suggestions based on your child’s academic and personal needs.'),
-            _featureCard(theme, Icons.location_searching_outlined, 'Smart Discovery', 'Compare schools by curriculum, facilities, tuition, and location.'),
-            _featureCard(theme, Icons.groups_outlined, 'Parent Engagement', 'Strengthening communication between schools and families.'),
-            _featureCard(theme, Icons.trending_up_outlined, 'Educational Insights', 'Helping schools and parents make more informed decisions.'),
-          ];
-          return features[index];
-        },
-      ),
-    ],
-  );
-}
-     
+                // Put your list of card data here and map it
+                final features = [
+                  _featureCard(theme, Icons.auto_awesome_outlined, 'School Recommendations', 'Tailored school suggestions based on your child’s academic and personal needs.'),
+                  _featureCard(theme, Icons.location_searching_outlined, 'Smart Discovery', 'Compare schools by curriculum, facilities, tuition, and location.'),
+                  _featureCard(theme, Icons.groups_outlined, 'Parent Engagement', 'Strengthening communication between schools and families.'),
+                  _featureCard(theme, Icons.trending_up_outlined, 'Educational Insights', 'Helping schools and parents make more informed decisions.'),
+                ];
+                return features[index];
+              },
+            );
+          },
+        ),
+      ],
+    );
+  }
 
   Widget _featureCard(
     ThemeData theme,
@@ -327,42 +370,11 @@ class LandingScreen extends ConsumerWidget {
     String title,
     String description,
   ) {
-    return Container(
-      padding: const EdgeInsets.all(28),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: theme.colorScheme.outlineVariant,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            icon,
-            size: 32,
-            color: theme.colorScheme.primary,
-          ),
-
-          const Spacer(),
-
-          Text(
-            title,
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-
-          const SizedBox(height: 10),
-
-          Text(
-            description,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              height: 1.5,
-            ),
-          ),
-        ],
-      ),
+    return _FeatureCard(
+      theme: theme,
+      icon: icon,
+      title: title,
+      description: description,
     );
   }
 
@@ -378,8 +390,14 @@ class LandingScreen extends ConsumerWidget {
         vertical: 80,
       ),
       decoration: BoxDecoration(
-        color:
-            theme.colorScheme.primaryContainer.withOpacity(0.2),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            theme.colorScheme.primaryContainer.withOpacity(0.3),
+            theme.colorScheme.secondaryContainer.withOpacity(0.2),
+          ],
+        ),
         borderRadius: BorderRadius.circular(32),
       ),
       child: Column(
@@ -390,20 +408,261 @@ class LandingScreen extends ConsumerWidget {
                 theme.textTheme.labelLarge?.copyWith(letterSpacing: 2),
           ),
 
-          const SizedBox(height: 18),
+          const SizedBox(height: 40),
 
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 800),
-            child: Text(
-              'Our mission is to democratize access to quality education information across Ethiopia. Every child deserves a school that nurtures their potential, and every family deserves the tools to find it.',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                height: 1.6,
-              ),
-            ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth > 600) {
+                // Two-column layout for larger screens
+                return Row(
+                  children: [
+                    Expanded(
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.all(32),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.school_outlined,
+                            size: 120,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 40),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Empowering Every Child\'s Future',
+                            style: theme.textTheme.headlineMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              height: 1.3,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Text(
+                            'Our mission is to democratize access to quality education information across Ethiopia. Every child deserves a school that nurtures their potential, and every family deserves the tools to find it.',
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              height: 1.7,
+                              color: theme.colorScheme.onSurface.withOpacity(0.85),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              } else {
+                // Single column layout for smaller screens
+                return Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.school_outlined,
+                        size: 80,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    Text(
+                      'Empowering Every Child\'s Future',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        height: 1.3,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Our mission is to democratize access to quality education information across Ethiopia. Every child deserves a school that nurtures their potential, and every family deserves the tools to find it.',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        height: 1.7,
+                        color: theme.colorScheme.onSurface.withOpacity(0.85),
+                      ),
+                    ),
+                  ],
+                );
+              }
+            },
           ),
         ],
       ),
+    );
+  }
+
+  // =========================================================
+  // STATISTICS SECTION
+  // =========================================================
+
+  Widget _buildStatsSection(ThemeData theme) {
+    return Column(
+      children: [
+        Text(
+          'OUR IMPACT',
+          style: theme.textTheme.labelLarge?.copyWith(letterSpacing: 2),
+        ),
+
+        const SizedBox(height: 16),
+
+        Text(
+          'Making a difference in education.',
+          style: theme.textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+
+        const SizedBox(height: 48),
+
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isMobile = constraints.maxWidth < 600;
+            final crossAxisCount = isMobile ? 2 : 4;
+            
+            return GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: crossAxisCount,
+              mainAxisSpacing: 24,
+              crossAxisSpacing: 24,
+              childAspectRatio: isMobile ? 1.2 : 1.0,
+              children: [
+                _StatCard(
+                  theme: theme,
+                  icon: Icons.school,
+                  value: '500+',
+                  label: 'Schools',
+                  color: theme.colorScheme.primary,
+                ),
+                _StatCard(
+                  theme: theme,
+                  icon: Icons.family_restroom,
+                  value: '10,000+',
+                  label: 'Parents',
+                  color: theme.colorScheme.secondary,
+                ),
+                _StatCard(
+                  theme: theme,
+                  icon: Icons.location_city,
+                  value: '10+',
+                  label: 'Subcities',
+                  color: theme.colorScheme.tertiary,
+                ),
+                _StatCard(
+                  theme: theme,
+                  icon: Icons.star,
+                  value: '98%',
+                  label: 'Satisfaction',
+                  color: Colors.amber,
+                ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  // =========================================================
+  // HOW IT WORKS SECTION
+  // =========================================================
+
+  Widget _buildHowItWorksSection(ThemeData theme) {
+    final steps = [
+      {'icon': Icons.person_add, 'title': 'Create Account', 'description': 'Sign up in seconds with your email'},
+      {'icon': Icons.tune, 'title': 'Set Preferences', 'description': 'Tell us what matters to you'},
+      {'icon': Icons.school, 'title': 'Get Recommendations', 'description': 'Receive personalized school matches'},
+      {'icon': Icons.favorite, 'title': 'Compare & Choose', 'description': 'Find the perfect fit for your child'},
+    ];
+
+    return Column(
+      children: [
+        Text(
+          'HOW IT WORKS',
+          style: theme.textTheme.labelLarge?.copyWith(letterSpacing: 2),
+        ),
+
+        const SizedBox(height: 16),
+
+        Text(
+          'Simple steps to find the right school.',
+          style: theme.textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+
+        const SizedBox(height: 48),
+
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isMobile = constraints.maxWidth < 800;
+            
+            if (isMobile) {
+              // Vertical layout for mobile
+              return Column(
+                children: steps.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final step = entry.value;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 32),
+                    child: _StepCard(
+                      theme: theme,
+                      stepNumber: index + 1,
+                      icon: step['icon'] as IconData,
+                      title: step['title'] as String,
+                      description: step['description'] as String,
+                      isLast: index == steps.length - 1,
+                    ),
+                  );
+                }).toList(),
+              );
+            } else {
+              // Horizontal layout for desktop
+              return Row(
+                children: steps.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final step = entry.value;
+                  return Expanded(
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _StepCard(
+                            theme: theme,
+                            stepNumber: index + 1,
+                            icon: step['icon'] as IconData,
+                            title: step['title'] as String,
+                            description: step['description'] as String,
+                            isLast: index == steps.length - 1,
+                          ),
+                        ),
+                        if (index < steps.length - 1)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Icon(
+                              Icons.arrow_forward,
+                              color: theme.colorScheme.primary.withOpacity(0.5),
+                              size: 32,
+                            ),
+                          ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              );
+            }
+          },
+        ),
+      ],
     );
   }
 
@@ -464,38 +723,97 @@ class LandingScreen extends ConsumerWidget {
     String question,
     String answer,
   ) {
-    return SizedBox(
-  width: double.infinity,
-  child: Container(
-    margin: const EdgeInsets.only(bottom: 18),
-    padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: theme.colorScheme.outlineVariant,
+    return _FAQItem(
+      theme: theme,
+      question: question,
+      answer: answer,
+    );
+  }
+
+  // =========================================================
+  // TESTIMONIALS SECTION
+  // =========================================================
+
+  Widget _buildTestimonialsSection(ThemeData theme) {
+    final testimonials = [
+      {
+        'quote': 'This platform made finding the right school for my daughter so easy. The recommendations were spot-on!',
+        'name': 'Sarah T.',
+        'role': 'Parent',
+        'icon': Icons.person,
+      },
+      {
+        'quote': 'Finally, a platform that understands what Ethiopian families need. The school comparisons are incredibly helpful.',
+        'name': 'Dawit A.',
+        'role': 'Parent',
+        'icon': Icons.person,
+      },
+      {
+        'quote': 'As a school administrator, this platform has helped us reach more families and showcase our unique programs.',
+        'name': 'Hanna M.',
+        'role': 'School Administrator',
+        'icon': Icons.school,
+      },
+    ];
+
+    return Column(
+      children: [
+        Text(
+          'TESTIMONIALS',
+          style: theme.textTheme.labelLarge?.copyWith(letterSpacing: 2),
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            question,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
 
-          const SizedBox(height: 10),
+        const SizedBox(height: 16),
 
-          Text(
-            answer,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              height: 1.5,
-            ),
+        Text(
+          'What parents are saying.',
+          style: theme.textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.bold,
           ),
-        ],
-      ),
-    )
+        ),
+
+        const SizedBox(height: 48),
+
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isMobile = constraints.maxWidth < 800;
+            
+            if (isMobile) {
+              return Column(
+                children: testimonials.map((testimonial) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 24),
+                    child: _TestimonialCard(
+                      theme: theme,
+                      quote: testimonial['quote'] as String,
+                      name: testimonial['name'] as String,
+                      role: testimonial['role'] as String,
+                      icon: testimonial['icon'] as IconData,
+                    ),
+                  );
+                }).toList(),
+              );
+            } else {
+              return Row(
+                children: testimonials.map((testimonial) {
+                  return Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: _TestimonialCard(
+                        theme: theme,
+                        quote: testimonial['quote'] as String,
+                        name: testimonial['name'] as String,
+                        role: testimonial['role'] as String,
+                        icon: testimonial['icon'] as IconData,
+                      ),
+                    ),
+                  );
+                }).toList(),
+              );
+            }
+          },
+        ),
+      ],
     );
   }
 
@@ -512,40 +830,838 @@ class LandingScreen extends ConsumerWidget {
       padding: const EdgeInsets.all(60),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(32),
-        color: theme.colorScheme.surfaceVariant.withOpacity(0.4),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            theme.colorScheme.primary.withOpacity(0.1),
+            theme.colorScheme.secondary.withOpacity(0.1),
+            theme.colorScheme.tertiary.withOpacity(0.1),
+          ],
+        ),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withOpacity(0.3),
+        ),
       ),
-      child: Column(
+      child: Stack(
         children: [
-          Text(
-            'Ready to find the right school?',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          Text(
-            'Create your account and begin exploring schools tailored to your child.',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyLarge,
-          ),
-
-          const SizedBox(height: 32),
-
-          FilledButton(
-            onPressed: () => context.go('/register'),
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 32,
-                vertical: 20,
+          // Decorative circles
+          Positioned(
+            top: -50,
+            right: -50,
+            child: Container(
+              width: 150,
+              height: 150,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: theme.colorScheme.primary.withOpacity(0.1),
               ),
-              shape: const StadiumBorder(),
             ),
-            child: const Text('Create Your Account'),
+          ),
+          Positioned(
+            bottom: -30,
+            left: -30,
+            child: Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: theme.colorScheme.secondary.withOpacity(0.1),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 20,
+            left: 40,
+            child: Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: theme.colorScheme.tertiary.withOpacity(0.1),
+              ),
+            ),
+          ),
+          
+          // Main content
+          Center(
+            child: Column(
+              children: [
+                Text(
+                  'Ready to find the right school?',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                Text(
+                  'Create your account and begin exploring schools tailored to your child.',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.8),
+                  ),
+                ),
+
+                const SizedBox(height: 32),
+
+                FilledButton(
+                  onPressed: () => context.go('/register'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: theme.colorScheme.primary,
+                    foregroundColor: theme.colorScheme.onPrimary,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 40,
+                      vertical: 24,
+                    ),
+                    shape: const StadiumBorder(),
+                    elevation: 2,
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('Create Your Account', style: TextStyle(fontSize: 16)),
+                      SizedBox(width: 8),
+                      Icon(Icons.arrow_forward, size: 20),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                Text(
+                  'Join 10,000+ parents already using our platform',
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// =========================================================
+// FEATURE CARD WIDGET
+// =========================================================
+
+class _FeatureCard extends StatefulWidget {
+  final ThemeData theme;
+  final IconData icon;
+  final String title;
+  final String description;
+
+  const _FeatureCard({
+    required this.theme,
+    required this.icon,
+    required this.title,
+    required this.description,
+  });
+
+  @override
+  State<_FeatureCard> createState() => _FeatureCardState();
+}
+
+class _FeatureCardState extends State<_FeatureCard> with SingleTickerProviderStateMixin {
+  bool _isHovered = false;
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) {
+        setState(() => _isHovered = true);
+        _animationController.forward();
+      },
+      onExit: (_) {
+        setState(() => _isHovered = false);
+        _animationController.reverse();
+      },
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                widget.theme.colorScheme.surface,
+                widget.theme.colorScheme.surface.withOpacity(0.95),
+              ],
+            ),
+            border: Border.all(
+              color: widget.theme.colorScheme.outlineVariant.withOpacity(0.5),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: widget.theme.colorScheme.shadow.withOpacity(_isHovered ? 0.15 : 0.05),
+                blurRadius: _isHovered ? 20 : 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: widget.theme.colorScheme.primaryContainer.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  widget.icon,
+                  size: 20,
+                  color: widget.theme.colorScheme.primary,
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
+              Text(
+                widget.title,
+                style: widget.theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+
+              const SizedBox(height: 8),
+
+              Text(
+                widget.description,
+                style: widget.theme.textTheme.bodySmall?.copyWith(
+                  height: 1.4,
+                  fontSize: 13,
+                  color: widget.theme.colorScheme.onSurface.withOpacity(0.8),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// =========================================================
+// STAT CARD WIDGET
+// =========================================================
+
+class _StatCard extends StatefulWidget {
+  final ThemeData theme;
+  final IconData icon;
+  final String value;
+  final String label;
+  final Color color;
+
+  const _StatCard({
+    required this.theme,
+    required this.icon,
+    required this.value,
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  State<_StatCard> createState() => _StatCardState();
+}
+
+class _StatCardState extends State<_StatCard> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _fadeInAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+    _fadeInAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _fadeInAnimation,
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              widget.theme.colorScheme.surface,
+              widget.theme.colorScheme.surface.withOpacity(0.95),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: widget.theme.colorScheme.outlineVariant.withOpacity(0.3),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: widget.theme.colorScheme.shadow.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: widget.color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                widget.icon,
+                size: 32,
+                color: widget.color,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              widget.value,
+              style: widget.theme.textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: widget.color,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              widget.label,
+              style: widget.theme.textTheme.bodyMedium?.copyWith(
+                color: widget.theme.colorScheme.onSurface.withOpacity(0.7),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// =========================================================
+// STEP CARD WIDGET
+// =========================================================
+
+class _StepCard extends StatefulWidget {
+  final ThemeData theme;
+  final int stepNumber;
+  final IconData icon;
+  final String title;
+  final String description;
+  final bool isLast;
+
+  const _StepCard({
+    required this.theme,
+    required this.stepNumber,
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.isLast,
+  });
+
+  @override
+  State<_StepCard> createState() => _StepCardState();
+}
+
+class _StepCardState extends State<_StepCard> with SingleTickerProviderStateMixin {
+  bool _isHovered = false;
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.05).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) {
+        setState(() => _isHovered = true);
+        _animationController.forward();
+      },
+      onExit: (_) {
+        setState(() => _isHovered = false);
+        _animationController.reverse();
+      },
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: Container(
+          height: 190,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                widget.theme.colorScheme.surface,
+                widget.theme.colorScheme.surface.withOpacity(0.95),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: widget.theme.colorScheme.outlineVariant.withOpacity(0.3),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: widget.theme.colorScheme.shadow.withOpacity(_isHovered ? 0.1 : 0.05),
+                blurRadius: _isHovered ? 15 : 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: widget.theme.colorScheme.primary,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${widget.stepNumber}',
+                        style: widget.theme.textTheme.titleMedium?.copyWith(
+                          color: widget.theme.colorScheme.onPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: widget.theme.colorScheme.primaryContainer.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      widget.icon,
+                      size: 24,
+                      color: widget.theme.colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                widget.title,
+                style: widget.theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                widget.description,
+                style: widget.theme.textTheme.bodyMedium?.copyWith(
+                  height: 1.4,
+                  color: widget.theme.colorScheme.onSurface.withOpacity(0.7),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// =========================================================
+// FAQ ITEM WIDGET
+// =========================================================
+
+class _FAQItem extends StatefulWidget {
+  final ThemeData theme;
+  final String question;
+  final String answer;
+
+  const _FAQItem({
+    required this.theme,
+    required this.question,
+    required this.answer,
+  });
+
+  @override
+  State<_FAQItem> createState() => _FAQItemState();
+}
+
+class _FAQItemState extends State<_FAQItem> with SingleTickerProviderStateMixin {
+  bool _isExpanded = false;
+  bool _isHovered = false;
+  late AnimationController _controller;
+  late Animation<double> _expandAnimation;
+  late Animation<double> _rotationAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _expandAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeInOut,
+    );
+    _rotationAnimation = Tween<double>(begin: 0.0, end: 0.5).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _toggleExpand() {
+    setState(() {
+      _isExpanded = !_isExpanded;
+      if (_isExpanded) {
+        _controller.forward();
+      } else {
+        _controller.reverse();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: GestureDetector(
+        onTap: _toggleExpand,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                widget.theme.colorScheme.surface,
+                widget.theme.colorScheme.surface.withOpacity(0.98),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: widget.theme.colorScheme.outlineVariant.withOpacity(_isHovered ? 0.8 : 0.5),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: widget.theme.colorScheme.shadow.withOpacity(_isHovered ? 0.1 : 0.05),
+                blurRadius: _isHovered ? 12 : 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      widget.question,
+                      style: widget.theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  RotationTransition(
+                    turns: _rotationAnimation,
+                    child: Icon(
+                      Icons.expand_more,
+                      color: widget.theme.colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+              SizeTransition(
+                sizeFactor: _expandAnimation,
+                axisAlignment: -1.0,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Text(
+                    widget.answer,
+                    style: widget.theme.textTheme.bodyMedium?.copyWith(
+                      height: 1.6,
+                      color: widget.theme.colorScheme.onSurface.withOpacity(0.8),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// =========================================================
+// TESTIMONIAL CARD WIDGET
+// =========================================================
+
+class _TestimonialCard extends StatefulWidget {
+  final ThemeData theme;
+  final String quote;
+  final String name;
+  final String role;
+  final IconData icon;
+
+  const _TestimonialCard({
+    required this.theme,
+    required this.quote,
+    required this.name,
+    required this.role,
+    required this.icon,
+  });
+
+  @override
+  State<_TestimonialCard> createState() => _TestimonialCardState();
+}
+
+class _TestimonialCardState extends State<_TestimonialCard> with SingleTickerProviderStateMixin {
+  bool _isHovered = false;
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.03).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) {
+        setState(() => _isHovered = true);
+        _animationController.forward();
+      },
+      onExit: (_) {
+        setState(() => _isHovered = false);
+        _animationController.reverse();
+      },
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: Container(
+          padding: const EdgeInsets.all(28),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                widget.theme.colorScheme.surface,
+                widget.theme.colorScheme.surface.withOpacity(0.95),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: widget.theme.colorScheme.outlineVariant.withOpacity(0.3),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: widget.theme.colorScheme.shadow.withOpacity(_isHovered ? 0.12 : 0.06),
+                blurRadius: _isHovered ? 16 : 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: widget.theme.colorScheme.primaryContainer.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.format_quote,
+                  size: 28,
+                  color: widget.theme.colorScheme.primary,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                widget.quote,
+                style: widget.theme.textTheme.bodyLarge?.copyWith(
+                  height: 1.6,
+                  fontStyle: FontStyle.italic,
+                  color: widget.theme.colorScheme.onSurface.withOpacity(0.85),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: widget.theme.colorScheme.secondaryContainer.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Icon(
+                      widget.icon,
+                      size: 24,
+                      color: widget.theme.colorScheme.secondary,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.name,
+                        style: widget.theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        widget.role,
+                        style: widget.theme.textTheme.bodySmall?.copyWith(
+                          color: widget.theme.colorScheme.onSurface.withOpacity(0.6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// =========================================================
+// FADE IN SECTION WIDGET
+// =========================================================
+
+class _FadeInSection extends StatefulWidget {
+  final Widget child;
+
+  const _FadeInSection({required this.child});
+
+  @override
+  State<_FadeInSection> createState() => _FadeInSectionState();
+}
+
+class _FadeInSectionState extends State<_FadeInSection> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _fadeInAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    _fadeInAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+    // Start animation after a brief delay
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        _controller.forward();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _fadeInAnimation,
+      child: SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(0, 0.1),
+          end: Offset.zero,
+        ).animate(_fadeInAnimation),
+        child: widget.child,
       ),
     );
   }
@@ -564,15 +1680,250 @@ class _AppFooter extends StatelessWidget {
 
     return Column(
       children: [
-        const Divider(height: 64),
-
-        Text(
-          '© ${DateTime.now().year} School Recommendation System',
-          style: theme.textTheme.bodySmall,
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 60),
+          child: Column(
+            children: [
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isMobile = constraints.maxWidth < 800;
+                  
+                  if (isMobile) {
+                    return Column(
+                      children: [
+                        _FooterColumn(
+                          theme: theme,
+                          title: 'Company',
+                          links: ['About Us', 'Contact', 'Careers'],
+                        ),
+                        const SizedBox(height: 32),
+                        _FooterColumn(
+                          theme: theme,
+                          title: 'Resources',
+                          links: ['Blog', 'Help Center', 'Community'],
+                        ),
+                        const SizedBox(height: 32),
+                        _FooterColumn(
+                          theme: theme,
+                          title: 'Legal',
+                          links: ['Privacy Policy', 'Terms of Service'],
+                        ),
+                        const SizedBox(height: 32),
+                        _FooterContact(theme: theme),
+                      ],
+                    );
+                  } else {
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: _FooterColumn(
+                            theme: theme,
+                            title: 'Company',
+                            links: ['About Us', 'Contact', 'Careers'],
+                          ),
+                        ),
+                        Expanded(
+                          child: _FooterColumn(
+                            theme: theme,
+                            title: 'Resources',
+                            links: ['Blog', 'Help Center', 'Community'],
+                          ),
+                        ),
+                        Expanded(
+                          child: _FooterColumn(
+                            theme: theme,
+                            title: 'Legal',
+                            links: ['Privacy Policy', 'Terms of Service'],
+                          ),
+                        ),
+                        Expanded(
+                          child: _FooterContact(theme: theme),
+                        ),
+                      ],
+                    );
+                  }
+                },
+              ),
+              const SizedBox(height: 40),
+              const Divider(),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '© ${DateTime.now().year} School Recommendation System',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      _SocialIcon(
+                        theme: theme,
+                        icon: Icons.facebook,
+                        onTap: () {},
+                      ),
+                      const SizedBox(width: 16),
+                      _SocialIcon(
+                        theme: theme,
+                        icon: Icons.alternate_email,
+                        onTap: () {},
+                      ),
+                      const SizedBox(width: 16),
+                      _SocialIcon(
+                        theme: theme,
+                        icon: Icons.link,
+                        onTap: () {},
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
-
-        const SizedBox(height: 24),
       ],
+    );
+  }
+}
+
+class _FooterColumn extends StatelessWidget {
+  final ThemeData theme;
+  final String title;
+  final List<String> links;
+
+  const _FooterColumn({
+    required this.theme,
+    required this.title,
+    required this.links,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
+        ...links.map((link) => Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: () {},
+              child: Text(
+                link,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                ),
+              ),
+            ),
+          ),
+        )),
+      ],
+    );
+  }
+}
+
+class _FooterContact extends StatelessWidget {
+  final ThemeData theme;
+
+  const _FooterContact({required this.theme});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Contact Us',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Icon(
+              Icons.email_outlined,
+              size: 18,
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'info@schoolrec.com',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.7),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Icon(
+              Icons.location_on_outlined,
+              size: 18,
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Addis Ababa, Ethiopia',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.7),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _SocialIcon extends StatefulWidget {
+  final ThemeData theme;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _SocialIcon({
+    required this.theme,
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  State<_SocialIcon> createState() => _SocialIconState();
+}
+
+class _SocialIconState extends State<_SocialIcon> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: widget.theme.colorScheme.surfaceVariant.withOpacity(_isHovered ? 0.3 : 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            widget.icon,
+            size: 20,
+            color: widget.theme.colorScheme.onSurface.withOpacity(0.6),
+          ),
+        ),
+      ),
     );
   }
 }
