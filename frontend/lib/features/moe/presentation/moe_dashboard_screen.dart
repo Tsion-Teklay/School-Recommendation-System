@@ -475,98 +475,106 @@ class _SchoolsBySubcityChart extends StatelessWidget {
 
 
 
-// 5. Top Schools by Rating Horizontal Bar Chart  
-class _TopSchoolsByRatingChart extends StatelessWidget {  
-  final List<TopSchool> schools;  
-  const _TopSchoolsByRatingChart({required this.schools});  
-  
-  @override  
-  Widget build(BuildContext context) {  
-    final theme = Theme.of(context);  
-    if (schools.isEmpty) {  
-      return const Card(child: Padding(padding: EdgeInsets.all(16), child: Text('No schools yet.')));  
-    }  
-      
-    return Card(  
-      child: Padding(  
-        padding: const EdgeInsets.all(16),  
-        child: Column(  
-          crossAxisAlignment: CrossAxisAlignment.start,  
-          children: [  
-            Text('Top Schools by Rating', style: theme.textTheme.titleMedium),  
-            const SizedBox(height: 16),  
-            SizedBox(  
-              height: schools.length * 60.0,  
-              child: BarChart(  
-                BarChartData(  
-                  alignment: BarChartAlignment.spaceAround,  
-                  minY: 0,
-                  maxY: 5,
-                  barTouchData: BarTouchData(
-                    enabled: true,
-                    touchTooltipData: BarTouchTooltipData(
-                      tooltipBgColor: Colors.black87,
-                      tooltipRoundedRadius: 8,
-                      getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                        final school = schools[groupIndex.toInt()];
-                        return BarTooltipItem(
-                          '${school.schoolName}: ${school.rating.toStringAsFixed(1)}★',
-                          TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
+// 5. Top Schools by Rating Horizontal Bar Chart
+class _TopSchoolsByRatingChart extends StatelessWidget {
+  final List<TopSchool> schools;
+  const _TopSchoolsByRatingChart({required this.schools});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    if (schools.isEmpty) {
+      return const Card(child: Padding(padding: EdgeInsets.all(16), child: Text('No schools yet.')));
+    }
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Top Schools by Rating', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 16),
+            ...schools.map((school) {
+              final percentage = school.rating / 5; // Max rating is 5
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Stack(
+                            children: [
+                              // Background bar (full width, light color)
+                              Container(
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.surfaceContainerHighest,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
+                              // Foreground bar (proportional width, blue color)
+                              FractionallySizedBox(
+                                widthFactor: (percentage > 0 ? percentage : 0.05).toDouble(), // Minimum 5% for visibility
+                                child: Container(
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.primary,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                              ),
+                              // Text overlay (positioned on top of the blue bar)
+                              Positioned.fill(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                                  child: Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(
+                                      school.schoolName,
+                                      style: theme.textTheme.bodyMedium?.copyWith(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        );
-                      },
+                        ),
+                        const SizedBox(width: 12),
+                        Container(
+                          width: 60,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${school.rating.toStringAsFixed(1)}★',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  titlesData: FlTitlesData(  
-                    leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),  
-                    rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),  
-                    topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),  
-                    bottomTitles: AxisTitles(  
-                      sideTitles: SideTitles(  
-                        showTitles: true,  
-                        getTitlesWidget: (value, meta) {  
-                          final index = value.toInt();  
-                          if (index >= 0 && index < schools.length) {  
-                            return Padding(  
-                              padding: const EdgeInsets.only(top: 8),  
-                              child: Text(  
-                                schools[index].schoolName,  
-                                style: theme.textTheme.bodySmall,  
-                                maxLines: 1,  
-                                overflow: TextOverflow.ellipsis,  
-                              ),  
-                            );  
-                          }  
-                          return const SizedBox();  
-                        },  
-                      ),  
-                    ),  
-                  ),  
-                  borderData: FlBorderData(show: false),  
-                  barGroups: schools.asMap().entries.map((entry) {  
-                    return BarChartGroupData(  
-                      x: entry.key,  
-                      barRods: [  
-                        BarChartRodData(  
-                          toY: entry.value.rating,  
-                          color: theme.colorScheme.primary,  
-                          width: 16,  
-                          borderRadius: BorderRadius.circular(4),  
-                        ),  
-                      ],  
-                    );  
-                  }).toList(),  
-                ),  
-              ),  
-            ),  
-          ],  
-        ),  
-      ),  
-    );  
-  }  
+                  ],
+                ),
+              );
+            }).toList(),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // 6. Most Followed Schools Leaderboard with Mini Bars  

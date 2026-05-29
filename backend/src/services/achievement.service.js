@@ -40,6 +40,23 @@ export async function createAchievement(data, userId) {
     },
   });
 
+  // Notify MOE officer based on subcity
+  try {
+    const assignedOfficer = await assignAchievementRequest(result.id);
+    if (assignedOfficer) {
+      await createNotification({
+        recipientId: assignedOfficer.userId,
+        recipientType: "MOE",
+        message: `New achievement request "${result.title}" from school "${school.schoolName}" in ${school.subCity || 'your assigned area'}.`,
+        sourceType: "SCHOOL",
+        sourceId: school.id,
+      });
+    }
+  } catch (err) {
+    // Log but don't fail the achievement creation
+    console.error("Failed to notify MOE officer of achievement request:", err);
+  }
+
   return result;
 }  
   
@@ -52,9 +69,26 @@ export async function getSchoolAchievements(schoolId) {
   return achievements;  
 }  
   
-export async function getPendingAchievements() {
+export async function getPendingAchievements(user) {
+  let where = { status: "PENDING" };
+
+  // Get the MOE officer's subcity assignment
+  try {
+    const officer = await db.moeOfficer.findUnique({
+      where: { userId: user.id }
+    });
+
+    // If officer has a subcity assignment, filter by it
+    if (officer && officer.subCity) {
+      where.school = { subCity: officer.subCity };
+    }
+  } catch (error) {
+    // If officer lookup fails, log but don't block the request
+    console.error("Failed to lookup MOE officer subcity assignment, showing all pending achievements:", error);
+  }
+
   const achievements = await db.achievement.findMany({
-    where: { status: "PENDING" },
+    where,
     include: { school: true },
     orderBy: { submittedAt: 'asc' },
   });
@@ -62,10 +96,26 @@ export async function getPendingAchievements() {
   return achievements;
 }
 
-export async function getAchievementsByStatus(status) {
-  const whereClause = status ? { status } : {};
+export async function getAchievementsByStatus(status, user) {
+  let where = status ? { status } : {};
+
+  // Get the MOE officer's subcity assignment
+  try {
+    const officer = await db.moeOfficer.findUnique({
+      where: { userId: user.id }
+    });
+
+    // If officer has a subcity assignment, filter by it
+    if (officer && officer.subCity) {
+      where.school = { subCity: officer.subCity };
+    }
+  } catch (error) {
+    // If officer lookup fails, log but don't block the request
+    console.error("Failed to lookup MOE officer subcity assignment, showing all achievements:", error);
+  }
+
   const achievements = await db.achievement.findMany({
-    where: whereClause,
+    where,
     include: { school: true },
     orderBy: { reviewedAt: 'desc' },
   });
@@ -192,14 +242,35 @@ export async function updateStaffBreakdown(id, data, userId) {
   });  
 }  
   
-export async function deleteStaffBreakdown(id, userId) {  
-  const existing = await db.staffBreakdown.findUnique({  
-    where: { id },  
-    include: { school: true }  
-  });  
-    
-  if (!existing) throw new NotFoundError("Staff breakdown not found");  
-  if (existing.school.adminId !== userId) throw new ForbiddenError("You can only delete your own school's staff breakdown");  
-    
-  return db.staffBreakdown.delete({ where: { id } });  
+export async function deleteStaffBreakdown(id, userId) {
+  const existing = await db.staffBreakdown.findUnique({
+    where: { id },
+    include: { school: true }
+  });
+
+  if (!existing) throw new NotFoundError("Staff breakdown not found");
+  if (existing.school.adminId !== userId) throw new ForbiddenError("You can only delete your own school's staff breakdown");
+
+  return db.staffBreakdown.delete({ where: { id } });
+}
+
+export async function assignAchievementRequest(achievementId) {
+  const achievement = await db.achievement.findUnique({
+    where: { id: achievementId },
+    include: { school: true }
+  });
+
+  if (!achievement) throw new NotFoundError("Achievement not found");
+
+  // Try to find MoE officer for the school's sub-city
+  const assignedOfficer = await db.moeOfficer.findFirst({
+    where: { subCity: achievement.school.subCity }
+  });
+
+  // Fallback to any available MoE officer if no sub-city match
+  if (!assignedOfficer) {
+    return db.moeOfficer.findFirst();
+  }
+
+  return assignedOfficer;
 }
