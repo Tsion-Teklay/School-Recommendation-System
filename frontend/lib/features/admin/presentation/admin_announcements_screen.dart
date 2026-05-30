@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/config.dart';
+import '../../../core/design_system.dart';
 import '../../../shared/utils/image_picker.dart';
 import '../../../shared/widgets/responsive_shell.dart';
+import '../../../shared/widgets/custom_components.dart';
 import '../../announcements/data/announcement_dtos.dart';
 import '../../announcements/data/announcement_repository.dart';
 import '../../auth/data/auth_repository.dart';
@@ -227,10 +229,10 @@ class _AnnouncementTile extends StatelessWidget {
     final theme = Theme.of(context);
     return InkWell(
       onTap: () => context.push('/announcements/${announcement.id}'),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: AppBorderRadius.lgRadius,
       child: Card(
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -253,23 +255,25 @@ class _AnnouncementTile extends StatelessWidget {
                 ],
               ),
               Wrap(
-                spacing: 6,
+                spacing: AppSpacing.md,
                 children: [
-                  Chip(
-                      label: Text(announcement.category.label()),
-                      visualDensity: VisualDensity.compact),
-                  Chip(
-                      label: Text(announcement.urgencyLevel.label()),
-                      visualDensity: VisualDensity.compact),
-                  Chip(
-                    label: Text(announcement.publisherType.label()),
-                    visualDensity: VisualDensity.compact,
+                  AppBadge(
+                    label: announcement.category.label(),
+                    small: true,
+                  ),
+                  AppBadge(
+                    label: announcement.urgencyLevel.label(),
+                    small: true,
+                  ),
+                  AppBadge(
+                    label: announcement.publisherType.label(),
+                    small: true,
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              SpacingHelper.sm,
               Text(announcement.content),
-              const SizedBox(height: 8),
+              SpacingHelper.sm,
               Text(
                 announcement.datePosted.toIso8601String().substring(0, 16),
                 style: theme.textTheme.bodySmall,

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../shared/widgets/responsive_shell.dart';
+import '../../../shared/widgets/custom_components.dart';
 import '../../../core/config.dart';
 import '../../auth/data/auth_repository.dart' show ApiException;
 import '../data/achievement_repository.dart';
@@ -201,9 +202,10 @@ class _MoeAchievementReviewScreenState extends ConsumerState<MoeAchievementRevie
                             ],
                           ),
                         ),  
-                        Chip(  
-                          label: Text(a.status),  
-                          backgroundColor: _getStatusColor(a.status).withOpacity(0.2),  
+                        AppBadge(
+                          label: a.status,
+                          color: _getStatusColor(a.status),
+                          small: true,
                         ),  
                       ],  
                     ),  

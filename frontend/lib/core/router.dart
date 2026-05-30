@@ -146,10 +146,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
 
-      // Main app routes with slide-in transitions
+      // Main app routes with unique transitions
       GoRoute(
         path: '/',
-        pageBuilder: (context, state) => AppAnimations.slideInFromRight(
+        pageBuilder: (context, state) => AppAnimations.navySweep(
           key: state.pageKey,
           child: const HomeScreen(),
         ),
@@ -204,7 +204,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             );
           }
 
-          return AppAnimations.slideInFromRight(
+          return AppAnimations.expandFromCenter(
             key: state.pageKey,
             child: SchoolDetailScreen(
               schoolId: id,
@@ -215,7 +215,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/compare',
-        pageBuilder: (context, state) => AppAnimations.slideInFromRight(
+        pageBuilder: (context, state) => AppAnimations.rotateIn(
           key: state.pageKey,
           child: const ComparisonsListScreen(),
         ),
@@ -257,7 +257,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Phase 11: parent-facing announcements feed + deep-linked detail.
       GoRoute(
         path: '/announcements',
-        pageBuilder: (context, state) => AppAnimations.slideInFromRight(
+        pageBuilder: (context, state) => AppAnimations.bounceSlide(
           key: state.pageKey,
           child: const AnnouncementsFeedScreen(),
         ),

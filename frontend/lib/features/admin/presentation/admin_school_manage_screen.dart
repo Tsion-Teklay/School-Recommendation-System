@@ -11,6 +11,7 @@ import '../../../core/location_helper.dart';
 import '../../../core/config.dart';
 import '../../../shared/utils/image_picker.dart';
 import '../../../shared/widgets/responsive_shell.dart';
+import '../../../shared/widgets/custom_components.dart';
 import '../../auth/data/auth_repository.dart';
 import '../../schools/data/school_dtos.dart';
 import '../../schools/data/school_repository.dart';
@@ -867,29 +868,36 @@ class _SchoolSummary extends StatelessWidget {
               const SizedBox(height: 4),  
                 
               const SizedBox(height: 12),  
-              Wrap(  
-                spacing: 8,  
-                runSpacing: 8,  
-                children: [  
-                  Chip(label: Text(school.curriculum.label())),  
-                  Chip(label: Text(school.verificationStatus.label())),  
-                  if ((school.tuitionFee ?? 0) > 0)  
-                    Chip(  
-                      avatar: const Icon(Icons.payments_outlined, size: 18),  
-                      label: Text('${school.tuitionFee} / year'),  
-                    ),  
-                  if ((school.followerCount ?? 0) > 0)  
-                    Chip(  
-                      avatar: const Icon(Icons.favorite_outline, size: 18),  
-                      label: Text('${school.followerCount} follower(s)'),  
-                    ),  
-                  if ((school.rating ?? 0) > 0)  
-                    Chip(  
-                      avatar: const Icon(Icons.star_outline, size: 18),  
-                      label: Text(  
-                        '${(school.rating!).toStringAsFixed(1)} '  
-                        '(${school.reviewCount ?? 0})',  
-                      ),  
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  AppBadge(
+                    label: school.curriculum.label(),
+                    small: true,
+                  ),
+                  AppBadge(
+                    label: school.verificationStatus.label(),
+                    small: true,
+                  ),
+                  if ((school.tuitionFee ?? 0) > 0)
+                    AppBadge(
+                      icon: Icons.payments_outlined,
+                      label: '${school.tuitionFee} / year',
+                      small: true,
+                    ),
+                  if ((school.followerCount ?? 0) > 0)
+                    AppBadge(
+                      icon: Icons.favorite_outline,
+                      label: '${school.followerCount} follower(s)',
+                      small: true,
+                    ),
+                  if ((school.rating ?? 0) > 0)
+                    AppBadge(
+                      icon: Icons.star_outline,
+                      label:
+                          '${(school.rating!).toStringAsFixed(1)} (${school.reviewCount ?? 0})',
+                      small: true,
                     ),  
                 ],  
               ),  
@@ -1180,10 +1188,10 @@ class _VerificationRequestTile extends StatelessWidget {
           children: [
             Row(
               children: [
-                Chip(
-                  backgroundColor: color.withValues(alpha: 0.15),
-                  label:
-                      Text(req.status.label(), style: TextStyle(color: color)),
+                AppBadge(
+                  label: req.status.label(),
+                  color: color,
+                  small: true,
                 ),
                 const Spacer(),
                 Text(

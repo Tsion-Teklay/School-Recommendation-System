@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme.dart';
+import '../../../core/design_system.dart';
+import '../../../shared/widgets/illustrations.dart';
 
 class LandingScreen extends ConsumerWidget {
   const LandingScreen({super.key});
@@ -218,7 +220,7 @@ class LandingScreen extends ConsumerWidget {
                           ),
                         ),
 
-                        const SizedBox(height: 24),
+                        SpacingHelper.xxl,
 
                         // Description
                         ConstrainedBox(
@@ -311,7 +313,7 @@ class LandingScreen extends ConsumerWidget {
               theme.textTheme.labelLarge?.copyWith(letterSpacing: 2),
         ),
 
-        const SizedBox(height: 16),
+        SpacingHelper.lg,
 
         Text(
           'Empowering education through connected communities.',
@@ -475,7 +477,7 @@ class LandingScreen extends ConsumerWidget {
                         color: theme.colorScheme.primary,
                       ),
                     ),
-                    const SizedBox(height: 32),
+                    SpacingHelper.xxxl,
                     Text(
                       'Empowering Every Child\'s Future',
                       textAlign: TextAlign.center,
@@ -484,7 +486,7 @@ class LandingScreen extends ConsumerWidget {
                         height: 1.3,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SpacingHelper.lg,
                     Text(
                       'Our mission is to democratize access to quality education information across Ethiopia. Every child deserves a school that nurtures their potential, and every family deserves the tools to find it.',
                       textAlign: TextAlign.center,
@@ -515,7 +517,7 @@ class LandingScreen extends ConsumerWidget {
           style: theme.textTheme.labelLarge?.copyWith(letterSpacing: 2),
         ),
 
-        const SizedBox(height: 16),
+        SpacingHelper.lg,
 
         Text(
           'Making a difference in education.',
@@ -524,7 +526,12 @@ class LandingScreen extends ConsumerWidget {
           ),
         ),
 
-        const SizedBox(height: 48),
+        SizedBox(height: AppSpacing.massive),
+
+        // Feature illustrations section
+        _FeatureIllustrationsSection(theme: theme),
+
+        SizedBox(height: AppSpacing.massive),
 
         LayoutBuilder(
           builder: (context, constraints) {
@@ -594,7 +601,7 @@ class LandingScreen extends ConsumerWidget {
           style: theme.textTheme.labelLarge?.copyWith(letterSpacing: 2),
         ),
 
-        const SizedBox(height: 16),
+        SpacingHelper.lg,
 
         Text(
           'Simple steps to find the right school.',
@@ -603,7 +610,7 @@ class LandingScreen extends ConsumerWidget {
           ),
         ),
 
-        const SizedBox(height: 48),
+        SizedBox(height: AppSpacing.massive),
 
         LayoutBuilder(
           builder: (context, constraints) {
@@ -682,7 +689,7 @@ class LandingScreen extends ConsumerWidget {
               theme.textTheme.labelLarge?.copyWith(letterSpacing: 2),
         ),
 
-        const SizedBox(height: 16),
+        SpacingHelper.lg,
 
         Text(
           'Answers to get you started.',
@@ -691,7 +698,7 @@ class LandingScreen extends ConsumerWidget {
           ),
         ),
 
-        const SizedBox(height: 32),
+        SpacingHelper.xxxl,
 
         _faqItem(
           theme,
@@ -765,7 +772,7 @@ class LandingScreen extends ConsumerWidget {
           style: theme.textTheme.labelLarge?.copyWith(letterSpacing: 2),
         ),
 
-        const SizedBox(height: 16),
+        SpacingHelper.lg,
 
         Text(
           'What parents are saying.',
@@ -774,7 +781,7 @@ class LandingScreen extends ConsumerWidget {
           ),
         ),
 
-        const SizedBox(height: 48),
+        SizedBox(height: AppSpacing.massive),
 
         LayoutBuilder(
           builder: (context, constraints) {
@@ -907,7 +914,7 @@ class LandingScreen extends ConsumerWidget {
                   ),
                 ),
 
-                const SizedBox(height: 32),
+                SpacingHelper.xxxl,
 
                 FilledButton(
                   onPressed: () => context.go('/register'),
@@ -931,7 +938,7 @@ class LandingScreen extends ConsumerWidget {
                   ),
                 ),
 
-                const SizedBox(height: 24),
+                SpacingHelper.xxl,
 
                 Text(
                   'Join 10,000+ parents already using our platform',
@@ -1163,7 +1170,7 @@ class _StatCardState extends State<_StatCard> with SingleTickerProviderStateMixi
                 color: widget.color,
               ),
             ),
-            const SizedBox(height: 16),
+            SpacingHelper.lg,
             Text(
               widget.value,
               style: widget.theme.textTheme.headlineMedium?.copyWith(
@@ -1570,7 +1577,7 @@ class _TestimonialCardState extends State<_TestimonialCard> with SingleTickerPro
                   color: widget.theme.colorScheme.onSurface.withOpacity(0.85),
                 ),
               ),
-              const SizedBox(height: 24),
+              SpacingHelper.xxl,
               Row(
                 children: [
                   Container(
@@ -1698,19 +1705,19 @@ class _AppFooter extends StatelessWidget {
                           title: 'Company',
                           links: ['About Us', 'Contact', 'Careers'],
                         ),
-                        const SizedBox(height: 32),
+                        SpacingHelper.xxxl,
                         _FooterColumn(
                           theme: theme,
                           title: 'Resources',
                           links: ['Blog', 'Help Center', 'Community'],
                         ),
-                        const SizedBox(height: 32),
+                        SpacingHelper.xxxl,
                         _FooterColumn(
                           theme: theme,
                           title: 'Legal',
                           links: ['Privacy Policy', 'Terms of Service'],
                         ),
-                        const SizedBox(height: 32),
+                        SpacingHelper.xxxl,
                         _FooterContact(theme: theme),
                       ],
                     );
@@ -1749,7 +1756,7 @@ class _AppFooter extends StatelessWidget {
               ),
               const SizedBox(height: 40),
               const Divider(),
-              const SizedBox(height: 24),
+              SpacingHelper.xxl,
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -1812,7 +1819,7 @@ class _FooterColumn extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 16),
+        SpacingHelper.lg,
         ...links.map((link) => Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: MouseRegion(
@@ -1849,7 +1856,7 @@ class _FooterContact extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 16),
+        SpacingHelper.lg,
         Row(
           children: [
             Icon(
@@ -1925,6 +1932,153 @@ class _SocialIconState extends State<_SocialIcon> {
             color: widget.theme.colorScheme.onSurface.withOpacity(0.6),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Feature illustrations section showcasing key benefits with custom graphics
+class _FeatureIllustrationsSection extends StatelessWidget {
+  final ThemeData theme;
+
+  const _FeatureIllustrationsSection({required this.theme});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          'Why Choose Our Platform?',
+          style: theme.textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        SpacingHelper.lg,
+        Text(
+          'We provide comprehensive tools to help you find the perfect educational environment',
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: theme.colorScheme.onSurface.withOpacity(0.7),
+          ),
+          textAlign: TextAlign.center,
+        ),
+        SpacingHelper.xxxl,
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isMobile = constraints.maxWidth < 800;
+            if (isMobile) {
+              return Column(
+                children: [
+                  _IllustrationFeatureCard(
+                    illustration: IllustrationType.education,
+                    title: 'Quality Education',
+                    description: 'Access detailed information about curriculum, facilities, and performance metrics.',
+                    theme: theme,
+                  ),
+                  SpacingHelper.xxl,
+                  _IllustrationFeatureCard(
+                    illustration: IllustrationType.community,
+                    title: 'Connected Community',
+                    description: 'Join a network of parents, schools, and educators sharing experiences.',
+                    theme: theme,
+                  ),
+                  SpacingHelper.xxl,
+                  _IllustrationFeatureCard(
+                    illustration: IllustrationType.growth,
+                    title: 'Continuous Growth',
+                    description: 'Track achievements and celebrate milestones in your educational journey.',
+                    theme: theme,
+                  ),
+                ],
+              );
+            } else {
+              return Row(
+                children: [
+                  Expanded(
+                    child: _IllustrationFeatureCard(
+                      illustration: IllustrationType.education,
+                      title: 'Quality Education',
+                      description: 'Access detailed information about curriculum, facilities, and performance metrics.',
+                      theme: theme,
+                    ),
+                  ),
+                  SizedBox(width: AppSpacing.xxl),
+                  Expanded(
+                    child: _IllustrationFeatureCard(
+                      illustration: IllustrationType.community,
+                      title: 'Connected Community',
+                      description: 'Join a network of parents, schools, and educators sharing experiences.',
+                      theme: theme,
+                    ),
+                  ),
+                  SizedBox(width: AppSpacing.xxl),
+                  Expanded(
+                    child: _IllustrationFeatureCard(
+                      illustration: IllustrationType.growth,
+                      title: 'Continuous Growth',
+                      description: 'Track achievements and celebrate milestones in your educational journey.',
+                      theme: theme,
+                    ),
+                  ),
+                ],
+              );
+            }
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _IllustrationFeatureCard extends StatelessWidget {
+  final IllustrationType illustration;
+  final String title;
+  final String description;
+  final ThemeData theme;
+
+  const _IllustrationFeatureCard({
+    required this.illustration,
+    required this.title,
+    required this.description,
+    required this.theme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.xxl),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: AppBorderRadius.lgRadius,
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.2),
+        ),
+      ),
+      child: Column(
+        children: [
+          AppIllustration(
+            type: illustration,
+            size: AppSizing.iconXl * 1.5,
+            color: theme.colorScheme.primary,
+            showBackground: true,
+          ),
+          SpacingHelper.lg,
+          Text(
+            title,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SpacingHelper.sm,
+          Text(
+            description,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.7),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }

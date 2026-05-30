@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme.dart';
 import '../../../shared/widgets/responsive_shell.dart';
 import '../../../shared/widgets/school_card.dart';
 import '../../auth/data/auth_dtos.dart';

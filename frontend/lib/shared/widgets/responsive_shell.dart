@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/theme.dart';
 import '../../features/auth/data/auth_dtos.dart';
 import '../../features/auth/state/auth_controller.dart';
 import '../../features/notifications/presentation/notification_bell.dart';
+import 'custom_navigation.dart';
 
 /// Breakpoints we use everywhere. Mirrors Material 3 window-size classes.
 class Breakpoints {
@@ -187,14 +189,8 @@ class ResponsiveShell extends ConsumerWidget {
             _selectedIndex(location, bottomDests).clamp(-1, bottomDests.length - 1);
 
         return Scaffold(
-          appBar: AppBar(
-            title: Row(  
-  children: [  
-    Image.asset('assets/logo.png', height: 32), // Ensure asset is in pubspec.yaml  
-    const SizedBox(width: 12),  
-    Text(title),  
-  ],  
-),
+          appBar: AppNavigationBar(
+            title: title,
             actions: [...?actions, ...defaultActions],
             leading: leading,
           ),
@@ -203,32 +199,31 @@ class ResponsiveShell extends ConsumerWidget {
               ? body
               : Row(
                   children: [
-                    NavigationRail(
-                      extended: isExpanded,
-                      selectedIndex: selected >= 0 ? selected : null,
-                      onDestinationSelected: (i) => context.go(dests[i].path),
-                      destinations: dests
-                          .map((d) => NavigationRailDestination(
-                                icon: Icon(d.icon),
-                                label: Text(d.label),
+                    AppNavigationRail(
+                      selectedIndex: selected >= 0 ? selected : 0,
+                      items: dests
+                          .map((d) => NavigationItem(
+                                label: d.label,
+                                icon: d.icon,
                               ))
                           .toList(),
+                      onDestinationSelected: (i) => context.go(dests[i].path),
+                      extended: isExpanded,
                     ),
                     const VerticalDivider(width: 1),
                     Expanded(child: body),
                   ],
                 ),
           bottomNavigationBar: bottomDests.isNotEmpty && isCompact
-              ? NavigationBar(
-                  selectedIndex:
-                      bottomSelected >= 0 ? bottomSelected : 0,
-                  onDestinationSelected: (i) => context.go(bottomDests[i].path),
-                  destinations: bottomDests
-                      .map((d) => NavigationDestination(
-                            icon: Icon(d.icon),
+              ? AppBottomNavigation(
+                  selectedIndex: bottomSelected >= 0 ? bottomSelected : 0,
+                  items: bottomDests
+                      .map((d) => NavigationItem(
                             label: d.label,
+                            icon: d.icon,
                           ))
                       .toList(),
+                  onDestinationSelected: (i) => context.go(bottomDests[i].path),
                 )
               : null,
         );

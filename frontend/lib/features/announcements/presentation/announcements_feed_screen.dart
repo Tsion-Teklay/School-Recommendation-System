@@ -7,6 +7,7 @@ import '../../../shared/widgets/responsive_shell.dart';
 import '../../../shared/widgets/like_action.dart';
 import '../../../shared/widgets/share_action.dart';
 import '../../../shared/widgets/report_dialog.dart';
+import '../../../shared/widgets/custom_components.dart';
 import '../data/announcement_dtos.dart';
 import '../state/announcements_feed_controller.dart';
 import '../../auth/state/auth_controller.dart';
@@ -257,29 +258,21 @@ class AnnouncementCard extends ConsumerWidget {
                     spacing: 6,
                     runSpacing: 6,
                     children: [
-                      Chip(
-                        visualDensity: VisualDensity.compact,
-                        label: Text(a.category.label()),
+                      AppBadge(
+                        label: a.category.label(),
+                        small: true,
                       ),
                       if (a.urgencyLevel != UrgencyLevel.normal)
-                        Chip(
-                          visualDensity: VisualDensity.compact,
-                          label: Text(a.urgencyLevel.label()),
-                          backgroundColor:
-                              a.urgencyLevel == UrgencyLevel.emergency
-                                  ? theme.colorScheme.errorContainer
-                                  : theme.colorScheme.tertiaryContainer,
+                        AppBadge(
+                          label: a.urgencyLevel.label(),
+                          small: true,
                         ),
-                      Chip(
-                        visualDensity: VisualDensity.compact,
-                        avatar: Icon(
-                          a.publisherType == PublisherType.moe
-                              ? Icons.account_balance_outlined
-                              : Icons.school_outlined,
-                          size: 16,
-                        ),
-                        label: Text(
-                            a.school?.schoolName ?? a.publisherType.label()),
+                      AppBadge(
+                        icon: a.publisherType == PublisherType.moe
+                            ? Icons.account_balance_outlined
+                            : Icons.school_outlined,
+                        label: a.school?.schoolName ?? a.publisherType.label(),
+                        small: true,
                       ),
                     ],
                   ),

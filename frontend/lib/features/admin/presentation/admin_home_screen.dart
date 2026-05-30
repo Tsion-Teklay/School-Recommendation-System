@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/design_system.dart';
 import '../../../shared/widgets/responsive_shell.dart';
 import '../../../shared/widgets/modern_card.dart';
+import '../../../shared/widgets/custom_components.dart';
+import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/illustrations.dart';
 import '../../../shared/utils/animations.dart';
 import '../../../core/theme.dart';
 import '../../../core/typography.dart';
@@ -66,13 +70,13 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
         children: [
           Text('Welcome${user != null ? ', ${user.fullName}' : ''}!',
               style: TextStyles.pageHeading),
-          const SizedBox(height: 8),
+          SpacingHelper.sm,
           Text(
             "Manage your schools, submit verification documents, and post "
             "announcements. Followers receive your announcements automatically.",
             style: TextStyles.pageSubheading,
           ),
-          const SizedBox(height: 24),
+          SpacingHelper.xxl,
           Row(
             children: [
               Text('My schools', style: TextStyles.pageHeading),
@@ -84,46 +88,30 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          SpacingHelper.sm,
           if (_loading && _schools.isEmpty)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
-              child: Center(child: CircularProgressIndicator()),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
+              child: const Center(child: CircularProgressIndicator()),
             )
           else if (_error != null)
             ModernCard(
               backgroundColor: AppColors.errorLight,
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSpacing.lg),
               elevated: false,
               bordered: true,
               child: Text(
                 _error!,
-                style: TextStyle(color: AppColors.error),
+                style: const TextStyle(color: AppColors.error),
               ),
             )
           else if (_schools.isEmpty)
-            ModernCard(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.school_outlined,
-                    size: 48,
-                    color: AppColors.textTertiary,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'You haven\'t registered a school yet.',
-                    style: AppTypography.titleMedium,
-                  ),
-                  const SizedBox(height: 12),
-                  FilledButton.icon(
-                    onPressed: () => context.go('/admin/schools/create'),
-                    icon: const Icon(Icons.add),
-                    label: const Text('Register your school'),
-                  ),
-                ],
-              ),
+            EmptyState(
+              illustrationType: IllustrationType.emptySchools,
+              title: 'You haven\'t registered a school yet',
+              description: 'Register your school to start managing announcements, achievements, and verification documents.',
+              actionLabel: 'Register your school',
+              onAction: () => context.go('/admin/schools/create'),
             )
           else
             Column(
@@ -133,7 +121,7 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
                     delay: Duration(milliseconds: index * 50),
                     child: ModernCard(
                       onTap: () => context.go('/admin/schools/${_schools[index].id}'),
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(AppSpacing.lg),
                       child: Row(
                         children: [
                           Expanded(
@@ -144,10 +132,10 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
                                   _schools[index].schoolName,
                                   style: TextStyles.cardTitle,
                                 ),
-                                const SizedBox(height: 8),
+                                SpacingHelper.sm,
                                 Wrap(
-                                  spacing: 8,
-                                  runSpacing: 4,
+                                  spacing: AppSpacing.lg,
+                                  runSpacing: AppSpacing.xs,
                                   children: [
                                     _buildStatusChip(
                                       _schools[index].curriculum.label(),
@@ -167,9 +155,9 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
                               ],
                             ),
                           ),
-                          const SizedBox(width: 12),
+                          SizedBox(width: AppSpacing.md),
                           Wrap(
-                            spacing: 4,
+                            spacing: AppSpacing.xs,
                             children: [
                               IconButton(
                                 tooltip: 'View public page',
@@ -197,7 +185,7 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
                   ),
               ],
             ),
-          const SizedBox(height: 24),
+          SpacingHelper.xxl,
           AppAnimations.tapScale(
             onTap: () => context.go('/admin/announcements'),
             child: InfoCard(
@@ -214,21 +202,10 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
   }
 
   Widget _buildStatusChip(String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
+    return AppBadge(
+      label: label,
+      color: color,
+      small: true,
     );
   }
 

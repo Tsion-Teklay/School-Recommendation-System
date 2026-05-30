@@ -141,6 +141,133 @@ class AppAnimations {
     );
   }
 
+  /// Navy-blue themed transition with color sweep effect
+  static CustomTransitionPage<T> navySweep<T>({
+    required LocalKey key,
+    required Widget child,
+  }) {
+    return CustomTransitionPage<T>(
+      key: key,
+      child: child,
+      transitionDuration: const Duration(milliseconds: 400),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return AnimatedBuilder(
+          animation: animation,
+          builder: (context, child) {
+            return DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.primary.withOpacity(0.0),
+                    AppColors.primary.withOpacity(animation.value * 0.3),
+                    AppColors.primary.withOpacity(0.0),
+                  ],
+                  stops: [0.0, animation.value, 1.0],
+                ),
+              ),
+              child: FadeTransition(
+                opacity: animation,
+                child: child,
+              ),
+            );
+          },
+          child: child,
+        );
+      },
+    );
+  }
+
+  /// Rotation transition with scale effect
+  static CustomTransitionPage<T> rotateIn<T>({
+    required LocalKey key,
+    required Widget child,
+  }) {
+    return CustomTransitionPage<T>(
+      key: key,
+      child: child,
+      transitionDuration: const Duration(milliseconds: 350),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        const curve = Curves.easeOutBack;
+
+        var rotationAnimation = Tween<double>(begin: 0.1, end: 0.0).animate(
+          CurvedAnimation(parent: animation, curve: curve),
+        );
+
+        var scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+          CurvedAnimation(parent: animation, curve: curve),
+        );
+
+        return RotationTransition(
+          turns: rotationAnimation,
+          child: ScaleTransition(
+            scale: scaleAnimation,
+            child: FadeTransition(
+              opacity: animation,
+              child: child,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Bounce slide transition for playful interactions
+  static CustomTransitionPage<T> bounceSlide<T>({
+    required LocalKey key,
+    required Widget child,
+  }) {
+    return CustomTransitionPage<T>(
+      key: key,
+      child: child,
+      transitionDuration: const Duration(milliseconds: 500),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        const curve = Curves.elasticOut;
+
+        var tween = Tween(begin: const Offset(0.0, 0.3), end: Offset.zero).chain(
+          CurveTween(curve: curve),
+        );
+
+        return SlideTransition(
+          position: animation.drive(tween),
+          child: FadeTransition(
+            opacity: animation,
+            child: child,
+          ),
+        );
+      },
+    );
+  }
+
+  /// Expand from center transition
+  static CustomTransitionPage<T> expandFromCenter<T>({
+    required LocalKey key,
+    required Widget child,
+  }) {
+    return CustomTransitionPage<T>(
+      key: key,
+      child: child,
+      transitionDuration: const Duration(milliseconds: 300),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        const curve = Curves.easeOutCubic;
+
+        var scaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+          CurvedAnimation(parent: animation, curve: curve),
+        );
+
+        return ScaleTransition(
+          scale: scaleAnimation,
+          alignment: Alignment.center,
+          child: FadeTransition(
+            opacity: animation,
+            child: child,
+          ),
+        );
+      },
+    );
+  }
+
   // ============================================
   // MICRO-INTERACTIONS
   // ============================================

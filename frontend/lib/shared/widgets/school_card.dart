@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme.dart';
+import '../../core/design_system.dart';
 import '../../features/schools/data/school_dtos.dart';
+import 'custom_components.dart';
 
 /// Re-usable card shown in browse list, recommendations, and comparison cart.
 /// Keeps formatting consistent so a future redesign only edits one file.
@@ -24,9 +27,9 @@ class SchoolCard extends StatelessWidget {
     return Card(
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppBorderRadius.lgRadius,
         child: Padding(
-          padding: EdgeInsets.all(dense ? 12 : 16),
+          padding: EdgeInsets.all(dense ? AppSpacing.md : AppSpacing.lg),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -45,12 +48,12 @@ class SchoolCard extends StatelessWidget {
                           ),
                         ),
                         if (school.rating != null && school.rating! > 0) ...[
-                          const SizedBox(width: 8),
+                          SizedBox(width: AppSpacing.sm),
                           _StarRating(rating: school.rating!.toDouble()),
                         ],
                       ],
                     ),
-                    const SizedBox(height: 4),
+                    SpacingHelper.xs,
                     Text(
                       school.subCity != null
                           ? '${school.subCity} - ${school.woreda ?? 'N/A'}'
@@ -59,37 +62,42 @@ class SchoolCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 8),
+                    SpacingHelper.sm,
                     Wrap(
-                      spacing: 6,
-                      runSpacing: 4,
+                      spacing: AppSpacing.md,
+                      runSpacing: AppSpacing.xs,
                       children: [
-                        _Chip(
+                        AppBadge(
                           icon: Icons.school_outlined,
                           label: school.curriculum.label(),
+                          small: true,
                         ),
-                        _Chip(
+                        AppBadge(
                           icon: Icons.payments_outlined,
                           label: _formatFee(school.tuitionFee),
+                          small: true,
                         ),
                         if ((school.rating ?? 0) > 0)
-                          _Chip(
+                          AppBadge(
                             icon: Icons.star_outline,
                             label:
                                 '${(school.rating ?? 0).toStringAsFixed(1)} (${school.reviewCount ?? 0})',
+                            small: true,
                           ),
                         if (school.verificationStatus ==
                             VerificationStatus.verified)
-                          const _Chip(
+                          AppBadge(
                             icon: Icons.verified_outlined,
                             label: 'Verified',
-                            highlighted: true,
+                            color: AppColors.success,
+                            small: true,
                           ),
                         if (school.distanceKm != null)
-                          _Chip(
+                          AppBadge(
                             icon: Icons.place_outlined,
                             label:
                                 '${school.distanceKm!.toStringAsFixed(1)} km',
+                            small: true,
                           ),
                       ],
                     ),
@@ -97,7 +105,7 @@ class SchoolCard extends StatelessWidget {
                 ),
               ),
               if (trailing != null) ...[
-                const SizedBox(width: 8),
+                SizedBox(width: AppSpacing.sm),
                 trailing!,
               ],
             ],
@@ -118,49 +126,12 @@ String _formatFee(num? fee) {
   return fee.toStringAsFixed(0);
 }
 
-class _Chip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final bool highlighted;
-  const _Chip({
-    required this.icon,
-    required this.label,
-    this.highlighted = false,
-  });
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final bg = highlighted
-        ? theme.colorScheme.primaryContainer
-        : theme.colorScheme.surfaceContainerHighest;
-    final fg = highlighted
-        ? theme.colorScheme.onPrimaryContainer
-        : theme.colorScheme.onSurfaceVariant;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: fg),
-          const SizedBox(width: 4),
-          Text(label, style: theme.textTheme.labelSmall?.copyWith(color: fg)),
-        ],
-      ),
-    );
-  }
-}
-
 class _StarRating extends StatelessWidget {
   final double rating;
   const _StarRating({required this.rating});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: List.generate(5, (index) {
@@ -168,19 +139,19 @@ class _StarRating extends StatelessWidget {
           return Icon(
             Icons.star,
             size: 16,
-            color: theme.colorScheme.primary,
+            color: AppColors.primary,
           );
         } else if (index < rating && rating % 1 >= 0.5) {
           return Icon(
             Icons.star_half,
             size: 16,
-            color: theme.colorScheme.primary,
+            color: AppColors.primary,
           );
         } else {
           return Icon(
             Icons.star_border,
             size: 16,
-            color: theme.colorScheme.onSurfaceVariant,
+            color: AppColors.textSecondary,
           );
         }
       }),
