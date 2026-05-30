@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../shared/widgets/responsive_shell.dart';
 import '../../../shared/widgets/modern_card.dart';
 import '../../../core/theme.dart';
+import '../../../core/typography.dart';
 import '../../auth/state/auth_controller.dart';
 import '../../schools/data/school_dtos.dart';
 import '../../schools/data/school_repository.dart';
@@ -63,17 +64,17 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text('Welcome${user != null ? ', ${user.fullName}' : ''}!',
-              style: theme.textTheme.headlineMedium),
+              style: TextStyles.pageHeading),
           const SizedBox(height: 8),
           Text(
             "Manage your schools, submit verification documents, and post "
             "announcements. Followers receive your announcements automatically.",
-            style: theme.textTheme.bodyMedium,
+            style: TextStyles.pageSubheading,
           ),
           const SizedBox(height: 24),
           Row(
             children: [
-              Text('My schools', style: theme.textTheme.titleLarge),
+              Text('My schools', style: TextStyles.pageHeading),
               const Spacer(),
               IconButton(
                 tooltip: 'Refresh',
@@ -112,7 +113,7 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
                   const SizedBox(height: 16),
                   Text(
                     'You haven\'t registered a school yet.',
-                    style: theme.textTheme.titleMedium,
+                    style: AppTypography.titleMedium,
                   ),
                   const SizedBox(height: 12),
                   FilledButton.icon(
@@ -138,9 +139,7 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
                             children: [
                               Text(
                                 s.schoolName,
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
+                                style: TextStyles.cardTitle,
                               ),
                               const SizedBox(height: 8),
                               Wrap(

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'typography.dart';
+
 /// Custom color palette for the School Recommendation System
 /// Designed to be distinctive, professional, and education-focused
 class AppColors {
@@ -118,78 +120,7 @@ ThemeData appTheme() {
       ),
     ],
 
-    textTheme: GoogleFonts.plusJakartaSansTextTheme().copyWith(
-      headlineLarge: GoogleFonts.plusJakartaSans(
-        fontSize: 34,
-        fontWeight: FontWeight.w700,
-        color: AppColors.textPrimary,
-        letterSpacing: -0.5,
-      ),
-      headlineMedium: GoogleFonts.plusJakartaSans(
-        fontSize: 28,
-        fontWeight: FontWeight.w700,
-        color: AppColors.textPrimary,
-        letterSpacing: -0.3,
-      ),
-      headlineSmall: GoogleFonts.plusJakartaSans(
-        fontSize: 24,
-        fontWeight: FontWeight.w600,
-        color: AppColors.textPrimary,
-        letterSpacing: -0.2,
-      ),
-      titleLarge: GoogleFonts.plusJakartaSans(
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        color: AppColors.textPrimary,
-        letterSpacing: -0.1,
-      ),
-      titleMedium: GoogleFonts.plusJakartaSans(
-        fontSize: 18,
-        fontWeight: FontWeight.w600,
-        color: AppColors.textPrimary,
-      ),
-      titleSmall: GoogleFonts.plusJakartaSans(
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-        color: AppColors.textPrimary,
-      ),
-      bodyLarge: GoogleFonts.plusJakartaSans(
-        fontSize: 16,
-        height: 1.6,
-        color: AppColors.textSecondary,
-        letterSpacing: 0.1,
-      ),
-      bodyMedium: GoogleFonts.plusJakartaSans(
-        fontSize: 14,
-        height: 1.5,
-        color: AppColors.textSecondary,
-        letterSpacing: 0.2,
-      ),
-      bodySmall: GoogleFonts.plusJakartaSans(
-        fontSize: 12,
-        height: 1.4,
-        color: AppColors.textTertiary,
-        letterSpacing: 0.3,
-      ),
-      labelLarge: GoogleFonts.plusJakartaSans(
-        fontSize: 14,
-        fontWeight: FontWeight.w600,
-        color: AppColors.textPrimary,
-        letterSpacing: 0.5,
-      ),
-      labelMedium: GoogleFonts.plusJakartaSans(
-        fontSize: 12,
-        fontWeight: FontWeight.w500,
-        color: AppColors.textSecondary,
-        letterSpacing: 0.4,
-      ),
-      labelSmall: GoogleFonts.plusJakartaSans(
-        fontSize: 10,
-        fontWeight: FontWeight.w500,
-        color: AppColors.textTertiary,
-        letterSpacing: 0.3,
-      ),
-    ),
+    textTheme: AppTypography.toTextTheme(),
 
     cardTheme: CardThemeData(
       elevation: 2,
@@ -319,12 +250,7 @@ ThemeData appTheme() {
       iconTheme: const IconThemeData(
         color: AppColors.textPrimary,
       ),
-      titleTextStyle: GoogleFonts.plusJakartaSans(
-        fontSize: 20,
-        fontWeight: FontWeight.w600,
-        color: AppColors.textPrimary,
-        letterSpacing: -0.1,
-      ),
+      titleTextStyle: AppTypography.titleLarge,
     ),
 
     iconTheme: const IconThemeData(
