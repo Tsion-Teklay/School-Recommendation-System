@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
   
 import '../../../shared/widgets/responsive_shell.dart';  
 import '../../../shared/widgets/loading_button.dart';  
+import '../../../shared/utils/message_helper.dart';  
 import '../data/demographics_repository.dart';  
 import '../data/demographics_dtos.dart';  
   
@@ -24,7 +25,6 @@ class _DemographicsManageScreenState extends ConsumerState<DemographicsManageScr
   final _nationalExamScore = TextEditingController();  
   
   bool _loading = false;  
-  String? _error;  
   List<SchoolDemographics> _demographics = [];  
   
   @override  
@@ -62,17 +62,28 @@ class _DemographicsManageScreenState extends ConsumerState<DemographicsManageScr
   
   Future<void> _submit() async {  
   if (!_form.currentState!.validate()) return;  
+  
+  // Cross-field validation: total students must equal girls + boys
+  final totalStudents = int.parse(_totalStudents.text);
+  final girlsCount = int.parse(_girlsCount.text);
+  final boysCount = int.parse(_boysCount.text);
+  
+  if (totalStudents != girlsCount + boysCount) {
+    final errorMessage = 'Total students ($totalStudents) must equal girls ($girlsCount) + boys ($boysCount). Current sum is ${girlsCount + boysCount}.';
+    MessageHelper.showError(context, errorMessage);
+    return;
+  }
+  
   setState(() {  
     _loading = true;  
-    _error = null;  
   });  
   try {  
     await ref.read(demographicsRepositoryProvider).create(  
       schoolId: widget.schoolId,  
       academicYear: int.parse(_academicYear.text),  
-      totalStudents: int.parse(_totalStudents.text),  
-      girlsCount: int.parse(_girlsCount.text),  
-      boysCount: int.parse(_boysCount.text),  
+      totalStudents: totalStudents,  
+      girlsCount: girlsCount,  
+      boysCount: boysCount,  
       passingRate: double.parse(_passingRate.text),  
       nationalExamScore: double.parse(_nationalExamScore.text),  
     );  
@@ -86,14 +97,12 @@ class _DemographicsManageScreenState extends ConsumerState<DemographicsManageScr
     _nationalExamScore.clear();  
     _academicYear.text = '2024'; // Reset to default  
       
-    if (mounted) ScaffoldMessenger.of(context).showSnackBar(  
-      const SnackBar(content: Text('Demographics added successfully')),  
-    );  
+    if (mounted) MessageHelper.showSuccess(context, 'Demographics added successfully');  
       
     // Reload demographics list
     await _load();  
   } catch (e) {  
-    setState(() => _error = e.toString());  
+    if (mounted) MessageHelper.showError(context, e.toString());  
   } finally {  
     if (mounted) setState(() => _loading = false);  
   }  
@@ -112,10 +121,6 @@ class _DemographicsManageScreenState extends ConsumerState<DemographicsManageScr
                 child: Column(  
                   crossAxisAlignment: CrossAxisAlignment.stretch,  
                   children: [  
-                    if (_error != null) ...[  
-                      Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),  
-                      const SizedBox(height: 16),  
-                    ],  
                     TextFormField(  
                       controller: _academicYear,  
                       decoration: const InputDecoration(labelText: 'Academic Year'),  
@@ -127,35 +132,67 @@ class _DemographicsManageScreenState extends ConsumerState<DemographicsManageScr
                       controller: _totalStudents,  
                       decoration: const InputDecoration(labelText: 'Total Students'),  
                       keyboardType: TextInputType.number,  
-                      validator: (v) => v?.isEmpty ?? true ? 'Required' : null,  
+                      validator: (v) {
+                        if (v?.isEmpty ?? true) return 'Required';
+                        final value = int.tryParse(v!);
+                        if (value == null) return 'Please enter a valid number';
+                        if (value < 0) return 'Total students cannot be negative';
+                        return null;
+                      },  
                     ),  
                     const SizedBox(height: 12),  
                     TextFormField(  
                       controller: _girlsCount,  
                       decoration: const InputDecoration(labelText: 'Girls Count'),  
                       keyboardType: TextInputType.number,  
-                      validator: (v) => v?.isEmpty ?? true ? 'Required' : null,  
+                      validator: (v) {
+                        if (v?.isEmpty ?? true) return 'Required';
+                        final value = int.tryParse(v!);
+                        if (value == null) return 'Please enter a valid number';
+                        if (value < 0) return 'Girls count cannot be negative';
+                        return null;
+                      },  
                     ),  
                     const SizedBox(height: 12),  
                     TextFormField(  
                       controller: _boysCount,  
                       decoration: const InputDecoration(labelText: 'Boys Count'),  
                       keyboardType: TextInputType.number,  
-                      validator: (v) => v?.isEmpty ?? true ? 'Required' : null,  
+                      validator: (v) {
+                        if (v?.isEmpty ?? true) return 'Required';
+                        final value = int.tryParse(v!);
+                        if (value == null) return 'Please enter a valid number';
+                        if (value < 0) return 'Boys count cannot be negative';
+                        return null;
+                      },  
                     ),  
                     const SizedBox(height: 12),  
                     TextFormField(  
                       controller: _passingRate,  
                       decoration: const InputDecoration(labelText: 'Passing Rate (%)'),  
-                      keyboardType: TextInputType.number,  
-                      validator: (v) => v?.isEmpty ?? true ? 'Required' : null,  
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),  
+                      validator: (v) {
+                        if (v?.isEmpty ?? true) return 'Required';
+                        final value = double.tryParse(v!);
+                        if (value == null) return 'Please enter a valid number';
+                        if (value < 0) return 'Passing rate cannot be negative';
+                        if (value > 100) return 'Passing rate cannot exceed 100%';
+                        return null;
+                      },  
                     ),  
                     const SizedBox(height: 12),  
                     TextFormField(  
                       controller: _nationalExamScore,  
                       decoration: const InputDecoration(labelText: 'National Exam Score'),  
-                      keyboardType: TextInputType.number,  
-                      validator: (v) => v?.isEmpty ?? true ? 'Required' : null,  
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),  
+                      validator: (v) {
+                        if (v?.isEmpty ?? true) return 'Required';
+                        final value = double.tryParse(v!);
+                        if (value == null) return 'Please enter a valid number';
+                        if (value < 0) return 'Exam score cannot be negative';
+                        if (value > 600) return 'Exam score cannot exceed 600';
+                        return null;
+                      },  
                     ),  
                     const SizedBox(height: 16),  
                     LoadingButton(  

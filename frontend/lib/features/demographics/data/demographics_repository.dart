@@ -78,9 +78,25 @@ class DemographicsRepository {
   }
 
   ApiException _toApiException(Response res) {
-    final errorMessage = res.data is Map
-        ? (res.data['error'] ?? res.data['message'] ?? 'An error occurred')
-        : 'An error occurred';
+    String errorMessage;
+    
+    if (res.data is Map) {
+      final data = res.data as Map<String, dynamic>;
+      
+      // Handle Zod validation errors with details
+      if (data['code'] == 'VALIDATION_ERROR' && data['details'] is List) {
+        final details = data['details'] as List;
+        final errorMessages = details
+            .map((d) => d is Map ? '${d['path']}: ${d['message']}' : null)
+            .where((msg) => msg != null)
+            .join('\n');
+        errorMessage = errorMessages.isNotEmpty ? errorMessages : (data['error'] ?? 'Validation failed');
+      } else {
+        errorMessage = data['error'] ?? data['message'] ?? 'An error occurred';
+      }
+    } else {
+      errorMessage = 'An error occurred';
+    }
 
     return ApiException(
       errorMessage,

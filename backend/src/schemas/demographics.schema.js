@@ -7,7 +7,7 @@ const demographicsBaseSchema = z.object({
   girlsCount: z.coerce.number().int().min(0, "Girls count cannot be negative"),
   boysCount: z.coerce.number().int().min(0, "Boys count cannot be negative"),
   passingRate: z.coerce.number().min(0, "Passing rate must be between 0 and 100").max(100, "Passing rate must be between 0 and 100"),
-  nationalExamScore: z.coerce.number().min(0, "National exam score must be between 0 and 100").max(100, "National exam score must be between 0 and 100"),
+  nationalExamScore: z.coerce.number().min(0, "National exam score must be between 0 and 600").max(600, "National exam score must be between 0 and 600"),
 });
 
 export const createDemographicsBodySchema =
@@ -15,7 +15,7 @@ export const createDemographicsBodySchema =
     (data) =>
       data.girlsCount + data.boysCount === data.totalStudents,
     {
-      message: "Total students must equal the sum of girls and boys counts",
+      message: (data) => `Total students (${data.totalStudents}) must equal girls (${data.girlsCount}) + boys (${data.boysCount}). Current sum is ${data.girlsCount + data.boysCount}.`,
       path: ["totalStudents"],
     }
   );
@@ -40,7 +40,7 @@ export const updateDemographicsBodySchema =
         );
       },
       {
-        message: "Total students must equal the sum of girls and boys counts",
+        message: (data) => `Total students (${data.totalStudents}) must equal girls (${data.girlsCount}) + boys (${data.boysCount}). Current sum is ${data.girlsCount + data.boysCount}.`,
         path: ["totalStudents"],
       }
     );
