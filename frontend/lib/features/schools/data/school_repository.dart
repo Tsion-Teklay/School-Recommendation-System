@@ -161,6 +161,11 @@ class SchoolRepository {
     }
   }
 
+Future<void> delete(int schoolId) async {
+  final res = await _dio.delete('/api/schools/$schoolId');
+  if (res.statusCode != 200) throw _toApiException(res);
+}
+
   /// Returns the school IDs I follow. Used by the detail screen to
   /// initialise the follow toggle without a per-school round-trip.
   Future<Set<int>> myFollowedSchoolIds() async {
@@ -276,6 +281,19 @@ class SchoolRepository {
   final res = await _dio.post('/api/schools/$schoolId/revoke', data: {'reason': reason});  
   if (res.statusCode != 200) throw _toApiException(res);  
 }
+
+Future<void> deleteAllSchools() async {
+  final res = await _dio.delete('/api/schools/delete-all');
+  if (res.statusCode != 200) throw _toApiException(res);
+}
+
+Future<int> getMySchoolCount() async {
+  final res = await _dio.get('/api/schools/my-count');
+  if (res.statusCode != 200) throw _toApiException(res);
+  final body = res.data as Map<String, dynamic>;
+  return body['count'] as int;
+}
+
 Future<Map<int, int>> getRatingDistribution(int schoolId) async {  
   final res = await _dio.get('/api/reviews/$schoolId/distribution');  
   if (res.statusCode != 200) throw _toApiException(res);  

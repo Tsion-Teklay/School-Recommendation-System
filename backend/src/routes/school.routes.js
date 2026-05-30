@@ -5,6 +5,8 @@ import {
   getOne,
   update,
   remove,
+  removeAll,
+  getSchoolCount,
     revoke,
 } from "../controllers/school.controller.js";
 import {
@@ -130,6 +132,41 @@ router.delete(
   authorizeRoles("SCHOOL_ADMIN"),
   validate({ params: idParamsSchema }),
   remove
+);
+
+/**
+ * @openapi
+ * /api/schools/delete-all:
+ *   delete:
+ *     tags: [Schools]
+ *     summary: Delete all schools for current school admin
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200: { description: All schools deleted }
+ *       403: { description: Forbidden }
+ */
+router.delete(
+  "/delete-all",
+  authenticate,
+  authorizeRoles("SCHOOL_ADMIN"),
+  removeAll
+);
+
+/**
+ * @openapi
+ * /api/schools/my-count:
+ *   get:
+ *     tags: [Schools]
+ *     summary: Get school count for current school admin
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200: { description: School count }
+ */
+router.get(
+  "/my-count",
+  authenticate,
+  authorizeRoles("SCHOOL_ADMIN"),
+  getSchoolCount
 );
 
 /**
