@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme.dart';
+
 class LandingScreen extends ConsumerWidget {
   const LandingScreen({super.key});
 
@@ -395,7 +397,7 @@ class LandingScreen extends ConsumerWidget {
           end: Alignment.bottomRight,
           colors: [
             theme.colorScheme.primaryContainer.withOpacity(0.3),
-            theme.colorScheme.secondaryContainer.withOpacity(0.2),
+            theme.colorScheme.tertiaryContainer.withOpacity(0.2),
           ],
         ),
         borderRadius: BorderRadius.circular(32),
@@ -549,7 +551,7 @@ class LandingScreen extends ConsumerWidget {
                   icon: Icons.family_restroom,
                   value: '10,000+',
                   label: 'Parents',
-                  color: theme.colorScheme.secondary,
+                  color: theme.colorScheme.tertiary,
                 ),
                 _StatCard(
                   theme: theme,
@@ -563,7 +565,7 @@ class LandingScreen extends ConsumerWidget {
                   icon: Icons.star,
                   value: '98%',
                   label: 'Satisfaction',
-                  color: Colors.amber,
+                  color: AppColors.primaryLight,
                 ),
               ],
             );
@@ -835,7 +837,7 @@ class LandingScreen extends ConsumerWidget {
           end: Alignment.bottomRight,
           colors: [
             theme.colorScheme.primary.withOpacity(0.1),
-            theme.colorScheme.secondary.withOpacity(0.1),
+            theme.colorScheme.tertiary.withOpacity(0.1),
             theme.colorScheme.tertiary.withOpacity(0.1),
           ],
         ),
@@ -866,7 +868,7 @@ class LandingScreen extends ConsumerWidget {
               height: 100,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: theme.colorScheme.secondary.withOpacity(0.1),
+                color: theme.colorScheme.tertiary.withOpacity(0.1),
               ),
             ),
           ),
@@ -1574,13 +1576,13 @@ class _TestimonialCardState extends State<_TestimonialCard> with SingleTickerPro
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: widget.theme.colorScheme.secondaryContainer.withOpacity(0.3),
+                      color: widget.theme.colorScheme.tertiaryContainer.withOpacity(0.3),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Icon(
                       widget.icon,
                       size: 24,
-                      color: widget.theme.colorScheme.secondary,
+                      color: widget.theme.colorScheme.tertiary,
                     ),
                   ),
                   const SizedBox(width: 12),

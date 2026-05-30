@@ -113,7 +113,7 @@ class _MoeAchievementReviewScreenState extends ConsumerState<MoeAchievementRevie
   
   Color _getTierColor(String? tier) {  
     switch (tier) {  
-      case 'GOLD': return Colors.amber;  
+      case 'GOLD': return const Color(0xFF60A5FA); // Light blue for premium feel  
       case 'SILVER': return Colors.grey;  
       case 'BRONZE': return Colors.brown;  
       default: return Colors.grey;  
