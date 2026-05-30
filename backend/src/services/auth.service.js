@@ -418,7 +418,7 @@ export async function loginUser({ identifier, email, password }) {
     throw err;
   }
 
-  const verified = user.emailVerified || user.phoneVerified;
+  const verified = user.emailVerified && user.phoneVerified;
 
   if (!verified) {
     const err = new UnauthorizedError("Account not verified");
