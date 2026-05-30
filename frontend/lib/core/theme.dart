@@ -1,33 +1,119 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-/// Material 3 theme seeded off a single brand color. Both light and dark
-/// schemes are derived automatically; if we ever swap the brand seed it
-/// propagates everywhere.
-ThemeData appTheme(Brightness brightness) {
+ThemeData appTheme() {
+  // Use ColorScheme.fromSeed to automatically generate all Material 3 colors
+  // while keeping your custom blue as the primary brand color
   final scheme = ColorScheme.fromSeed(
-    seedColor: const Color(0xFF1565C0),
-    brightness: brightness,
+    seedColor: const Color(0xFF2563EB),
+    brightness: Brightness.light,
   );
+
   return ThemeData(
-    colorScheme: scheme,
     useMaterial3: true,
-    inputDecorationTheme: const InputDecorationTheme(
-      border: OutlineInputBorder(),
-      filled: false,
+    colorScheme: scheme,
+
+    scaffoldBackgroundColor: const Color(0xFFF8FAFC),
+
+    textTheme: GoogleFonts.plusJakartaSansTextTheme().copyWith(
+      headlineLarge: GoogleFonts.plusJakartaSans(
+        fontSize: 34,
+        fontWeight: FontWeight.w700,
+        color: const Color(0xFF1A1D23),
+      ),
+      headlineMedium: GoogleFonts.plusJakartaSans(
+        fontSize: 28,
+        fontWeight: FontWeight.w700,
+        color: const Color(0xFF1A1D23),
+      ),
+      titleLarge: GoogleFonts.plusJakartaSans(
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        color: const Color(0xFF1A1D23),
+      ),
+      bodyLarge: GoogleFonts.plusJakartaSans(
+        fontSize: 16,
+        height: 1.5,
+        color: const Color(0xFF374151),
+      ),
+      bodyMedium: GoogleFonts.plusJakartaSans(
+        fontSize: 14,
+        height: 1.5,
+        color: const Color(0xFF6B7280),
+      ),
     ),
-    // Use a finite minimum-width here. `Size.fromHeight(48)` resolves to
-    // `Size(double.infinity, 48)`, which forces every FilledButton in the
-    // app to a min-width of infinity. That works in `Column(crossAxisAlignment:
-    // stretch)` (where the parent imposes a tight bounded width regardless),
-    // but blows up in unbounded-width contexts — `Row + Spacer`, `Wrap`,
-    // narrow viewports — with "Cannot hit test a render box that has never
-    // been laid out" / "BoxConstraints forces an infinite width" assertions.
-    // `Size(0, 48)` keeps the 48dp tap-target height and lets the button
-    // size to its content elsewhere.
+
+    cardTheme: CardThemeData(
+      elevation: 0,
+      color: Colors.white,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: BorderSide(
+          color: Colors.black.withValues(alpha: 0.06),
+        ),
+      ),
+    ),
+
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        minimumSize: const Size(0, 48),
+        minimumSize: const Size(0, 52),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+        ),
+        textStyle: const TextStyle(
+          fontWeight: FontWeight.w600,
+          fontSize: 15,
+        ),
       ),
+    ),
+
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: Colors.white,
+
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 16,
+      ),
+
+      hintStyle: TextStyle(
+        color: Colors.grey.shade600,
+      ),
+
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide.none,
+      ),
+
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(
+          color: Colors.grey.withValues(alpha: 0.3),
+        ),
+      ),
+
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(
+          color: scheme.primary,
+          width: 2,
+        ),
+      ),
+    ),
+
+    appBarTheme: const AppBarTheme(
+      centerTitle: false,
+      elevation: 0,
+      backgroundColor: Colors.transparent,
+      foregroundColor: Color(0xFF1A1D23),
+      iconTheme: IconThemeData(
+        color: Color(0xFF1A1D23),
+      ),
+    ),
+
+    iconTheme: const IconThemeData(
+      color: Color(0xFF374151),
     ),
   );
 }

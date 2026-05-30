@@ -18,9 +18,7 @@ class SchoolRecApp extends ConsumerWidget {
     final router = ref.watch(routerProvider);
     return MaterialApp.router(
       title: 'School Recommendation System',
-      theme: appTheme(Brightness.light),
-      darkTheme: appTheme(Brightness.dark),
-      themeMode: ThemeMode.system,
+      theme: appTheme(),
       routerConfig: router,
       debugShowCheckedModeBanner: false,
     );
