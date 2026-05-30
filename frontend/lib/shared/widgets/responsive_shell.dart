@@ -60,12 +60,6 @@ const _allDestinations = <NavDestination>[
     path: '/notifications',
   ),
   NavDestination(
-    label: 'Admin',
-    icon: Icons.business_outlined,
-    path: '/admin',
-    visibleTo: {UserRole.schoolAdmin},
-  ),
-  NavDestination(
     label: 'Reports',
     icon: Icons.report_gmailerrorred,
     path: '/moderation',
