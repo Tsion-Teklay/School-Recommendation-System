@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/utils/error_handler.dart';
 import '../../auth/data/auth_repository.dart';
 import '../../schools/data/school_dtos.dart';
 import '../../schools/data/school_repository.dart';
@@ -79,9 +80,9 @@ class RecommendationsController extends ChangeNotifier {
         error: null,
       ));
     } on ApiException catch (e) {
-      _set(_state.copyWith(loading: false, error: e.message));
+      _set(_state.copyWith(loading: false, error: ErrorHandler.getUserFriendlyMessage(e)));
     } catch (e) {
-      _set(_state.copyWith(loading: false, error: e.toString()));
+      _set(_state.copyWith(loading: false, error: ErrorHandler.getUserFriendlyMessage(e)));
     }
   }
 }

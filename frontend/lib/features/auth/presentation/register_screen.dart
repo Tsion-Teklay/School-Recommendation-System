@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../shared/utils/error_handler.dart';
+import '../../../shared/utils/message_helper.dart';
 import '../../../shared/widgets/loading_button.dart';
 import '../../../shared/widgets/responsive_shell.dart';
 import '../data/auth_dtos.dart';
@@ -60,9 +62,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             password: _password.text,
             role: _role,
           );
-      if (mounted) setState(() => _success = true);
+      if (mounted) {
+        setState(() => _success = true);
+        MessageHelper.showSuccess(context, SuccessMessages.register);
+      }
     } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
+      if (mounted) setState(() => _error = ErrorHandler.getUserFriendlyMessage(e));
     } finally {
       if (mounted) setState(() => _loading = false);
     }

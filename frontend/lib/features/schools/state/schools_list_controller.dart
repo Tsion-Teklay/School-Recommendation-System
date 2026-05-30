@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/utils/error_handler.dart';
 import '../data/school_dtos.dart';
 import '../data/school_repository.dart';
 
@@ -134,7 +135,7 @@ class SchoolsListController extends ChangeNotifier {
       _set(_state.copyWith(
         initialLoading: false,
         loadingMore: false,
-        error: e.toString(),
+        error: ErrorHandler.getUserFriendlyMessage(e),
       ));
     }
   }

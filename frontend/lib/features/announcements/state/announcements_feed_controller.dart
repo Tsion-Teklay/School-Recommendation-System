@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/utils/error_handler.dart';
 import '../../auth/data/auth_dtos.dart';
 import '../../auth/data/auth_repository.dart';
 import '../../auth/state/auth_controller.dart';
@@ -104,7 +105,9 @@ class AnnouncementsFeedController extends ChangeNotifier {
       _page = result.page;
       _totalPages = result.totalPages;
     } on ApiException catch (e) {
-      _error = e.message;
+      _error = ErrorHandler.getUserFriendlyMessage(e);
+    } catch (e) {
+      _error = ErrorHandler.getUserFriendlyMessage(e);
     } finally {
       _appending = false;
       notifyListeners();
@@ -136,9 +139,9 @@ class AnnouncementsFeedController extends ChangeNotifier {
       _totalPages = result.totalPages;
       _initialized = true;
     } on ApiException catch (e) {
-      _error = e.message;
+      _error = ErrorHandler.getUserFriendlyMessage(e);
     } catch (e) {
-      _error = e.toString();
+      _error = ErrorHandler.getUserFriendlyMessage(e);
     } finally {
       _loading = false;
       notifyListeners();
