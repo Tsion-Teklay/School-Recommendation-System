@@ -99,33 +99,63 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
 }
 
   Future<void> _showRevokeConfirmationDialog() async {
-    final confirmed = await showDialog<bool>(
+    final reasonController = TextEditingController();
+    
+    final result = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Revoke Verification'),
-        content: const Text(
-          'This will revoke the school\'s verification status. '
-          'The school will not be able to make announcements. '
-          'Are you sure?',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'This will revoke the school\'s verification status. '
+              'The school will not be able to make announcements. '
+              'Please provide a reason for this action.',
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: reasonController,
+              decoration: const InputDecoration(
+                labelText: 'Reason for revocation *',
+                hintText: 'Explain why the verification is being revoked',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
+              maxLength: 500,
+            ),
+          ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
             child: const Text('Cancel'),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
+          FilledButton(
+            onPressed: () {
+              if (reasonController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(ctx).showSnackBar(
+                  const SnackBar(content: Text('Please provide a reason')),
+                );
+                return;
+              }
+              Navigator.pop(ctx, true);
+            },
             child: const Text('Revoke'),
           ),
         ],
       ),
     );
 
-    if (confirmed == true) {
+    final reason = reasonController.text.trim();
+    reasonController.dispose();
+
+    if (result == true) {
       try {
         await ref
             .read(schoolRepositoryProvider)
-            .revokeVerification(widget.schoolId);
+            .revokeVerification(widget.schoolId, reason);
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Verification revoked successfully')),
@@ -147,6 +177,8 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
     final state = ctl.state;
     final auth = ref.watch(authControllerProvider);
     final isParent = auth.user?.role == UserRole.parent;
+    final isOwnSchool = auth.user?.role == UserRole.schoolAdmin &&
+        auth.user?.id == state.school?.adminId;
     final cart = ref.watch(compareCartProvider);
 
     Widget body;
@@ -164,6 +196,7 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
       body = _DetailBody(
         school: state.school!,
         isParent: isParent,
+        isOwnSchool: isOwnSchool,
         userRole: auth.user?.role,
         isFollowing: state.isFollowing,
         followBusy: state.followBusy,
@@ -211,6 +244,7 @@ class _SchoolDetailScreenState extends ConsumerState<SchoolDetailScreen> {
 class _DetailBody extends StatelessWidget {
   final School school;
   final bool isParent;
+  final bool isOwnSchool;
   final UserRole? userRole;
   final bool isFollowing;
   final bool followBusy;
@@ -225,6 +259,7 @@ class _DetailBody extends StatelessWidget {
   const _DetailBody({
     required this.school,
     required this.isParent,
+    required this.isOwnSchool,
     required this.userRole,
     required this.isFollowing,
     required this.followBusy,
@@ -276,9 +311,19 @@ class _DetailBody extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(school.schoolName, style: theme.textTheme.headlineSmall),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(school.schoolName, style: theme.textTheme.headlineSmall),
+                    ),
+                    if (school.rating != null && school.rating! > 0) ...[
+                      const SizedBox(width: 8),
+                      _StarRating(rating: school.rating!.toDouble()),
+                    ],
+                  ],
+                ),
                 const SizedBox(height: 4),
-                Text(school.address, style: theme.textTheme.bodyMedium),
+                Text(school.subCity != null ? '${school.subCity} - ${school.woreda ?? 'N/A'}' : 'No location info', style: theme.textTheme.bodyMedium),
                 const SizedBox(height: 16),
                 Wrap(
                   spacing: 8,
@@ -295,7 +340,7 @@ class _DetailBody extends StatelessWidget {
                       ),
                     _Badge(
                       icon: Icons.payments_outlined,
-                      label: 'Fee: ${school.tuitionFee}',
+                      label: 'Fee: ${school.tuitionFee ?? 'Not specified'}',
                     ),
                     if ((school.rating ?? 0) > 0)
                       _Badge(
@@ -322,7 +367,7 @@ class _DetailBody extends StatelessWidget {
                 const SizedBox(height: 20),
                 _ContactRow(
                   icon: Icons.email_outlined,
-                  label: school.contactEmail,
+                  label: school.contactEmail ?? 'Not specified',
                 ),
                 if (school.contactPhone != null &&
                     school.contactPhone!.isNotEmpty) ...[
@@ -374,6 +419,12 @@ class _DetailBody extends StatelessWidget {
                             : Icons.compare_arrows_outlined),
                         label:
                             Text(inCart ? 'In compare cart' : 'Add to compare'),
+                      ),
+                    if (isParent || isOwnSchool)
+                      OutlinedButton.icon(
+                        onPressed: () => context.go('/schools/${school.id}/analytics'),
+                        icon: const Icon(Icons.bar_chart_outlined),
+                        label: const Text('Analytics'),
                       ),
                     if (onRevokeVerification != null &&
                         school.verificationStatus ==
@@ -735,4 +786,38 @@ String _absoluteImage(String url) {
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
   if (url.startsWith('/')) return '${AppConfig.apiBaseUrl}$url';
   return '${AppConfig.apiBaseUrl}/$url';
+}
+
+class _StarRating extends StatelessWidget {
+  final double rating;
+  const _StarRating({required this.rating});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(5, (index) {
+        if (index < rating.floor()) {
+          return Icon(
+            Icons.star,
+            size: 18,
+            color: theme.colorScheme.primary,
+          );
+        } else if (index < rating && rating % 1 >= 0.5) {
+          return Icon(
+            Icons.star_half,
+            size: 18,
+            color: theme.colorScheme.primary,
+          );
+        } else {
+          return Icon(
+            Icons.star_border,
+            size: 18,
+            color: theme.colorScheme.onSurfaceVariant,
+          );
+        }
+      }),
+    );
+  }
 }

@@ -39,10 +39,21 @@ class _MoeDashboardScreenState extends ConsumerState<MoeDashboardScreen> {
     try {  
       final d = await ref.read(analyticsRepositoryProvider).dashboard();  
       setState(() => _dashboard = d);  
-    } on ApiException catch (e) {  
-      setState(() => _error = e.message);  
+    } on ApiException catch (e) {
+      String errorMessage = e.message;
+      if (e.statusCode == 401) {
+        errorMessage = 'You must be logged in to view the dashboard';
+      } else if (e.statusCode == 403) {
+        errorMessage = 'You do not have permission to view the dashboard';
+      } else if (e.code == 'VALIDATION_ERROR' && e.details != null) {
+        final validationErrors = e.details!.map((d) => '${d['path']}: ${d['message']}').join(', ');
+        errorMessage = 'Validation error: $validationErrors';
+      } else if (e.code == 'VALIDATION_ERROR') {
+        errorMessage = 'Validation error: ${e.message}';
+      }
+      setState(() => _error = errorMessage);
     } catch (e) {  
-      setState(() => _error = e.toString());  
+      setState(() => _error = 'An unexpected error occurred: ${e.toString()}');  
     } finally {  
       if (mounted) setState(() => _loading = false);  
     }  
@@ -140,6 +151,8 @@ class _MoeDashboardScreenState extends ConsumerState<MoeDashboardScreen> {
                           const SizedBox(height: 24),  
                           _SchoolsByVerificationChart(data: d.schoolsByVerification),  
                           const SizedBox(height: 24),  
+                          _SchoolsBySubcityChart(data: d.schoolsBySubcity),  
+                          const SizedBox(height: 24),  
                           _TopSchoolsByRatingChart(schools: d.topSchools),  
                           const SizedBox(height: 24),  
                           _MostFollowedLeaderboard(schools: d.mostFollowed),  
@@ -212,8 +225,26 @@ class _UsersByRoleChart extends StatelessWidget {
               child: BarChart(  
                 BarChartData(  
                   alignment: BarChartAlignment.spaceAround,  
-                  maxY: maxValue > 0 ? maxValue * 1.2 : 10,  
-                  barTouchData: BarTouchData(enabled: true),  
+                  maxY: maxValue > 0 ? maxValue * 1.2 : 10,
+                  barTouchData: BarTouchData(
+                    enabled: true,
+                    touchTooltipData: BarTouchTooltipData(
+                      tooltipBgColor: Colors.black87,
+                      tooltipRoundedRadius: 8,
+                      getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                        final role = entries[groupIndex.toInt()].key;
+                        final value = entries[groupIndex.toInt()].value;
+                        return BarTooltipItem(
+                          '$role: $value users',
+                          TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
                   titlesData: FlTitlesData(  
                     leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),  
                     rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),  
@@ -339,84 +370,214 @@ class _SchoolsByVerificationChart extends StatelessWidget {
   }  
 }  
   
-// 4. Top Schools by Rating Horizontal Bar Chart  
-class _TopSchoolsByRatingChart extends StatelessWidget {  
-  final List<TopSchool> schools;  
-  const _TopSchoolsByRatingChart({required this.schools});  
-  
-  @override  
-  Widget build(BuildContext context) {  
-    final theme = Theme.of(context);  
-    if (schools.isEmpty) {  
-      return const Card(child: Padding(padding: EdgeInsets.all(16), child: Text('No schools yet.')));  
-    }  
-      
-    return Card(  
-      child: Padding(  
-        padding: const EdgeInsets.all(16),  
-        child: Column(  
-          crossAxisAlignment: CrossAxisAlignment.start,  
-          children: [  
-            Text('Top Schools by Rating', style: theme.textTheme.titleMedium),  
-            const SizedBox(height: 16),  
-            SizedBox(  
-              height: schools.length * 60.0,  
-              child: BarChart(  
-                BarChartData(  
-                  alignment: BarChartAlignment.spaceAround,  
-                  minY: 0,  
-                  maxY: 5,  
-                  barTouchData: BarTouchData(enabled: true),  
-                  titlesData: FlTitlesData(  
-                    leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),  
-                    rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),  
-                    topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),  
-                    bottomTitles: AxisTitles(  
-                      sideTitles: SideTitles(  
-                        showTitles: true,  
-                        getTitlesWidget: (value, meta) {  
-                          final index = value.toInt();  
-                          if (index >= 0 && index < schools.length) {  
-                            return Padding(  
-                              padding: const EdgeInsets.only(top: 8),  
-                              child: Text(  
-                                schools[index].schoolName,  
-                                style: theme.textTheme.bodySmall,  
-                                maxLines: 1,  
-                                overflow: TextOverflow.ellipsis,  
-                              ),  
-                            );  
-                          }  
-                          return const SizedBox();  
-                        },  
-                      ),  
-                    ),  
-                  ),  
-                  borderData: FlBorderData(show: false),  
-                  barGroups: schools.asMap().entries.map((entry) {  
-                    return BarChartGroupData(  
-                      x: entry.key,  
-                      barRods: [  
-                        BarChartRodData(  
-                          toY: entry.value.rating,  
-                          color: theme.colorScheme.primary,  
-                          width: 16,  
-                          borderRadius: BorderRadius.circular(4),  
-                        ),  
-                      ],  
-                    );  
-                  }).toList(),  
-                ),  
-              ),  
-            ),  
-          ],  
-        ),  
-      ),  
-    );  
-  }  
+// 4. Schools by Subcity Horizontal Bar Chart
+class _SchoolsBySubcityChart extends StatelessWidget {
+  final Map<String, int> data;
+  const _SchoolsBySubcityChart({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    if (data.isEmpty) {
+      return const Card(child: Padding(padding: EdgeInsets.all(16), child: Text('No subcity data available')));
+    }
+
+    final entries = data.entries.toList();
+    final maxValue = entries.map((e) => e.value).reduce((a, b) => a > b ? a : b);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Schools by Subcity', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 16),
+            ...entries.map((entry) {
+              final percentage = maxValue > 0 ? entry.value / maxValue : 0;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Stack(
+                            children: [
+                              // Background bar (full width, light color)
+                              Container(
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.surfaceContainerHighest,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
+                              // Foreground bar (proportional width, blue color)
+                              FractionallySizedBox(
+                                widthFactor: (percentage > 0 ? percentage : 0.05).toDouble(), // Minimum 5% for visibility
+                                child: Container(
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.primary,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                              ),
+                              // Text overlay (positioned on top of the blue bar)
+                              Positioned.fill(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                                  child: Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(
+                                      entry.key,
+                                      style: theme.textTheme.bodyMedium?.copyWith(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Container(
+                          width: 60,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${entry.value}',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-// 5. Most Followed Schools Leaderboard with Mini Bars  
+
+
+// 5. Top Schools by Rating Horizontal Bar Chart
+class _TopSchoolsByRatingChart extends StatelessWidget {
+  final List<TopSchool> schools;
+  const _TopSchoolsByRatingChart({required this.schools});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    if (schools.isEmpty) {
+      return const Card(child: Padding(padding: EdgeInsets.all(16), child: Text('No schools yet.')));
+    }
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Top Schools by Rating', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 16),
+            ...schools.map((school) {
+              final percentage = school.rating / 5; // Max rating is 5
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Stack(
+                            children: [
+                              // Background bar (full width, light color)
+                              Container(
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.surfaceContainerHighest,
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
+                              // Foreground bar (proportional width, blue color)
+                              FractionallySizedBox(
+                                widthFactor: (percentage > 0 ? percentage : 0.05).toDouble(), // Minimum 5% for visibility
+                                child: Container(
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.primary,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                              ),
+                              // Text overlay (positioned on top of the blue bar)
+                              Positioned.fill(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                                  child: Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(
+                                      school.schoolName,
+                                      style: theme.textTheme.bodyMedium?.copyWith(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Container(
+                          width: 60,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '${school.rating.toStringAsFixed(1)}★',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// 6. Most Followed Schools Leaderboard with Mini Bars  
 class _MostFollowedLeaderboard extends StatelessWidget {  
   final List<MostFollowed> schools;  
   const _MostFollowedLeaderboard({required this.schools});  
@@ -518,7 +679,7 @@ class _MostFollowedLeaderboard extends StatelessWidget {
   }  
 }
 
-// 6. MoE Ranking Leaderboard (Top 10)  
+// 7. MoE Ranking Leaderboard (Top 10)  
 class _MoeRankingLeaderboard extends StatelessWidget {  
   final List<MoeRankedSchool> schools;  
   const _MoeRankingLeaderboard({required this.schools});  
@@ -565,19 +726,11 @@ class _MoeRankingLeaderboard extends StatelessWidget {
                     ),  
                   ),  
                 ),  
-                title: Text(school.schoolName),  
-                subtitle: Text(  
-  'Score: ${school.moeScore.toStringAsFixed(2)} · '  
-  'Rating: ${school.rating.toStringAsFixed(1)} · '  
-  '${school.verificationStatus}'  
-  '${school.schoolLevel != null ? ' · Level: ${school.schoolLevel}' : ''}'  
-  '${school.schoolType != null ? ' · Type: ${school.schoolType}' : ''}'  
-  '${school.passingRate != null ? ' · Pass: ${school.passingRate}%' : ''}'  
-  '${school.nationalExamScore != null ? ' · Exam: ${school.nationalExamScore}%' : ''}',  
-),  
+                title: Text(school.schoolName),
+                subtitle: Text('Total Score: ${school.totalScore}/100'),
                 trailing: IconButton(  
                   icon: const Icon(Icons.open_in_new),  
-                  onPressed: () => context.go('/schools/${school.id}'),  
+                  onPressed: () => context.go('/schools/${school.schoolId}'),  
                 ),  
               );  
             }).toList(),  
@@ -586,4 +739,50 @@ class _MoeRankingLeaderboard extends StatelessWidget {
       ),  
     );  
   }  
+}
+
+class _ScoreBar extends StatelessWidget {
+  final String label;
+  final int score;
+  final int maxScore;
+
+  const _ScoreBar({
+    required this.label,
+    required this.score,
+    required this.maxScore,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final percentage = maxScore > 0 ? score / maxScore : 0;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(label, style: theme.textTheme.bodySmall),
+              Text('$score/$maxScore', style: theme.textTheme.bodySmall),
+            ],
+          ),
+          const SizedBox(height: 4),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: percentage.toDouble(),
+              backgroundColor: theme.colorScheme.surfaceContainerHighest,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                theme.colorScheme.primary,
+              ),
+              minHeight: 6,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

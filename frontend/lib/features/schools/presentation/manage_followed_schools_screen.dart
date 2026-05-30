@@ -125,7 +125,7 @@ class _ManageFollowedSchoolsScreenState
                   Card(  
                     child: ListTile(  
                       title: Text(school.schoolName),  
-                      subtitle: Text(school.address),  
+                      subtitle: Text(school.subCity != null ? '${school.subCity} - ${school.woreda ?? 'N/A'}' : 'No location info'),  
                       trailing: IconButton(  
                         tooltip: 'Unfollow',  
                         onPressed: () => _unfollow(school),  

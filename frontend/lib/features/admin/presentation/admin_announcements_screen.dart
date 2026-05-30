@@ -56,11 +56,15 @@ class _AdminAnnouncementsScreenState
       final mySchools = await ref.read(schoolRepositoryProvider).list(
             const SchoolListFilters(limit: 100),
           );
+      // Filter to only get schools where current user is the admin
+      final adminSchools = me != null 
+          ? mySchools.items.where((s) => s.adminId == me.id).toList()
+          : <School>[];
       setState(() {
         _items = result.items
             .where((a) => me != null && a.publisherId == me.id)
             .toList();
-        _mySchools = mySchools.items;
+        _mySchools = adminSchools;
       });
     } on ApiException catch (e) {
       setState(() => _error = e.message);
@@ -197,51 +201,55 @@ class _AnnouncementTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(announcement.title,
-                      style: theme.textTheme.titleMedium),
-                ),
-                PopupMenuButton<String>(
-                  onSelected: (v) {
-                    if (v == 'delete') onDelete();
-                  },
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(value: 'delete', child: Text('Delete')),
-                  ],
-                ),
-              ],
-            ),
-            Wrap(
-              spacing: 6,
-              children: [
-                Chip(
-                    label: Text(announcement.category.label()),
-                    visualDensity: VisualDensity.compact),
-                Chip(
-                    label: Text(announcement.urgencyLevel.label()),
-                    visualDensity: VisualDensity.compact),
-                Chip(
-                  label: Text(announcement.publisherType.label()),
-                  visualDensity: VisualDensity.compact,
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(announcement.content),
-            const SizedBox(height: 8),
-            Text(
-              announcement.datePosted.toIso8601String().substring(0, 16),
-              style: theme.textTheme.bodySmall,
-            ),
-          ],
+    return InkWell(
+      onTap: () => context.push('/announcements/${announcement.id}'),
+      borderRadius: BorderRadius.circular(12),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(announcement.title,
+                        style: theme.textTheme.titleMedium),
+                  ),
+                  PopupMenuButton<String>(
+                    onSelected: (v) {
+                      if (v == 'delete') onDelete();
+                    },
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(value: 'delete', child: Text('Delete')),
+                    ],
+                  ),
+                ],
+              ),
+              Wrap(
+                spacing: 6,
+                children: [
+                  Chip(
+                      label: Text(announcement.category.label()),
+                      visualDensity: VisualDensity.compact),
+                  Chip(
+                      label: Text(announcement.urgencyLevel.label()),
+                      visualDensity: VisualDensity.compact),
+                  Chip(
+                    label: Text(announcement.publisherType.label()),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(announcement.content),
+              const SizedBox(height: 8),
+              Text(
+                announcement.datePosted.toIso8601String().substring(0, 16),
+                style: theme.textTheme.bodySmall,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -316,15 +324,37 @@ class _AnnouncementComposeDialogState extends State<AnnouncementComposeDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (!widget.forMoE && widget.schools.isNotEmpty)
-                DropdownButtonFormField<int>(
-                  initialValue: _schoolId,
-                  decoration: const InputDecoration(labelText: 'School'),
-                  items: [
-                    for (final s in widget.schools)
-                      DropdownMenuItem(value: s.id, child: Text(s.schoolName)),
-                  ],
-                  onChanged: (v) => setState(() => _schoolId = v),
-                ),
+                if (widget.schools.length == 1)
+                  // Show school name as read-only when there's only one school (school admin case)
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'School',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        widget.schools.first.schoolName,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  // Show dropdown when there are multiple schools (for other cases)
+                  DropdownButtonFormField<int>(
+                    initialValue: _schoolId,
+                    decoration: const InputDecoration(labelText: 'School'),
+                    items: [
+                      for (final s in widget.schools)
+                        DropdownMenuItem(value: s.id, child: Text(s.schoolName)),
+                    ],
+                    onChanged: (v) => setState(() => _schoolId = v),
+                  ),
               const SizedBox(height: 8),
               TextField(
                 controller: _titleCtrl,

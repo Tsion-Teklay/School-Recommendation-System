@@ -55,22 +55,36 @@ class MoeHomeScreen extends ConsumerWidget {
                   buttonLabel: 'Manage announcements',
                   onTap: () => context.go('/moe/announcements'),
                 ),
+                _ActionCard(  
+  icon: Icons.emoji_events_outlined,  
+  title: 'Achievement review',  
+  body:  
+      'Review and approve/reject pending school achievement submissions.',  
+  buttonLabel: 'Review achievements',  
+  onTap: () => context.go('/moe/achievements'),  
+),
               ];
               if (wide) {
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    for (var i = 0; i < cards.length; i++) ...[
-                      if (i > 0) const SizedBox(width: 12),
-                      Expanded(child: cards[i]),
-                    ]
-                  ],
+                return IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (var i = 0; i < cards.length; i++) ...[
+                        if (i > 0) const SizedBox(width: 12),
+                        Expanded(child: cards[i]),
+                      ]
+                    ],
+                  ),
                 );
               }
               return Column(
                 children: [
                   for (final card in cards) ...[
-                    card,
+                    SizedBox(
+                      width: double.infinity,
+                      height: 200,
+                      child: card,
+                    ),
                     const SizedBox(height: 12),
                   ]
                 ],
@@ -101,19 +115,28 @@ class _ActionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, size: 32, color: theme.colorScheme.primary),
-            const SizedBox(height: 8),
-            Text(title, style: theme.textTheme.titleLarge),
-            const SizedBox(height: 4),
-            Text(body),
-            const SizedBox(height: 12),
-            FilledButton(onPressed: onTap, child: Text(buttonLabel)),
-          ],
+      child: SizedBox(
+        height: 200,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(icon, size: 32, color: theme.colorScheme.primary),
+              const SizedBox(height: 8),
+              Text(title, style: theme.textTheme.titleLarge),
+              const SizedBox(height: 4),
+              Expanded(
+                child: Text(
+                  body,
+                  style: theme.textTheme.bodyMedium,
+                  overflow: TextOverflow.fade,
+                ),
+              ),
+              const SizedBox(height: 8),
+              FilledButton(onPressed: onTap, child: Text(buttonLabel)),
+            ],
+          ),
         ),
       ),
     );

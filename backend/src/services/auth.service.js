@@ -76,7 +76,7 @@ export function normalizePhone(phone) {
 // Register + verify email
 // -----------------------------------------------------------------------------
 
-export async function registerUser({ fullName, email, phone, password, role }) {
+export async function registerUser({ fullName, email, phone, password, role, subCity, officerRole }) {
   if (!fullName || !password || !role) {
     throw new ValidationError("Missing required fields");
   }
@@ -84,6 +84,10 @@ export async function registerUser({ fullName, email, phone, password, role }) {
   if (!email && !phone) {
     throw new ValidationError("Either email or phone is required");
   }
+  // Validate MOE_OFFICER specific fields
+  if (role === "MOE_OFFICER" && (!subCity || !officerRole)) {
+    throw new ValidationError("subCity and officerRole are required for MOE_OFFICER role");
+  }  
 
   const normalizedEmail = email ? email.toLowerCase() : null;
 
@@ -137,7 +141,8 @@ export async function registerUser({ fullName, email, phone, password, role }) {
    |--------------------------------------------------------------------------
    */
 
-  const user = await db.user.create({
+  const user = await db.$transaction(async (tx) => {
+  const newUser = await tx.user.create({
     data: {
       fullName,
 
@@ -152,13 +157,6 @@ export async function registerUser({ fullName, email, phone, password, role }) {
       accountStatus: "ACTIVE",
 
       role,
-
-      /*
-       |--------------------------------------------------------------------------
-       | Email verification
-       |--------------------------------------------------------------------------
-       */
-
       emailVerified: !normalizedEmail,
 
       emailVerificationToken,
@@ -181,11 +179,19 @@ export async function registerUser({ fullName, email, phone, password, role }) {
     },
   });
 
-  /*
-   |--------------------------------------------------------------------------
-   | Send email verification
-   |--------------------------------------------------------------------------
-   */
+  // Create MoEOfficer profile if role is MOE_OFFICER
+  if (role === "MOE_OFFICER") {
+    await tx.moEOfficer.create({
+      data: {
+        userId: newUser.id,
+        officerRole: officerRole,
+        subCity: subCity,
+      },
+    });
+  }
+
+  return newUser;
+});
 
   if (normalizedEmail && emailVerificationToken) {
     await sendMailSafe(

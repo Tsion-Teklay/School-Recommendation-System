@@ -7,6 +7,8 @@ import {
 import { authenticate } from "../middlewares/auth.middleware.js";
 import { validate } from "../middlewares/validate.middleware.js";
 import { updateMeBodySchema } from "../schemas/user.schema.js";
+import { deleteAccountSchema } from "../schemas/auth.schema.js";
+import { deletePermanently } from "../controllers/user.controller.js";
 
 const router = express.Router();
 
@@ -62,5 +64,7 @@ router.put(
  *       200: { description: Account deactivated }
  */
 router.post("/me/deactivate", authenticate, deactivateMeHandler);
+
+router.post("/me/delete-permanently", authenticate, validate({ body: deleteAccountSchema }), deletePermanently);
 
 export default router;

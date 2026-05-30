@@ -142,26 +142,38 @@ class _FiltersBar extends ConsumerWidget {
                 selected: controller.followedOnly,
                 onSelected: (v) => controller.applyFilters(followedOnly: v),
               ),
-            DropdownButton<AnnouncementCategory?>(
-              value: controller.category,
-              hint: const Text('Any category'),
-              items: [
-                const DropdownMenuItem(
-                    value: null, child: Text('Any category')),
-                for (final c in AnnouncementCategory.values)
-                  DropdownMenuItem(value: c, child: Text(c.label())),
-              ],
-              onChanged: (v) => controller.applyFilters(category: v),
+            FilterChip(
+              label: Text(controller.category?.label() ?? 'Any category'),
+              selected: controller.category != null,
+              onSelected: (v) {
+                if (v) {
+                  _showCategoryDialog(context, controller);
+                } else {
+                  controller.applyFilters(category: null);
+                }
+              },
             ),
-            DropdownButton<UrgencyLevel?>(
-              value: controller.urgency,
-              hint: const Text('Any urgency'),
-              items: [
-                const DropdownMenuItem(value: null, child: Text('Any urgency')),
-                for (final u in UrgencyLevel.values)
-                  DropdownMenuItem(value: u, child: Text(u.label())),
-              ],
-              onChanged: (v) => controller.applyFilters(urgency: v),
+            FilterChip(
+              label: Text(controller.urgency?.label() ?? 'Any urgency'),
+              selected: controller.urgency != null,
+              onSelected: (v) {
+                if (v) {
+                  _showUrgencyDialog(context, controller);
+                } else {
+                  controller.applyFilters(urgency: null);
+                }
+              },
+            ),
+            FilterChip(
+              label: Text(controller.publisherType?.label() ?? 'Any source'),
+              selected: controller.publisherType != null,
+              onSelected: (v) {
+                if (v) {
+                  _showPublisherTypeDialog(context, controller);
+                } else {
+                  controller.applyFilters(publisherType: null);
+                }
+              },
             ),
             TextButton.icon(
               onPressed: controller.refresh,
@@ -264,15 +276,6 @@ class AnnouncementCard extends ConsumerWidget {
                         label: Text(
                             a.school?.schoolName ?? a.publisherType.label()),
                       ),
-                      Chip(
-                        visualDensity: VisualDensity.compact,
-                        avatar: Icon(
-
-                          Icons.school_outlined, size: 16
-                        ),
-                        label: Text(
-                            a.school?.schoolName ?? a.publisherType.label()),
-                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -306,4 +309,88 @@ String _formatDate(DateTime d) {
   if (diff.inDays < 1) return '${diff.inHours}h ago';
   if (diff.inDays < 30) return '${diff.inDays}d ago';
   return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+}
+
+void _showCategoryDialog(BuildContext context, AnnouncementsFeedController controller) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Select Category'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            title: const Text('Any category'),
+            onTap: () {
+              controller.applyFilters(category: null);
+              Navigator.pop(context);
+            },
+          ),
+          ...AnnouncementCategory.values.map((category) => ListTile(
+            title: Text(category.label()),
+            onTap: () {
+              controller.applyFilters(category: category);
+              Navigator.pop(context);
+            },
+          )),
+        ],
+      ),
+    ),
+  );
+}
+
+void _showUrgencyDialog(BuildContext context, AnnouncementsFeedController controller) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Select Urgency'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            title: const Text('Any urgency'),
+            onTap: () {
+              controller.applyFilters(urgency: null);
+              Navigator.pop(context);
+            },
+          ),
+          ...UrgencyLevel.values.map((urgency) => ListTile(
+            title: Text(urgency.label()),
+            onTap: () {
+              controller.applyFilters(urgency: urgency);
+              Navigator.pop(context);
+            },
+          )),
+        ],
+      ),
+    ),
+  );
+}
+
+void _showPublisherTypeDialog(BuildContext context, AnnouncementsFeedController controller) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Select Source'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            title: const Text('Any source'),
+            onTap: () {
+              controller.applyFilters(publisherType: null);
+              Navigator.pop(context);
+            },
+          ),
+          ...PublisherType.values.map((type) => ListTile(
+            title: Text(type.label()),
+            onTap: () {
+              controller.applyFilters(publisherType: type);
+              Navigator.pop(context);
+            },
+          )),
+        ],
+      ),
+    ),
+  );
 }

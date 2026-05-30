@@ -145,6 +145,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ),
       child: Form(
         key: _form,
+         autovalidateMode: AutovalidateMode.onUserInteraction,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -216,6 +217,80 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               onPressed: _confirmDeactivate,
               icon: const Icon(Icons.delete_outline),
               label: const Text('Deactivate account'),
+            ),
+            const SizedBox(height: 12),
+            TextButton.icon(
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error,
+              ),
+              onPressed: () async {
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Delete Account Permanently'),
+                    content: const Text(
+                      'This action cannot be undone. All your data will be permanently deleted.',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Cancel'),
+                      ),
+                      FilledButton.tonal(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Delete'),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (confirmed == true) {
+                  final passwordController = TextEditingController();
+
+                  final passwordConfirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Confirm Password'),
+                      content: TextField(
+                        controller: passwordController,
+                        obscureText: true,
+                        decoration: const InputDecoration(
+                          hintText: 'Enter your password',
+                        ),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Cancel'),
+                        ),
+                        FilledButton.tonal(
+                          onPressed: () => Navigator.pop(context, true),
+                          child: const Text('Confirm'),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if (passwordConfirmed == true &&
+                      passwordController.text.isNotEmpty) {
+                    try {
+                      await ref
+                          .read(authControllerProvider.notifier)
+                          .deletePermanently(passwordController.text);
+
+                      if (mounted) {
+                        context.go('/login');
+                      }
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error: ${e.toString()}')),
+                      );
+                    }
+                  }
+                }
+              },
+              icon: const Icon(Icons.warning),
+              label: const Text('Delete Account Permanently'),
             ),
           ],
         ),

@@ -31,6 +31,7 @@ const VERIFICATION_SUBDIR = "verification";
 const FACILITY_IMAGES_SUBDIR = "facility-images";
 const ANNOUNCEMENT_IMAGES_SUBDIR = "announcement-images";
 const AD_IMAGES_SUBDIR = "ad-images";
+const ACHIEVEMENTS_SUBDIR = "achievements";
 
 // MIME whitelist for verification document uploads — accreditation papers
 // are usually PDFs or photographed paper documents.
@@ -55,6 +56,7 @@ mkdirSync(path.join(UPLOAD_DIR, VERIFICATION_SUBDIR), { recursive: true });
 mkdirSync(path.join(UPLOAD_DIR, FACILITY_IMAGES_SUBDIR), { recursive: true });
 mkdirSync(path.join(UPLOAD_DIR, ANNOUNCEMENT_IMAGES_SUBDIR), { recursive: true });
 mkdirSync(path.join(UPLOAD_DIR, AD_IMAGES_SUBDIR), { recursive: true });
+mkdirSync(path.join(UPLOAD_DIR, ACHIEVEMENTS_SUBDIR), { recursive: true });
 
 function safeFilename(originalName) {
   const ext = path.extname(originalName).toLowerCase().replace(/[^.a-z0-9]/g, "");
@@ -113,6 +115,37 @@ function wrapMulter(middleware) {
 /** Up-to-5 verification documents under field `documents`. */
 export const verificationDocumentsUpload = wrapMulter(
   verificationUploader.array("documents", 5)
+);
+
+// Achievement documents uploader (similar to verification)
+const achievementStorage = multer.diskStorage({
+  destination(req, file, cb) {
+    cb(null, path.join(UPLOAD_DIR, ACHIEVEMENTS_SUBDIR));
+  },
+  filename(req, file, cb) {
+    cb(null, safeFilename(file.originalname));
+  },
+});
+
+const achievementUploader = multer({
+  storage: achievementStorage,
+  limits: { fileSize: UPLOAD_MAX_SIZE_BYTES },
+  fileFilter(req, file, cb) {
+    if (!VERIFICATION_MIME_WHITELIST.has(file.mimetype)) {
+      cb(
+        new ValidationError(
+          `Unsupported file type: ${file.mimetype}. Allowed: PDF, PNG, JPEG.`
+        )
+      );
+      return;
+    }
+    cb(null, true);
+  },
+});
+
+/** Up-to-5 achievement documents under field `documents`. */
+export const achievementDocumentsUpload = wrapMulter(
+  achievementUploader.array("documents", 5)
 );
 
 /**

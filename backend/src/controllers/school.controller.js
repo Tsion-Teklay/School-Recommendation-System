@@ -53,8 +53,9 @@ export const remove = asyncHandler(async (req, res) => {
 });
 
 
-export const revoke = asyncHandler(async (req, res) => {  
-  const { id } = req.params;  // Change from schoolId to id  
-  const school = await revokeVerification(Number(id));  
-  res.status(200).json({ school });  
+export const revoke = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { reason } = req.body;
+  const school = await revokeVerification(Number(id), req.user.id, reason);
+  res.status(200).json({ school });
 });

@@ -83,129 +83,286 @@ class _ComparisonTable extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final schools = comparison.schools;
-    final rows = _buildRows(comparison);
+    final metrics = comparison.metrics.isNotEmpty
+        ? comparison.metrics
+        : const ['curriculum', 'tuitionFee', 'rating', 'facilities', 'schoolLevel', 'schoolType', 'passingRate', 'nationalExamScore'];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Comparison #${comparison.id} · ${schools.length} schools',
-          style: theme.textTheme.titleMedium,
-        ),
-        const SizedBox(height: 16),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: DataTable(
-            headingRowHeight: 56,
-            columnSpacing: 24,
-            columns: [
-              const DataColumn(label: Text('Metric')),
-              ...schools.map(
-                (s) => DataColumn(
-                  label: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 200),
-                    child: Text(
-                      s.schoolName,
-                      style: theme.textTheme.titleSmall,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
+        // Header with school names
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primaryContainer,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'School Comparison',
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  color: theme.colorScheme.onPrimaryContainer,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                schools.map((s) => s.schoolName).join(' vs '),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: theme.colorScheme.onPrimaryContainer,
                 ),
               ),
             ],
-            rows: rows
-                .map((row) => DataRow(cells: [
-                      DataCell(Text(row.label,
-                          style: theme.textTheme.labelMedium)),
-                      ...row.values.map((v) => DataCell(Text(v))),
-                    ]))
-                .toList(),
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // Card-based side-by-side comparison
+        Card(
+          elevation: 2,
+          child: Column(
+            children: [
+              // Header row with school names
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceVariant,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    // Metric label column
+                    SizedBox(
+                      width: 120,
+                      child: Text(
+                        'Metric',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                    // School name columns
+                    ...schools.map((school) => Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    school.schoolName,
+                                    style: theme.textTheme.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (school.rating != null && school.rating! > 0) ...[
+                                  const SizedBox(width: 4),
+                                  _StarRating(rating: school.rating!.toDouble()),
+                                ],
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: _getVerificationColor(school.verificationStatus).withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                school.verificationStatus.label(),
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: _getVerificationColor(school.verificationStatus),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+
+              // Metric rows
+              ...metrics.asMap().entries.map((entry) => _MetricRow(
+                label: _label(entry.value),
+                values: schools.map((s) => _value(s, entry.value)).toList(),
+                theme: theme,
+                index: entry.key,
+              )),
+
+              // Verification status row
+              _MetricRow(
+                label: 'Verification',
+                values: schools.map((s) => s.verificationStatus.label()).toList(),
+                theme: theme,
+                index: metrics.length,
+              ),
+            ],
           ),
         ),
       ],
     );
   }
 
-  List<_Row> _buildRows(Comparison c) {
-    final metrics = c.metrics.isNotEmpty
-        ? c.metrics
-        : const ['curriculum', 'tuitionFee', 'rating', 'facilities', 'schoolLevel', 'schoolType', 'passingRate', 'nationalExamScore'];
-    final rows = <_Row>[];
-    for (final metric in metrics) {
-      rows.add(_Row(
-        label: _label(metric),
-        values: c.schools.map((s) => _value(s, metric)).toList(),
-      ));
-    }
-    rows.add(_Row(
-      label: 'Verification',
-      values: c.schools.map((s) => s.verificationStatus.label()).toList(),
-    ));
-    return rows;
-  }
-
-  String _label(String metric) {
-    switch (metric) {
-      case 'curriculum':
-        return 'Curriculum';
-      case 'tuitionFee':
-        return 'Tuition fee';
-      case 'rating':
-        return 'Rating';
-      case 'facilities':
-        return 'Facilities';
-      case 'schoolLevel':
-        return 'School Level';
-      case 'schoolType':
-        return 'School Type';
-      case 'passingRate':
-        return 'Passing Rate';
-      case 'nationalExamScore':
-        return 'National Exam Score';
-      case 'distance':
-        return 'Distance';
-      default:
-        return metric;
+  Color _getVerificationColor(VerificationStatus status) {
+    switch (status) {
+      case VerificationStatus.verified:
+        return Colors.green;
+      case VerificationStatus.pending:
+        return Colors.orange;
+      case VerificationStatus.rejected:
+      case VerificationStatus.revoked:
+        return Colors.red;
     }
   }
-
-  String _value(School s, String metric) {  
-  switch (metric) {  
-    case 'curriculum':  
-      return s.curriculum.label();  
-    case 'tuitionFee':  
-      return s.tuitionFee.toString();  
-    case 'rating':  
-      if ((s.rating ?? 0) == 0) return '—';  
-      return '${(s.rating ?? 0).toStringAsFixed(1)} '  
-          '(${s.reviewCount ?? 0})';  
-    case 'facilities':  
-      final f = s.facilities;  
-      if (f == null || f.trim().isEmpty) return '—';  
-      return f.length > 120 ? '${f.substring(0, 117)}…' : f;  
-    case 'distance':  
-      return s.distanceKm == null  
-          ? '—'  
-          : '${s.distanceKm!.toStringAsFixed(1)} km';  
-    case 'schoolLevel':  
-      return s.schoolLevel?.label() ?? '—';  
-    case 'schoolType':  
-      return s.schoolType?.label() ?? '—';  
-    case 'passingRate':  
-      return s.passingRate != null ? '${s.passingRate}%' : '—';  
-    case 'nationalExamScore':  
-      return s.nationalExamScore != null ? '${s.nationalExamScore}%' : '—';  
-    default:  
-      return '—';  
-  }  
-}
 }
 
-@immutable
-class _Row {
+String _label(String metric) {
+  switch (metric) {
+    case 'curriculum':
+      return 'Curriculum';
+    case 'tuitionFee':
+      return 'Tuition fee';
+    case 'rating':
+      return 'Rating';
+    case 'facilities':
+      return 'Facilities';
+    case 'schoolLevel':
+      return 'School Level';
+    case 'schoolType':
+      return 'School Type';
+    case 'passingRate':
+      return 'Passing Rate';
+    case 'nationalExamScore':
+      return 'National Exam Score';
+    case 'distance':
+      return 'Distance';
+    case 'totalStudents':
+      return 'Total Students';
+    case 'genderBalance':
+      return 'Gender Balance';
+    case 'achievementScore':
+      return 'Achievement Score';
+    default:
+      return metric;
+  }
+}
+
+String _value(School s, String metric) {
+  switch (metric) {
+    case 'curriculum':
+      return s.curriculum.label();
+    case 'tuitionFee':
+      return s.tuitionFee?.toString() ?? '—';
+    case 'rating':
+      if ((s.rating ?? 0) == 0) return '—';
+      return '${(s.rating ?? 0).toStringAsFixed(1)} '
+          '(${s.reviewCount ?? 0})';
+    case 'facilities':
+      final f = s.facilities;
+      if (f == null || f.trim().isEmpty) return '—';
+      return f.length > 120 ? '${f.substring(0, 117)}…' : f;
+    case 'distance':
+      return s.distanceKm == null
+          ? '—'
+          : '${s.distanceKm!.toStringAsFixed(1)} km';
+    case 'schoolLevel':
+      return s.schoolLevel?.label() ?? '—';
+    case 'schoolType':
+      return s.schoolType?.label() ?? '—';
+    case 'passingRate':
+      return s.passingRate != null ? '${s.passingRate}%' : '—';
+    case 'nationalExamScore':
+      return s.nationalExamScore != null ? '${s.nationalExamScore}%' : '—';
+    case 'totalStudents':
+      return s.totalStudents != null ? '${s.totalStudents}' : '—';
+    case 'genderBalance':
+      if (s.genderBalance == null) return '—';
+      final balance = s.genderBalance!;
+      if (balance == 0) return 'Not balanced';
+      if (balance >= 0.8) return 'Well balanced';
+      if (balance >= 0.5) return 'Moderately balanced';
+      return 'Poorly balanced';
+    case 'achievementScore':
+      return s.achievementScore != null ? '${s.achievementScore}' : '—';
+    default:
+      return '—';
+  }
+}
+
+class _MetricRow extends StatelessWidget {
   final String label;
   final List<String> values;
-  const _Row({required this.label, required this.values});
+  final ThemeData theme;
+  final int index;
+
+  const _MetricRow({
+    required this.label,
+    required this.values,
+    required this.theme,
+    required this.index,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isEven = index % 2 == 0;
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      decoration: BoxDecoration(
+        color: isEven ? theme.colorScheme.surface : null,
+        border: Border(
+          bottom: BorderSide(
+            color: theme.dividerColor,
+            width: 0.5,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          // Metric label
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w500,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+          ),
+          // Value columns
+          ...values.map((value) => Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Text(
+                value,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurface,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          )),
+        ],
+      ),
+    );
+  }
 }
 
 class _ErrorRow extends StatelessWidget {
@@ -230,6 +387,40 @@ class _ErrorRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _StarRating extends StatelessWidget {
+  final double rating;
+  const _StarRating({required this.rating});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(5, (index) {
+        if (index < rating.floor()) {
+          return Icon(
+            Icons.star,
+            size: 14,
+            color: theme.colorScheme.primary,
+          );
+        } else if (index < rating && rating % 1 >= 0.5) {
+          return Icon(
+            Icons.star_half,
+            size: 14,
+            color: theme.colorScheme.primary,
+          );
+        } else {
+          return Icon(
+            Icons.star_border,
+            size: 14,
+            color: theme.colorScheme.onSurfaceVariant,
+          );
+        }
+      }),
     );
   }
 }

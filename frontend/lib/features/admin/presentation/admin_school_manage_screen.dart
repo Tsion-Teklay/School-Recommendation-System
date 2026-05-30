@@ -44,18 +44,21 @@ class _AdminSchoolManageScreenState
   bool _saving = false;  
   String? _saveError;  
 
-  // Add controllers for edit form  
-  final _editSchoolName = TextEditingController();  
-  final _editAddress = TextEditingController();  
-  final _editContactEmail = TextEditingController();  
-  final _editContactPhone = TextEditingController();  
-  final _editTuitionFee = TextEditingController();  
-  final _editFacilities = TextEditingController();  
-  final _editLatitude = TextEditingController();  
-  final _editLongitude = TextEditingController();  
-  
-  Curriculum? _editCurriculum;  
-  SchoolLevel? _editSchoolLevel; 
+  // Add controllers for edit form
+  final _editSchoolName = TextEditingController();
+  final _editContactEmail = TextEditingController();
+  final _editContactPhone = TextEditingController();
+  final _editTuitionFee = TextEditingController();
+  final _editFacilities = TextEditingController();
+  final _editLatitude = TextEditingController();
+  final _editLongitude = TextEditingController();
+  final _editWoreda = TextEditingController();
+  final _editStreetName = TextEditingController();
+
+  Curriculum? _editCurriculum;
+  SchoolLevel? _editSchoolLevel;
+  SchoolType? _editSchoolType;
+  SubCity? _editSubCity; 
 
   bool _fetchingLocation = false;
   LatLng? _pin;
@@ -74,14 +77,15 @@ class _AdminSchoolManageScreenState
   @override
   void dispose() {
     _notesCtrl.dispose();
-    _editSchoolName.dispose();  
-    _editAddress.dispose();  
-    _editContactEmail.dispose();  
-    _editContactPhone.dispose();  
-    _editTuitionFee.dispose();  
-    _editFacilities.dispose();  
-    _editLatitude.dispose();  
-    _editLongitude.dispose();  
+    _editSchoolName.dispose();
+    _editContactEmail.dispose();
+    _editContactPhone.dispose();
+    _editTuitionFee.dispose();
+    _editFacilities.dispose();
+    _editLatitude.dispose();
+    _editLongitude.dispose();
+    _editWoreda.dispose();
+    _editStreetName.dispose();
     super.dispose();
   }
 
@@ -267,19 +271,20 @@ class _AdminSchoolManageScreenState
     }
   }
 
-void _startEdit() {  
-  if (_school == null) return;  
-  setState(() {  
-    _editing = true;  
-    _saveError = null;  
-    _editSchoolName.text = _school!.schoolName;  
-    _editAddress.text = _school!.address;  
-    _editContactEmail.text = _school!.contactEmail;  
-    _editContactPhone.text = _school!.contactPhone ?? '';  
-    _editTuitionFee.text = _school!.tuitionFee.toString();  
-    _editFacilities.text = _school!.facilities ?? '';  
-    _editLatitude.text = _school!.latitude?.toString() ?? '';  
-    _editLongitude.text = _school!.longitude?.toString() ?? '';  
+void _startEdit() {
+  if (_school == null) return;
+  setState(() {
+    _editing = true;
+    _saveError = null;
+    _editSchoolName.text = _school!.schoolName;
+    _editContactEmail.text = _school!.contactEmail ?? '';
+    _editContactPhone.text = _school!.contactPhone ?? '';
+    _editTuitionFee.text = _school!.tuitionFee?.toString() ?? '';
+    _editFacilities.text = _school!.facilities ?? '';
+    _editLatitude.text = _school!.latitude?.toString() ?? '';
+    _editLongitude.text = _school!.longitude?.toString() ?? '';
+    _editWoreda.text = _school!.woreda ?? '';
+    _editStreetName.text = _school!.streetName ?? '';
     if (_school!.latitude != null &&
     _school!.longitude != null) {
   _pin = LatLng(
@@ -287,9 +292,11 @@ void _startEdit() {
     _school!.longitude!,
   );
 }
-    _editCurriculum = _school!.curriculum;  
-    _editSchoolLevel = _school!.schoolLevel;  
-  });  
+    _editCurriculum = _school!.curriculum;
+    _editSchoolLevel = _school!.schoolLevel;
+    _editSchoolType = _school!.schoolType;
+    _editSubCity = _school!.subCity;
+  });
 }  
   
 // Add this method to cancel edit  
@@ -300,58 +307,63 @@ void _cancelEdit() {
   });  
 }  
   
-// Add this method to save changes  
-Future<void> _saveEdit() async {  
-  if (_school == null) return;  
-  setState(() {  
-    _saving = true;  
-    _saveError = null;  
-  });  
-  try {  
-    final updated = await ref.read(schoolRepositoryProvider).update(  
-          id: _school!.id,  
-          schoolName: _editSchoolName.text.trim().isEmpty  
-              ? null  
-              : _editSchoolName.text.trim(),  
-          address: _editAddress.text.trim().isEmpty  
-              ? null  
-              : _editAddress.text.trim(),  
-          contactEmail: _editContactEmail.text.trim().isEmpty  
-              ? null  
-              : _editContactEmail.text.trim(),  
-          contactPhone: _editContactPhone.text.trim().isEmpty  
-              ? null  
-              : _editContactPhone.text.trim(),  
-          curriculum: _editCurriculum,  
-          schoolLevel: _editSchoolLevel,  
-          tuitionFee: _editTuitionFee.text.trim().isEmpty  
-              ? null  
-              : num.tryParse(_editTuitionFee.text.trim()),  
-          facilities: _editFacilities.text.trim().isEmpty  
-              ? null  
-              : _editFacilities.text.trim(),  
-          latitude: _editLatitude.text.trim().isEmpty  
-              ? null  
-              : double.tryParse(_editLatitude.text.trim()),  
-          longitude: _editLongitude.text.trim().isEmpty  
-              ? null  
-              : double.tryParse(_editLongitude.text.trim()),  
-        );  
-    if (!mounted) return;  
-    setState(() {  
-      _school = updated;  
-      _editing = false;  
-    });  
-    ScaffoldMessenger.of(context).showSnackBar(  
-      const SnackBar(content: Text('School updated successfully')),  
-    );  
-  } on ApiException catch (e) {  
-    setState(() => _saveError = e.message);  
-  } catch (e) {  
-    setState(() => _saveError = e.toString());  
-  } finally {  
-    if (mounted) setState(() => _saving = false);  
-  }  
+// Add this method to save changes
+Future<void> _saveEdit() async {
+  if (_school == null) return;
+  setState(() {
+    _saving = true;
+    _saveError = null;
+  });
+  try {
+    final updated = await ref.read(schoolRepositoryProvider).update(
+          id: _school!.id,
+          schoolName: _editSchoolName.text.trim().isEmpty
+              ? null
+              : _editSchoolName.text.trim(),
+          contactEmail: _editContactEmail.text.trim().isEmpty
+              ? null
+              : _editContactEmail.text.trim(),
+          contactPhone: _editContactPhone.text.trim().isEmpty
+              ? null
+              : _editContactPhone.text.trim(),
+          curriculum: _editCurriculum,
+          schoolLevel: _editSchoolLevel,
+          schoolType: _editSchoolType,
+          subCity: _editSubCity,
+          woreda: _editWoreda.text.trim().isEmpty
+              ? null
+              : _editWoreda.text.trim(),
+          streetName: _editStreetName.text.trim().isEmpty
+              ? null
+              : _editStreetName.text.trim(),
+          tuitionFee: _editTuitionFee.text.trim().isEmpty
+              ? null
+              : num.tryParse(_editTuitionFee.text.trim()),
+          facilities: _editFacilities.text.trim().isEmpty
+              ? null
+              : _editFacilities.text.trim(),
+          latitude: _editLatitude.text.trim().isEmpty
+              ? null
+              : double.tryParse(_editLatitude.text.trim()),
+          longitude: _editLongitude.text.trim().isEmpty
+              ? null
+              : double.tryParse(_editLongitude.text.trim()),
+        );
+    if (!mounted) return;
+    setState(() {
+      _school = updated;
+      _editing = false;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('School updated successfully')),
+    );
+  } on ApiException catch (e) {
+    setState(() => _saveError = e.message);
+  } catch (e) {
+    setState(() => _saveError = e.toString());
+  } finally {
+    if (mounted) setState(() => _saving = false);
+  }
 }
 
 Future<void> _fetchLocation() async {
@@ -406,28 +418,33 @@ Future<void> _fetchLocation() async {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     if (_school != null)  
-                    _SchoolSummary(  
-                      school: _school!,  
-                      editing: _editing,  
-                      saving: _saving,  
-                      saveError: _saveError,  
-                      onEdit: _startEdit,  
-                      onCancel: _cancelEdit,  
-                      onSave: _saveEdit,  
-                      controllers: [  
-                        _editSchoolName,  
-                        _editAddress,  
-                        _editContactEmail,  
-                        _editContactPhone,  
-                        _editTuitionFee,  
-                        _editFacilities,  
-                        _editLatitude,  
-                        _editLongitude,  
-                      ],  
-                      editCurriculum: _editCurriculum,  
-                      editSchoolLevel: _editSchoolLevel,  
-                      onCurriculumChanged: (v) => setState(() => _editCurriculum = v),  
-                      onSchoolLevelChanged: (v) => setState(() => _editSchoolLevel = v), 
+                    _SchoolSummary(
+                      school: _school!,
+                      editing: _editing,
+                      saving: _saving,
+                      saveError: _saveError,
+                      onEdit: _startEdit,
+                      onCancel: _cancelEdit,
+                      onSave: _saveEdit,
+                      controllers: [
+                        _editSchoolName,
+                        _editContactEmail,
+                        _editContactPhone,
+                        _editTuitionFee,
+                        _editFacilities,
+                        _editLatitude,
+                        _editLongitude,
+                        _editWoreda,
+                        _editStreetName,
+                      ],
+                      editCurriculum: _editCurriculum,
+                      editSchoolLevel: _editSchoolLevel,
+                      editSchoolType: _editSchoolType,
+                      editSubCity: _editSubCity,
+                      onCurriculumChanged: (v) => setState(() => _editCurriculum = v),
+                      onSchoolLevelChanged: (v) => setState(() => _editSchoolLevel = v),
+                      onSchoolTypeChanged: (v) => setState(() => _editSchoolType = v),
+                      onSubCityChanged: (v) => setState(() => _editSubCity = v),
                       fetchingLocation: _fetchingLocation,
 onFetchLocation: _fetchLocation,
 pin: _pin,
@@ -453,86 +470,152 @@ onPinChanged: (latLng) {
                         onDelete: _deleteFacilityImage,
                       ),
                     const SizedBox(height: 16),
-                    if (_school != null && _school!.verificationStatus != VerificationStatus.verified)  
                     Card(
                       child: Padding(
                         padding: const EdgeInsets.all(16),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Submit verification request',
-                                style: theme.textTheme.titleLarge),
+                            Text('School Demographics', style: theme.textTheme.titleLarge),
                             const SizedBox(height: 8),
                             const Text(
-                              "Attach proof-of-license documents (PDF/PNG/JPEG, "
-                              "≤10MB each, up to 5 files). The MoE will review "
-                              "and approve or reject the request.",
+                              'Manage yearly academic performance data including student counts, passing rates, and exam scores.',
                             ),
                             const SizedBox(height: 12),
-                            if (_picked.isNotEmpty)
-                              Wrap(
-                                spacing: 6,
-                                runSpacing: 6,
-                                children: [
-                                  for (final f in _picked)
-                                    InputChip(
-                                      label: Text(f.filename),
-                                      onDeleted: () =>
-                                          setState(() => _picked.remove(f)),
-                                    ),
-                                ],
-                              ),
-                            const SizedBox(height: 8),
-                            TextField(
-                              controller: _notesCtrl,
-                              decoration: const InputDecoration(
-                                labelText: 'Notes for reviewer (optional)',
-                              ),
-                              minLines: 1,
-                              maxLines: 3,
-                            ),
-                            if (_submitError != null) ...[
-                              const SizedBox(height: 8),
-                              Text(_submitError!,
-                                  style: TextStyle(
-                                      color: theme.colorScheme.error)),
-                            ],
-                            const SizedBox(height: 12),
-                            // We use `Wrap` rather than `Row + Spacer +
-                            // FilledButton.icon` because the latter combo
-                            // silently drops the trailing button on the
-                            // Flutter web release build (see Phase 9 PR
-                            // #22 review thread).
-                            Wrap(
-                              alignment: WrapAlignment.spaceBetween,
-                              spacing: 12,
-                              runSpacing: 8,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              children: [
-                                OutlinedButton.icon(
-                                  onPressed: _submitting ? null : _addStubFile,
-                                  icon: const Icon(Icons.attach_file),
-                                  label: const Text('Attach document'),
-                                ),
-                                FilledButton.icon(
-                                  onPressed:
-                                      _submitting ? null : _submitVerification,
-                                  icon: _submitting
-                                      ? const SizedBox(
-                                          width: 16,
-                                          height: 16,
-                                          child: CircularProgressIndicator(
-                                              strokeWidth: 2),
-                                        )
-                                      : const Icon(Icons.send),
-                                  label: const Text('Submit'),
-                                ),
-                              ],
+                            FilledButton.icon(
+                              onPressed: () => context.go('/admin/schools/${widget.schoolId}/demographics'),
+                              icon: const Icon(Icons.bar_chart_outlined),
+                              label: const Text('Manage Demographics'),
                             ),
                           ],
                         ),
                       ),
                     ),
+                    const SizedBox(height: 24),
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('School Achievements', style: theme.textTheme.titleLarge),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Submit and manage school achievements (Gold/Silver/Bronze) for MoE verification.',
+                            ),
+                            const SizedBox(height: 12),
+                            FilledButton.icon(
+                              onPressed: () => context.go('/admin/schools/${widget.schoolId}/achievements'),
+                              icon: const Icon(Icons.emoji_events_outlined),
+                              label: const Text('Manage Achievements'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Staff Breakdown', style: theme.textTheme.titleLarge),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Manage staff qualification breakdown by education level (PhD, Masters, Degree, etc.).',
+                            ),
+                            const SizedBox(height: 12),
+                            FilledButton.icon(
+                              onPressed: () => context.go('/admin/schools/${widget.schoolId}/staff-breakdown'),
+                              icon: const Icon(Icons.people_outline),
+                              label: const Text('Manage Staff Breakdown'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    if (_school != null && _school!.verificationStatus != VerificationStatus.verified)
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Submit verification request',
+                                  style: theme.textTheme.titleLarge),
+                              const SizedBox(height: 8),
+                              const Text(
+                                "Attach proof-of-license documents (PDF/PNG/JPEG, "
+                                "≤10MB each, up to 5 files). The MoE will review "
+                                "and approve or reject the request.",
+                              ),
+                              const SizedBox(height: 12),
+                              if (_picked.isNotEmpty)
+                                Wrap(
+                                  spacing: 6,
+                                  runSpacing: 6,
+                                  children: [
+                                    for (final f in _picked)
+                                      InputChip(
+                                        label: Text(f.filename),
+                                        onDeleted: () =>
+                                            setState(() => _picked.remove(f)),
+                                      ),
+                                  ],
+                                ),
+                              const SizedBox(height: 8),
+                              TextField(
+                                controller: _notesCtrl,
+                                decoration: const InputDecoration(
+                                  labelText: 'Notes for reviewer (optional)',
+                                ),
+                                minLines: 1,
+                                maxLines: 3,
+                              ),
+                              if (_submitError != null) ...[
+                                const SizedBox(height: 8),
+                                Text(_submitError!,
+                                    style: TextStyle(
+                                        color: theme.colorScheme.error)),
+                              ],
+                              const SizedBox(height: 12),
+                              // We use `Wrap` rather than `Row + Spacer +
+                              // FilledButton.icon` because the latter combo
+                              // silently drops the trailing button on the
+                              // Flutter web release build (see Phase 9 PR
+                              // #22 review thread).
+                              Wrap(
+                                alignment: WrapAlignment.spaceBetween,
+                                spacing: 12,
+                                runSpacing: 8,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  OutlinedButton.icon(
+                                    onPressed: _submitting ? null : _addStubFile,
+                                    icon: const Icon(Icons.attach_file),
+                                    label: const Text('Attach document'),
+                                  ),
+                                  FilledButton.icon(
+                                    onPressed:
+                                        _submitting ? null : _submitVerification,
+                                    icon: _submitting
+                                        ? const SizedBox(
+                                            width: 16,
+                                            height: 16,
+                                            child: CircularProgressIndicator(
+                                                strokeWidth: 2),
+                                          )
+                                        : const Icon(Icons.send),
+                                    label: const Text('Submit'),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     const SizedBox(height: 16),
                     Text('Past verification requests',
                         style: theme.textTheme.titleLarge),
@@ -717,16 +800,20 @@ class _SchoolSummary extends StatelessWidget {
 
   final Curriculum? editCurriculum;
   final SchoolLevel? editSchoolLevel;
+  final SchoolType? editSchoolType;
+  final SubCity? editSubCity;
 
   final ValueChanged<Curriculum?> onCurriculumChanged;
   final ValueChanged<SchoolLevel?> onSchoolLevelChanged;
+  final ValueChanged<SchoolType?> onSchoolTypeChanged;
+  final ValueChanged<SubCity?> onSubCityChanged;
 
   final bool fetchingLocation;
   final VoidCallback onFetchLocation;
 
   final LatLng? pin;
-  final ValueChanged<LatLng> onPinChanged; 
-  
+  final ValueChanged<LatLng> onPinChanged;
+
   const _SchoolSummary({
   required this.school,
   required this.editing,
@@ -738,8 +825,12 @@ class _SchoolSummary extends StatelessWidget {
   required this.controllers,
   this.editCurriculum,
   this.editSchoolLevel,
+  this.editSchoolType,
+  this.editSubCity,
   required this.onCurriculumChanged,
   required this.onSchoolLevelChanged,
+  required this.onSchoolTypeChanged,
+  required this.onSubCityChanged,
   required this.fetchingLocation,
   required this.onFetchLocation,
   required this.pin,
@@ -773,7 +864,7 @@ class _SchoolSummary extends StatelessWidget {
             ),  
             if (!editing) ...[  
               const SizedBox(height: 4),  
-              Text(school.address, style: theme.textTheme.bodyMedium),  
+                
               const SizedBox(height: 12),  
               Wrap(  
                 spacing: 8,  
@@ -781,7 +872,7 @@ class _SchoolSummary extends StatelessWidget {
                 children: [  
                   Chip(label: Text(school.curriculum.label())),  
                   Chip(label: Text(school.verificationStatus.label())),  
-                  if (school.tuitionFee > 0)  
+                  if ((school.tuitionFee ?? 0) > 0)  
                     Chip(  
                       avatar: const Icon(Icons.payments_outlined, size: 18),  
                       label: Text('${school.tuitionFee} / year'),  
@@ -824,34 +915,55 @@ class _SchoolSummary extends StatelessWidget {
                   labelText: 'School name',  
                   border: OutlineInputBorder(),  
                 ),  
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: controllers[1],
+                decoration: const InputDecoration(
+                  labelText: 'Contact email',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.emailAddress,
               ),  
-              const SizedBox(height: 12),  
-              TextFormField(  
-                controller: controllers[1],  
-                decoration: const InputDecoration(  
-                  labelText: 'Address',  
-                  border: OutlineInputBorder(),  
-                ),  
-              ),  
-              const SizedBox(height: 12),  
-              TextFormField(  
-                controller: controllers[2],  
-                decoration: const InputDecoration(  
-                  labelText: 'Contact email',  
-                  border: OutlineInputBorder(),  
-                ),  
-                keyboardType: TextInputType.emailAddress,  
-              ),  
-              const SizedBox(height: 12),  
-              TextFormField(  
-                controller: controllers[3],  
-                decoration: const InputDecoration(  
-                  labelText: 'Contact phone',  
-                  border: OutlineInputBorder(),  
-                ),  
-                keyboardType: TextInputType.phone,  
-              ),  
-              const SizedBox(height: 12),  
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: controllers[2],
+                decoration: const InputDecoration(
+                  labelText: 'Contact phone',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.phone,
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<SubCity>(
+                decoration: const InputDecoration(
+                  labelText: 'Sub-city',
+                  border: OutlineInputBorder(),
+                ),
+                value: editSubCity,
+                items: SubCity.values.map((subCity) {
+                  return DropdownMenuItem(value: subCity, child: Text(subCity.label));
+                }).toList(),
+                onChanged: onSubCityChanged,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: controllers[7],
+                decoration: const InputDecoration(
+                  labelText: 'Woreda',
+                  border: OutlineInputBorder(),
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: controllers[8],
+                decoration: const InputDecoration(
+                  labelText: 'Street Name',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
               DropdownButtonFormField<Curriculum>(  
                 decoration: const InputDecoration(  
                   labelText: 'Curriculum',  
@@ -866,37 +978,52 @@ class _SchoolSummary extends StatelessWidget {
                     .toList(),  
                 onChanged: onCurriculumChanged,  
               ),  
-              const SizedBox(height: 12),  
-              DropdownButtonFormField<SchoolLevel>(  
-                decoration: const InputDecoration(  
-                  labelText: 'School level',  
-                  border: OutlineInputBorder(),  
-                ),  
-                value: editSchoolLevel,  
-                items: SchoolLevel.values  
-                    .map((l) => DropdownMenuItem(  
-                          value: l,  
-                          child: Text(l.label()),  
-                        ))  
-                    .toList(),  
-                onChanged: onSchoolLevelChanged,  
-              ),  
-              const SizedBox(height: 12),  
-              TextFormField(  
-                controller: controllers[4],  
-                decoration: const InputDecoration(  
-                  labelText: 'Tuition fee',  
-                  border: OutlineInputBorder(),  
-                  prefixText: 'ETB ',  
-                ),  
-                keyboardType: TextInputType.number,  
-              ),  
-              const SizedBox(height: 12),  
-              TextFormField(  
-                controller: controllers[5],  
-                decoration: const InputDecoration(  
-                  labelText: 'Facilities',  
-                  border: OutlineInputBorder(),  
+              const SizedBox(height: 12),
+              DropdownButtonFormField<SchoolLevel>(
+                decoration: const InputDecoration(
+                  labelText: 'School level',
+                  border: OutlineInputBorder(),
+                ),
+                value: editSchoolLevel,
+                items: SchoolLevel.values
+                    .map((l) => DropdownMenuItem(
+                          value: l,
+                          child: Text(l.label()),
+                        ))
+                    .toList(),
+                onChanged: onSchoolLevelChanged,
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<SchoolType>(
+                decoration: const InputDecoration(
+                  labelText: 'School type',
+                  border: OutlineInputBorder(),
+                ),
+                value: editSchoolType,
+                items: SchoolType.values
+                    .map((t) => DropdownMenuItem(
+                          value: t,
+                          child: Text(t.label()),
+                        ))
+                    .toList(),
+                onChanged: onSchoolTypeChanged,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: controllers[3],
+                decoration: const InputDecoration(
+                  labelText: 'Tuition fee',
+                  border: OutlineInputBorder(),
+                  prefixText: 'ETB ',
+                ),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: controllers[4],
+                decoration: const InputDecoration(
+                  labelText: 'Facilities',
+                  border: OutlineInputBorder(),
                 ),  
                 maxLines: 3,  
               ),  
@@ -941,7 +1068,7 @@ class _SchoolSummary extends StatelessWidget {
       children: [
         Expanded(
           child: TextFormField(
-            controller: controllers[6],
+            controller: controllers[5],
             decoration: const InputDecoration(
               labelText: 'Latitude',
               border: OutlineInputBorder(),
@@ -950,7 +1077,7 @@ class _SchoolSummary extends StatelessWidget {
             onChanged: (value) {
               final lat = double.tryParse(value);
               final lng = double.tryParse(
-                controllers[7].text,
+                controllers[6].text,
               );
 
               if (lat != null && lng != null) {
@@ -964,7 +1091,7 @@ class _SchoolSummary extends StatelessWidget {
 
         Expanded(
           child: TextFormField(
-            controller: controllers[7],
+            controller: controllers[6],
             decoration: const InputDecoration(
               labelText: 'Longitude',
               border: OutlineInputBorder(),
@@ -972,7 +1099,7 @@ class _SchoolSummary extends StatelessWidget {
             keyboardType: TextInputType.number,
             onChanged: (value) {
               final lat = double.tryParse(
-                controllers[6].text,
+                controllers[5].text,
               );
 
               final lng = double.tryParse(value);

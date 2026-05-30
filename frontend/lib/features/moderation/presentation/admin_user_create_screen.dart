@@ -1,175 +1,252 @@
-import 'package:flutter/material.dart';  
-import 'package:flutter_riverpod/flutter_riverpod.dart';  
-import 'package:go_router/go_router.dart';  
-  
-import '../../../shared/widgets/loading_button.dart';  
-import '../../../shared/widgets/responsive_shell.dart';  
-import '../../auth/data/auth_dtos.dart';  
-import '../../auth/state/auth_controller.dart';  
-  
-class AdminUserCreateScreen extends ConsumerStatefulWidget {  
-  const AdminUserCreateScreen({super.key});  
-  
-  @override  
-  ConsumerState<AdminUserCreateScreen> createState() =>  
-      _AdminUserCreateScreenState();  
-}  
-  
-class _AdminUserCreateScreenState extends ConsumerState<AdminUserCreateScreen> {  
-  final _form = GlobalKey<FormState>();  
-  final _name = TextEditingController();  
-  final _email = TextEditingController();  
-  final _phone = TextEditingController();  
-  final _password = TextEditingController();  
-  UserRole _role = UserRole.moeOfficer;  
-  bool _loading = false;  
-  String? _error;  
-  bool _success = false;  
-  
-  @override  
-  void dispose() {  
-    _name.dispose();  
-    _email.dispose();  
-    _phone.dispose();  
-    _password.dispose();  
-    super.dispose();  
-  }  
-  
-  Future<void> _submit() async {  
-    if (!_form.currentState!.validate()) return;  
-    setState(() {  
-      _loading = true;  
-      _error = null;  
-    });  
-    try {  
-      await ref.read(authControllerProvider).register(  
-            fullName: _name.text.trim(),  
-            email: _email.text.trim().isEmpty ? null : _email.text.trim(),  
-            phone: _phone.text.trim().isEmpty ? null : _phone.text.trim(),  
-            password: _password.text,  
-            role: _role,  
-          );  
-      if (mounted) setState(() => _success = true);  
-    } catch (e) {  
-      if (mounted) setState(() => _error = e.toString());  
-    } finally {  
-      if (mounted) setState(() => _loading = false);  
-    }  
-  }  
-  
-  @override  
-  Widget build(BuildContext context) {  
-    if (_success) {  
-      return ResponsiveShell(  
-        title: 'Account created',  
-        leading: IconButton(  
-          icon: const Icon(Icons.arrow_back),  
-          onPressed: () => context.go('/moderation'),  
-        ),  
-        child: Column(  
-          crossAxisAlignment: CrossAxisAlignment.stretch,  
-          children: [  
-            const Icon(Icons.check_circle_outline, size: 64),  
-            const SizedBox(height: 16),  
-            Text(  
-              'Account created successfully',  
-              textAlign: TextAlign.center,  
-              style: Theme.of(context).textTheme.titleMedium,  
-            ),  
-            const SizedBox(height: 24),  
-            FilledButton(  
-              onPressed: () => context.go('/moderation'),  
-              child: const Text('Back to moderation'),  
-            ),  
-          ],  
-        ),  
-      );  
-    }  
-  
-    return ResponsiveShell(  
-      title: 'Create admin user',  
-      leading: IconButton(  
-        icon: const Icon(Icons.arrow_back),  
-        onPressed: () => context.go('/moderation'),  
-      ),  
-      child: Form(  
-        key: _form,  
-        child: Column(  
-          crossAxisAlignment: CrossAxisAlignment.stretch,  
-          children: [  
-            TextFormField(  
-              controller: _name,  
-              decoration: const InputDecoration(labelText: 'Full name'),  
-              validator: (v) =>  
-                  (v ?? '').trim().isNotEmpty ? null : 'Required',  
-            ),  
-            const SizedBox(height: 12),  
-            TextFormField(  
-              controller: _email,  
-              keyboardType: TextInputType.emailAddress,  
-              decoration: const InputDecoration(  
-                labelText: 'Email (optional)',  
-                helperText: 'Leave empty for phone-only signup',  
-              ),  
-            ),  
-            const SizedBox(height: 12),  
-            TextFormField(  
-              controller: _phone,  
-              keyboardType: TextInputType.phone,  
-              decoration: const InputDecoration(  
-                labelText: 'Phone (optional)',  
-                helperText: '5–15 characters',  
-              ),  
-              validator: (v) {  
-                final t = (v ?? '').trim();  
-                if (t.isEmpty && _email.text.trim().isEmpty) {  
-                  return 'Either email or phone is required';  
-                }  
-                if (t.isNotEmpty && (t.length < 5 || t.length > 15)) {  
-                  return '5–15 characters';  
-                }  
-                return null;  
-              },  
-            ),  
-            const SizedBox(height: 12),  
-            TextFormField(  
-              controller: _password,  
-              obscureText: true,  
-              decoration: const InputDecoration(  
-                labelText: 'Password',  
-                helperText: 'Minimum 6 characters',  
-              ),  
-              validator: (v) =>  
-                  (v ?? '').length >= 6 ? null : 'At least 6 characters',  
-            ),  
-            const SizedBox(height: 12),  
-            DropdownButtonFormField<UserRole>(  
-              value: _role,  
-              decoration: const InputDecoration(labelText: 'Role'),  
-              items: const [  
-                DropdownMenuItem(  
-                    value: UserRole.moeOfficer,  
-                    child: Text('MoE Officer')),  
-                DropdownMenuItem(  
-                    value: UserRole.moderator,  
-                    child: Text('Moderator')),  
-              ],  
-              onChanged: (v) => setState(() => _role = v ?? UserRole.moeOfficer),  
-            ),  
-            if (_error != null) ...[  
-              const SizedBox(height: 12),  
-              Text(_error!,  
-                  style: TextStyle(color: Theme.of(context).colorScheme.error)),  
-            ],  
-            const SizedBox(height: 16),  
-            LoadingButton(  
-              loading: _loading,  
-              onPressed: _submit,  
-              child: const Text('Create account'),  
-            ),  
-          ],  
-        ),  
-      ),  
-    );  
-  }  
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../shared/widgets/loading_button.dart';
+import '../../../shared/widgets/responsive_shell.dart';
+import '../../auth/data/auth_dtos.dart';
+import '../../auth/state/auth_controller.dart';
+import '../../schools/data/school_dtos.dart';
+
+/// Whether the user is being created with an email-as-credential or a
+/// phone-as-credential. Backend supports both — same as public signup.
+enum _IdentifierKind { email, phone }
+
+class AdminUserCreateScreen extends ConsumerStatefulWidget {
+  const AdminUserCreateScreen({super.key});
+
+  @override
+  ConsumerState<AdminUserCreateScreen> createState() =>
+      _AdminUserCreateScreenState();
+}
+
+class _AdminUserCreateScreenState extends ConsumerState<AdminUserCreateScreen> {
+  final _form = GlobalKey<FormState>();
+  final _name = TextEditingController();
+  final _email = TextEditingController();
+  final _phone = TextEditingController();
+  final _password = TextEditingController();
+  final _officerRole = TextEditingController();
+  UserRole _role = UserRole.moeOfficer;
+  SubCity? _subCity;
+  _IdentifierKind _identifierKind = _IdentifierKind.email;
+  bool _loading = false;
+  String? _error;
+  bool _success = false;
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _email.dispose();
+    _phone.dispose();
+    _password.dispose();
+    _officerRole.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_form.currentState!.validate()) return;
+
+    // Validate MOE officer specific fields
+    if (_role == UserRole.moeOfficer && _subCity == null) {
+      setState(() => _error = 'Sub-city is required for MoE officers');
+      return;
+    }
+    if (_role == UserRole.moeOfficer && _officerRole.text.trim().isEmpty) {
+      setState(() => _error = 'Officer role is required for MoE officers');
+      return;
+    }
+
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      // Only send the credential that matches the current toggle
+      final isEmail = _identifierKind == _IdentifierKind.email;
+      await ref.read(authControllerProvider).register(
+            fullName: _name.text.trim(),
+            email: isEmail ? _email.text.trim() : null,
+            phone: !isEmail ? _phone.text.trim() : null,
+            password: _password.text,
+            role: _role,
+            subCity: _subCity?.toWire(),
+            officerRole: _role == UserRole.moeOfficer ? _officerRole.text.trim() : null,
+          );
+      if (mounted) setState(() => _success = true);
+    } catch (e) {
+      if (mounted) setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_success) {
+      return ResponsiveShell(
+        title: 'Account created',
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/moderation'),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Icon(Icons.check_circle_outline, size: 64),
+            const SizedBox(height: 16),
+            Text(
+              'Account created successfully',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 24),
+            FilledButton(
+              onPressed: () => context.go('/moderation'),
+              child: const Text('Back to moderation'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ResponsiveShell(
+      title: 'Create admin user',
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back),
+        onPressed: () => context.go('/moderation'),
+      ),
+      child: Form(
+        key: _form,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            TextFormField(
+              controller: _name,
+              decoration: const InputDecoration(labelText: 'Full name'),
+              validator: (v) =>
+                  (v ?? '').trim().isNotEmpty ? null : 'Required',
+            ),
+            const SizedBox(height: 12),
+            SegmentedButton<_IdentifierKind>(
+              segments: const [
+                ButtonSegment(
+                  value: _IdentifierKind.email,
+                  label: Text('Email'),
+                  icon: Icon(Icons.mail_outline),
+                ),
+                ButtonSegment(
+                  value: _IdentifierKind.phone,
+                  label: Text('Phone'),
+                  icon: Icon(Icons.phone_outlined),
+                ),
+              ],
+              selected: {_identifierKind},
+              onSelectionChanged: (Set<_IdentifierKind> s) {
+                if (s.isNotEmpty) {
+                  setState(() => _identifierKind = s.first);
+                }
+              },
+            ),
+            const SizedBox(height: 12),
+            if (_identifierKind == _IdentifierKind.email)
+              TextFormField(
+                controller: _email,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  hintText: 'example@gmail.com',
+                  helperText: "We'll send a verification link to this address.",
+                ),
+                validator: (v) {
+                  final t = (v ?? '').trim();
+                  if (t.isEmpty) return 'Required';
+                  // Basic email validation
+                  if (!t.contains('@') || !t.contains('.')) {
+                    return 'Invalid email';
+                  }
+                  return null;
+                },
+              )
+            else
+              TextFormField(
+                controller: _phone,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(
+                  labelText: 'Phone',
+                  helperText: '5–15 characters. No verification step — usable right away.',
+                ),
+                validator: (v) {
+                  final t = (v ?? '').trim();
+                  if (t.isEmpty) return 'Required';
+                  if (t.length < 5 || t.length > 15) {
+                    return '5–15 characters';
+                  }
+                  return null;
+                },
+              ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _password,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Password',
+                helperText: 'Minimum 6 characters',
+              ),
+              validator: (v) =>
+                  (v ?? '').length >= 6 ? null : 'At least 6 characters',
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<UserRole>(
+              value: _role,
+              decoration: const InputDecoration(labelText: 'Role'),
+              items: const [
+                DropdownMenuItem(
+                    value: UserRole.moeOfficer,
+                    child: Text('MoE Officer')),
+                DropdownMenuItem(
+                    value: UserRole.moderator,
+                    child: Text('Moderator')),
+              ],
+              onChanged: (v) => setState(() => _role = v ?? UserRole.moeOfficer),
+            ),
+            const SizedBox(height: 12),
+            // Show subcity dropdown only for MOE officers
+            if (_role == UserRole.moeOfficer) ...[
+              DropdownButtonFormField<SubCity>(
+                decoration: const InputDecoration(labelText: 'Sub-city *'),
+                value: _subCity,
+                items: SubCity.values.map((subCity) {
+                  return DropdownMenuItem(value: subCity, child: Text(subCity.label));
+                }).toList(),
+                onChanged: (v) => setState(() => _subCity = v),
+                validator: (v) => v == null ? 'Required' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _officerRole,
+                decoration: const InputDecoration(
+                  labelText: 'Officer Role *',
+                  helperText: 'e.g., Senior Inspector, Regional Officer',
+                ),
+                validator: (v) => (v ?? '').trim().isEmpty ? 'Required' : null,
+              ),
+              const SizedBox(height: 12),
+            ],
+            if (_error != null) ...[
+              const SizedBox(height: 12),
+              Text(_error!,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            ],
+            const SizedBox(height: 16),
+            LoadingButton(
+              loading: _loading,
+              onPressed: _submit,
+              child: const Text('Create account'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

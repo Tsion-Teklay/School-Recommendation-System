@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../shared/widgets/responsive_shell.dart';
 import '../../admin/presentation/admin_announcements_screen.dart';
@@ -149,44 +150,48 @@ class _MoeAnnouncementsScreenState
             )
           else
             for (final a in _items)
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(a.title,
-                                style: theme.textTheme.titleMedium),
-                          ),
-                          PopupMenuButton<String>(
-                            onSelected: (v) {
-                              if (v == 'delete') _delete(a);
-                            },
-                            itemBuilder: (_) => const [
-                              PopupMenuItem(
-                                  value: 'delete', child: Text('Delete')),
-                            ],
-                          ),
-                        ],
-                      ),
-                      Wrap(
-                        spacing: 6,
-                        children: [
-                          Chip(label: Text(a.category.label())),
-                          Chip(label: Text(a.urgencyLevel.label())),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(a.content),
-                      const SizedBox(height: 8),
-                      Text(
-                        a.datePosted.toIso8601String().substring(0, 16),
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ],
+              InkWell(
+                onTap: () => context.push('/announcements/${a.id}'),
+                borderRadius: BorderRadius.circular(12),
+                child: Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(a.title,
+                                  style: theme.textTheme.titleMedium),
+                            ),
+                            PopupMenuButton<String>(
+                              onSelected: (v) {
+                                if (v == 'delete') _delete(a);
+                              },
+                              itemBuilder: (_) => const [
+                                PopupMenuItem(
+                                    value: 'delete', child: Text('Delete')),
+                              ],
+                            ),
+                          ],
+                        ),
+                        Wrap(
+                          spacing: 6,
+                          children: [
+                            Chip(label: Text(a.category.label())),
+                            Chip(label: Text(a.urgencyLevel.label())),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(a.content),
+                        const SizedBox(height: 8),
+                        Text(
+                          a.datePosted.toIso8601String().substring(0, 16),
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

@@ -17,6 +17,74 @@ extension CurriculumX on Curriculum {
   }
 }
 
+enum SubCity {  
+  addisKetema('Addis Ketema'),  
+  akaliKalti('Akali Kalti'),  
+  arada('Arada'),  
+  bole('Bole'),  
+  gulele('Gulele'),  
+  kolfeKeranio('Kolfe Keranio'),  
+  kirkos('Kirkos'),  
+  lideta('Lideta'),  
+  nifasSilkLafto('Nifas Silk Lafto'),  
+  yekka('Yekka');  
+  
+  final String label;  
+  const SubCity(this.label);  
+  
+  String toWire() {
+    switch (this) {
+      case SubCity.addisKetema:
+        return 'ADDIS_KETEMA';
+      case SubCity.akaliKalti:
+        return 'AKALI_KALTI';
+      case SubCity.arada:
+        return 'ARADA';
+      case SubCity.bole:
+        return 'BOLE';
+      case SubCity.gulele:
+        return 'GULELE';
+      case SubCity.kolfeKeranio:
+        return 'KOLFE_KERANIO';
+      case SubCity.kirkos:
+        return 'KIRKOS';
+      case SubCity.lideta:
+        return 'LIDETA';
+      case SubCity.nifasSilkLafto:
+        return 'NIFAS_SILK_LAFTO';
+      case SubCity.yekka:
+        return 'YEKKA';
+    }
+  }
+
+  static SubCity? fromWire(String? s) {
+    switch (s) {
+      case 'ADDIS_KETEMA':
+        return SubCity.addisKetema;
+      case 'AKALI_KALTI':
+        return SubCity.akaliKalti;
+      case 'ARADA':
+        return SubCity.arada;
+      case 'BOLE':
+        return SubCity.bole;
+      case 'GULELE':
+        return SubCity.gulele;
+      case 'KOLFE_KERANIO':
+        return SubCity.kolfeKeranio;
+      case 'KIRKOS':
+        return SubCity.kirkos;
+      case 'LIDETA':
+        return SubCity.lideta;
+      case 'NIFAS_SILK_LAFTO':
+        return SubCity.nifasSilkLafto;
+      case 'YEKKA':
+        return SubCity.yekka;
+      default:
+        return null;
+    }
+  }  
+}
+
 enum SchoolType { private, government, church }  
   
 extension SchoolTypeX on SchoolType {  
@@ -146,12 +214,15 @@ extension VerificationStatusX on VerificationStatus {
 }
 class School {
   final int id;
+  final int? adminId;
   final String schoolName;
-  final String address;
-  final String contactEmail;
+  final SubCity? subCity;
+  final String? woreda;
+  final String? streetName;
+  final String? contactEmail;
   final String? contactPhone;
   final Curriculum curriculum;
-  final num tuitionFee;
+  final num? tuitionFee;
   final String? facilities;
   final double? latitude;
   final double? longitude;
@@ -162,9 +233,14 @@ class School {
   /// Phase 11 — null when the school hasn't been categorised yet.
   final SchoolLevel? schoolLevel;
 
-  final SchoolType? schoolType;      
-  final num? passingRate;            
-  final num? nationalExamScore;      
+  final SchoolType? schoolType;
+  final num? passingRate;
+  final num? nationalExamScore;
+
+  /// Additional metrics from comparisons and analytics
+  final int? totalStudents;
+  final num? genderBalance;
+  final int? achievementScore;
 
   /// Phase 11 — facility images attached to this school. Only populated on
   /// the detail response (`GET /api/schools/:id`); the list endpoint
@@ -179,25 +255,31 @@ class School {
 
   const School({
     required this.id,
+    this.adminId,
     required this.schoolName,
-    required this.address,
-    required this.contactEmail,
-    required this.contactPhone,
+    this.subCity,
+    this.woreda,
+    this.streetName,
+    this.contactEmail,
+    this.contactPhone,
     required this.curriculum,
-    required this.tuitionFee,
-    required this.facilities,
-    required this.latitude,
-    required this.longitude,
-    required this.rating,
-    required this.reviewCount,
+    this.tuitionFee,
+    this.facilities,
+    this.latitude,
+    this.longitude,
+    this.rating,
+    this.reviewCount,
     required this.verificationStatus,
-    required this.schoolLevel,
-    required this.schoolType,
-    required this.passingRate,
-    required this.nationalExamScore,
+    this.schoolLevel,
+    this.schoolType,
+    this.passingRate,
+    this.nationalExamScore,
+    this.totalStudents,
+    this.genderBalance,
+    this.achievementScore,
     required this.facilityImages,
-    required this.followerCount,
-    required this.distanceKm,
+    this.followerCount,
+    this.distanceKm,
   });
 
   factory School.fromJson(Map<String, dynamic> json) {
@@ -210,10 +292,10 @@ class School {
       return double.tryParse(v.toString());
     }
 
-    num coerceNum(dynamic v, num fallback) {
-      if (v == null) return fallback;
+    num? coerceNum(dynamic v) {
+      if (v == null) return null;
       if (v is num) return v;
-      return num.tryParse(v.toString()) ?? fallback;
+      return num.tryParse(v.toString());
     }
 
     int? coerceInt(dynamic v) {
@@ -225,12 +307,17 @@ class School {
     final imgs = (json['facilityImages'] as List?) ?? const [];
     return School(
       id: coerceInt(json['id'])!,
+      adminId: coerceInt(json['adminId']),
       schoolName: json['schoolName'] as String,
-      address: (json['address'] ?? '') as String,
-      contactEmail: (json['contactEmail'] ?? '') as String,
+      subCity: json['subCity'] == null
+          ? null
+          : SubCity.fromWire(json['subCity'] as String?),
+      woreda: json['woreda'] as String?,
+      streetName: json['streetName'] as String?,
+      contactEmail: json['contactEmail'] as String?,
       contactPhone: json['contactPhone'] as String?,
       curriculum: CurriculumX.fromWire(json['curriculum'] as String),
-      tuitionFee: coerceNum(json['tuitionFee'], 0),
+      tuitionFee: coerceNum(json['tuitionFee']),
       facilities: json['facilities'] as String?,
       latitude: coerceDouble(json['latitude']),
       longitude: coerceDouble(json['longitude']),
@@ -239,9 +326,12 @@ class School {
       verificationStatus:
           VerificationStatusX.fromWire(json['verificationStatus'] as String?),
       schoolLevel: SchoolLevelX.fromWire(json['schoolLevel'] as String?),
-      schoolType: SchoolTypeX.fromWire(json['schoolType'] as String?),  // Add  
-      passingRate: coerceDouble(json['passingRate']),                  // Add  
+      schoolType: SchoolTypeX.fromWire(json['schoolType'] as String?),
+      passingRate: coerceDouble(json['passingRate']),
       nationalExamScore: coerceDouble(json['nationalExamScore']),
+      totalStudents: coerceInt(json['totalStudents']),
+      genderBalance: coerceDouble(json['genderBalance']),
+      achievementScore: coerceInt(json['achievementScore']),
       facilityImages: imgs
           .whereType<Map>()
           .map((m) => FacilityImage.fromJson(m.cast<String, dynamic>()))
@@ -301,6 +391,8 @@ class SchoolListFilters {
   // Phase 11 additions.
   final num? minRating;
   final SchoolLevel? schoolLevel;
+  final SchoolType? schoolType;
+  final SubCity? subCity;
   final int page;
   final int limit;
 
@@ -314,6 +406,8 @@ class SchoolListFilters {
     this.radiusKm,
     this.minRating,
     this.schoolLevel,
+    this.schoolType,
+    this.subCity,
     this.page = 1,
     this.limit = 10,
   });
@@ -327,6 +421,8 @@ class SchoolListFilters {
     Object? radiusKm = _sentinel,
     Object? minRating = _sentinel,
     Object? schoolLevel = _sentinel,
+    Object? schoolType = _sentinel,
+    Object? subCity = _sentinel,
     int? page,
     int? limit,
   }) {
@@ -345,6 +441,12 @@ class SchoolListFilters {
       schoolLevel: identical(schoolLevel, _sentinel)
           ? this.schoolLevel
           : schoolLevel as SchoolLevel?,
+      schoolType: identical(schoolType, _sentinel)
+          ? this.schoolType
+          : schoolType as SchoolType?,
+      subCity: identical(subCity, _sentinel)
+          ? this.subCity
+          : subCity as SubCity?,
       page: page ?? this.page,
       limit: limit ?? this.limit,
     );
@@ -361,6 +463,8 @@ class SchoolListFilters {
       if (radiusKm != null) 'radiusKm': radiusKm.toString(),
       if (minRating != null) 'minRating': minRating.toString(),
       if (schoolLevel != null) 'schoolLevel': schoolLevel!.toWire(),
+      if (schoolType != null) 'schoolType': schoolType!.toWire(),
+      if (subCity != null) 'subCity': subCity!.toWire(),
       'page': page.toString(),
       'limit': limit.toString(),
     };
