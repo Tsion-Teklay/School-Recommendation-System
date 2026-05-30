@@ -14,13 +14,11 @@ class LikeController extends ChangeNotifier {
 
   LikeController(this._repo);
 
-  /// Get like status for a target
   bool isLiked(LikeTargetType type, int id) {
     final key = _getKey(type, id);
     return _likeStatus[key] ?? false;
   }
 
-  /// Get like count for a target
   int getLikeCount(LikeTargetType type, int id) {
     final key = _getKey(type, id);
     return _likeCounts[key] ?? 0;

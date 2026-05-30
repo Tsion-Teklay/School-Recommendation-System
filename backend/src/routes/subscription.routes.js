@@ -11,7 +11,7 @@ import {
 } from "../controllers/subscription.controller.js";
 
 /**
- * Phase 4 — follow/subscribe routes.
+ * Follow/subscribe routes.
  *
  * Mounted under two paths in app.js so the URL structure matches the
  * conceptual model:

@@ -9,7 +9,7 @@ import '../data/announcement_dtos.dart';
 import '../data/announcement_repository.dart';
 
 /// Paginated controller for `/announcements`. Mirrors the schools list
-/// controller (Phase 8) — `refresh()` resets to page 1, `loadMore()`
+/// controller — `refresh()` resets to page 1, `loadMore()`
 /// appends one more page, `applyFilters()` resets when filters change.
 ///
 /// `followedOnly` only makes sense for parents (the backend ignores it

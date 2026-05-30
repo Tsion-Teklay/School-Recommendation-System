@@ -2,7 +2,7 @@ import { db } from "../config/db.js";
 import { ConflictError, NotFoundError } from "../utils/errors.js";
 
 /**
- * Phase 4 — Follow / Subscribe.
+ * Follow / Subscribe.
  *
  * Subscriptions back the targeted-announcement fan-out: when a SCHOOL_ADMIN
  * publishes an announcement, only parents subscribed to that school get a

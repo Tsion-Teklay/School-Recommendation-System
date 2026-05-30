@@ -19,8 +19,7 @@ const router = express.Router();
  *     tags: [Recommendations]
  *     summary: Get ranked school recommendations (PARENT only)
  *     description: |
- *       Phase 0 uses the same mock ranking as before; Phase 6 will replace this
- *       with a content-based v1 recommender (curriculum, budget, distance,
+ *       Content-based recommender (curriculum, budget, distance,
  *       rating, facilities, verification bonus).
  *     security: [{ bearerAuth: [] }]
  *     parameters:

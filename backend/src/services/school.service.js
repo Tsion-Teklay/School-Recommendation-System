@@ -34,7 +34,6 @@ export async function createSchool(data, userId) {
       contactEmail,
       ...(contactPhone ? { contactPhone } : {}),
       curriculum,
-      // Phase 11 — optional education level; omitted keeps the column null.
       ...(schoolLevel ? { schoolLevel } : {}),
       ...(schoolType ? { schoolType } : {}),
       tuitionFee,
@@ -267,15 +266,11 @@ export async function getSchoolById(id) {
           email: true,
         },
       },
-      // Phase 11 — facility images surface on the detail payload so the
-      // frontend can render a carousel without a second roundtrip.
       facilityImages: {
         select: { id: true, imageUrl: true },
         orderBy: { id: "asc" },
       },
       _count: {
-        // Phase 4: surface the live follower count on every detail fetch so
-        // the UI doesn't need a second roundtrip to /follows to render it.
         select: { subscribers: true },
       },
     },

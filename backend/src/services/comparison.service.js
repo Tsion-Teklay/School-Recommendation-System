@@ -6,7 +6,7 @@ import {
 } from "../utils/errors.js";
 
 /**
- * Phase 4 — comparisons.
+ * Comparisons.
  *
  * Each `Comparison` row owns 2–5 `ComparisonSchool` join rows. We persist the
  * client's chosen metric list as a JSON string in `metricsUsed` (Text column)

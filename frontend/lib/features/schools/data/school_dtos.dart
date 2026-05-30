@@ -230,7 +230,6 @@ class School {
   final int? reviewCount;
   final VerificationStatus verificationStatus;
 
-  /// Phase 11 — null when the school hasn't been categorised yet.
   final SchoolLevel? schoolLevel;
 
   final SchoolType? schoolType;
@@ -242,7 +241,7 @@ class School {
   final num? genderBalance;
   final int? achievementScore;
 
-  /// Phase 11 — facility images attached to this school. Only populated on
+  /// Facility images attached to this school. Only populated on
   /// the detail response (`GET /api/schools/:id`); the list endpoint
   /// returns an empty list to keep payloads small.
   final List<FacilityImage> facilityImages;
@@ -388,7 +387,6 @@ class SchoolListFilters {
   final num? maxFee;
   final String? near;
   final num? radiusKm;
-  // Phase 11 additions.
   final num? minRating;
   final SchoolLevel? schoolLevel;
   final SchoolType? schoolType;

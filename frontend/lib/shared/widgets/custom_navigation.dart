@@ -95,7 +95,7 @@ class AppNavigationRail extends StatelessWidget {
                   Image.asset('assets/logo.png', height: 24),
                   SpacingHelper.sm,
                   Text(
-                    'School Rec',
+                    'Fidel Guide',
                     style: AppTypography.titleSmall.copyWith(
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,
@@ -857,7 +857,7 @@ class AppNavigationBar extends StatelessWidget implements PreferredSizeWidget {
     required this.title,
     this.actions,
     this.leading,
-    this.showLogo = true,
+    this.showLogo = false,
     this.transparent = false,
   });
 
@@ -1181,7 +1181,7 @@ class _DefaultDrawerHeader extends StatelessWidget {
               Image.asset('assets/logo.png', height: 40),
               const SizedBox(width: AppSpacing.md),
               Text(
-                'School Rec',
+                'Fidel Guide',
                 style: AppTypography.titleLarge.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,

@@ -498,7 +498,7 @@ class _EditAnnouncementDialogState extends ConsumerState<_EditAnnouncementDialog
       }
       
       if (mounted) {
-        Navigator.pop(context, true); // Return true to indicate success
+        Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {

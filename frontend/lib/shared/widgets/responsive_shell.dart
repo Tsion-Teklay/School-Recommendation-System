@@ -32,9 +32,6 @@ class NavDestination {
   });
 }
 
-/// Phase 9 nav. Order matters — it's the same on rail (desktop/tablet) and
-/// bottom bar (mobile). Role gating drops irrelevant entries; the trim
-/// happens in [_visibleDestinations] below.
 const _allDestinations = <NavDestination>[
   NavDestination(label: 'Home', icon: Icons.home_outlined, path: '/'),
   NavDestination(
@@ -162,13 +159,13 @@ class ResponsiveShell extends ConsumerWidget {
                     ? 1100.0
                     : (isMedium ? constraints.maxWidth - 48 : double.infinity),
               ),
-              child: Column( // Add Column here  
-        mainAxisSize: MainAxisSize.min,  
-        children: [  
-          child, // Existing page content  
-          const Divider(height: 64), // Optional separator  
-          const _AppFooter(),   
-        ],  
+              child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          child,
+          const Divider(height: 64),
+          const _AppFooter(),
+        ],
       ),  
             ),
           ),
@@ -238,27 +235,46 @@ class _AppFooter extends StatelessWidget {
   @override  
   Widget build(BuildContext context) {  
     final theme = Theme.of(context);  
-    return Padding(  
-      padding: const EdgeInsets.only(top: 32.0),  
-      child: Column(  
-        children: [  
-          const Divider(),  
-          const SizedBox(height: 16),  
-          Text(  
-            '© ${DateTime.now().year} School Recommendation System',  
-            style: theme.textTheme.bodySmall?.copyWith(  
-              color: theme.colorScheme.onSurface.withOpacity(0.6),  
-            ),  
-          ),  
-          const SizedBox(height: 8),  
-          Text(  
-            'Ministry of Education',  
-            style: theme.textTheme.bodySmall?.copyWith(  
-              color: theme.colorScheme.onSurface.withOpacity(0.6),  
-            ),  
-          ),  
-        ],  
-      ),  
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(
+            color: theme.colorScheme.outline.withOpacity(0.2),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.email_outlined,
+                size: 14,
+                color: theme.colorScheme.onSurface.withOpacity(0.5),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'info@fidelguide.com',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '© ${DateTime.now().year} Fidel Guide. All rights reserved.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.5),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );  
   }  
 }

@@ -2,17 +2,17 @@ import { ValidationError } from "../utils/errors.js";
 import { logger } from "../config/logger.js";
 import axios from "axios";  
   
-const HF_TOKEN = process.env.HF_TOKEN; 
+const HF_TOKEN = process.env.HF_TOKEN;
 
 /**
- * Phase 5 — pluggable content moderation.
+ * Pluggable content moderation.
  *
  * Anything user-generated (review.comment, announcement.content,
  * forum.content, …) flows through `validateContent(text)` before it hits
  * the database. The default implementation is a keyword blocklist driven by
  * the `CONTENT_BLOCKLIST` env var (comma-separated). The interface is
  * intentionally narrow — `{ validate(text): { ok, reason? } }` — so a future
- * phase can swap in OpenAI moderations / Perspective / etc. without
+ * implementation can swap in OpenAI moderations / Perspective / etc. without
  * touching any caller.
  *
  * Failure mode: `ValidationError` with code `CONTENT_REJECTED` and a
@@ -22,8 +22,8 @@ const HF_TOKEN = process.env.HF_TOKEN;
 
 const DEFAULT_BLOCKLIST = [
   // Keep this list intentionally small + boring. The spec only requires a
-  // pluggable validator; the keyword set is a placeholder until Phase 9
-  // wires in a real moderation provider.
+  // pluggable validator; the keyword set is a placeholder until a real
+  // moderation provider is wired in.
   "fuck",
   "shit",
   "bitch",

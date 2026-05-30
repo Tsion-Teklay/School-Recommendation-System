@@ -30,7 +30,7 @@ export const dashboard = asyncHandler(async (req, res) => {
 });
 
 /**
- * Phase 6 — CSV export of the same dashboard payload.
+ * CSV export of the dashboard payload.
  *
  * Filename includes today's date so MoE officers downloading multiple times
  * don't overwrite previous exports in their downloads folder.

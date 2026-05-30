@@ -338,8 +338,6 @@ class _Filters extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            // Phase 11 — minimum rating slider. 0 disables the filter; 1–5
-            // map to the same scale as Review.rating.
             Row(
               children: [
                 const Text('Min rating'),

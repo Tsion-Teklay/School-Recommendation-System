@@ -95,8 +95,6 @@ class _AdminAnnouncementsScreenState
     try {
       final repo = ref.read(announcementRepositoryProvider);
       final created = await repo.createForSchool(result.input);
-      // Phase 11 — if the publisher attached an image in the same
-      // dialog, attach it to the freshly created announcement.
       if (result.image != null) {
         await repo.uploadImage(
           id: created.id,
@@ -207,6 +205,7 @@ class _AdminAnnouncementsScreenState
                 announcement: a,
                 onDelete: () => _delete(a),
                 onEdit: () => _edit(a),
+                onReturn: _load,
               ),
         ],
       ),
@@ -218,18 +217,23 @@ class _AnnouncementTile extends StatelessWidget {
   final Announcement announcement;
   final VoidCallback onDelete;
   final VoidCallback onEdit;
+  final VoidCallback? onReturn;
   const _AnnouncementTile({
     required this.announcement,
     required this.onDelete,
     required this.onEdit,
+    this.onReturn,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return InkWell(
-      onTap: () => context.push('/announcements/${announcement.id}'),
-      borderRadius: AppBorderRadius.lgRadius,
+      onTap: () async {
+        await context.push('/announcements/${announcement.id}');
+        onReturn?.call();
+      },
+      borderRadius: BorderRadius.circular(AppBorderRadius.lg),
       child: Card(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.lg),
@@ -288,8 +292,6 @@ class _AnnouncementTile extends StatelessWidget {
 
 /// Reused by both the school-admin and MoE flows. Pass `forMoE = true` and
 /// an empty `schools` list when posting a ministry-level announcement.
-///
-/// Phase 11: also accepts an optional banner image (web file picker).
 class AnnouncementComposeDialog extends StatefulWidget {
   final List<School> schools;
   final bool forMoE;
@@ -517,7 +519,6 @@ class _AnnouncementComposeDialogState extends State<AnnouncementComposeDialog> {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      // Phase 11 — optional banner image.
                       Container(
                         decoration: BoxDecoration(
                           border: Border.all(color: theme.colorScheme.outline.withOpacity(0.3)),
@@ -833,7 +834,7 @@ class _EditAnnouncementDialogState extends ConsumerState<_EditAnnouncementDialog
       }
       
       if (mounted) {
-        Navigator.pop(context, true); // Return true to indicate success
+        Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {

@@ -1,4 +1,4 @@
-/// Design System for School Recommendation System
+/// Design System for Fidel Guide
 /// Provides consistent spacing, sizing, and layout guidelines
 /// based on a 4px base unit for visual rhythm
 

@@ -18,7 +18,7 @@ class RegisterScreen extends ConsumerStatefulWidget {
 
 /// Whether the user is signing up with an email-as-credential (legacy path,
 /// gated by a verification email) or a phone-as-credential (no verification,
-/// usable immediately). Backend supports both — see Phase 10 backend changes.
+/// usable immediately). Backend supports both.
 enum _IdentifierKind { email, phone }
 
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {

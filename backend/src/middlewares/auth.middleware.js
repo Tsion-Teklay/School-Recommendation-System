@@ -25,7 +25,7 @@ export function authenticate(req, res, next) {
 }
 
 /**
- * Phase 11 — soft auth for public routes that *can* personalize when the
+ * Soft auth for public routes that *can* personalize when the
  * caller is logged in (e.g. announcements list with `followedOnly=true`).
  *
  * Behaviour:

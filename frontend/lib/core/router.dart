@@ -246,7 +246,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           );
         },
       ),
-      // Phase 9: notifications inbox.
       GoRoute(
         path: '/notifications',
         pageBuilder: (context, state) => AppAnimations.slideInFromRight(
@@ -254,7 +253,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           child: const NotificationsScreen(),
         ),
       ),
-      // Phase 11: parent-facing announcements feed + deep-linked detail.
       GoRoute(
         path: '/announcements',
         pageBuilder: (context, state) => AppAnimations.bounceSlide(
@@ -281,7 +279,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           );
         },
       ),
-      // Phase 9: forum.
       GoRoute(
         path: '/forum',
         pageBuilder: (context, state) => AppAnimations.slideInFromRight(
@@ -308,7 +305,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           );
         },
       ),
-      // Phase 9: school-admin portal.
       GoRoute(
         path: '/admin',
         pageBuilder: (context, state) => AppAnimations.slideInFromRight(
@@ -350,7 +346,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
       ),
 
-      // Phase 9: MoE portal.
       GoRoute(
         path: '/moe',
         pageBuilder: (context, state) => AppAnimations.slideInFromRight(
@@ -379,7 +374,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           child: const MoeAnnouncementsScreen(),
         ),
       ),
-      // Phase 9: moderation portal.
       GoRoute(
         path: '/moderation',
         pageBuilder: (context, state) => AppAnimations.slideInFromRight(

@@ -33,8 +33,8 @@ class _PreferencesScreenState extends ConsumerState<PreferencesScreen> {
   final _address = TextEditingController();
 
   PreferredCurriculum? _curriculum;
-  SchoolLevel? _schoolLevel;   // Add  
-  SchoolType? _schoolType;     // Add
+  SchoolLevel? _schoolLevel;
+  SchoolType? _schoolType;
   // The recommender treats home pin as a triple (address + lat + lng). The
   // map below lets the user drop a pin; we keep the lat/lng here. Address is
   // a free-text field (the parent types a label like "Bole, Addis Ababa").
@@ -96,8 +96,8 @@ class _PreferencesScreenState extends ConsumerState<PreferencesScreen> {
       _pin = LatLng(p.latitude!, p.longitude!);
     }
     _curriculum = p.curriculum;
-    _schoolLevel = p.schoolLevel;  // Add  
-    _schoolType = p.schoolType;    // Add  
+    _schoolLevel = p.schoolLevel;
+    _schoolType = p.schoolType;
   }
 
   // The backend stores tuition fees / budgets as Decimal(10,2). Render

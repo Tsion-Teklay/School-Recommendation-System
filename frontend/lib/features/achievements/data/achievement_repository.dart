@@ -33,7 +33,6 @@ class AchievementRepository {
     required List<PickedFile> documents,
   }) async {
     final form = FormData();
-    // Add files
     for (final f in documents) {
       form.files.add(MapEntry(
         'documents',
@@ -43,7 +42,6 @@ class AchievementRepository {
         ),
       ));
     }
-    // Add optional description as form field
     if (description != null && description.isNotEmpty) {
       form.fields.add(MapEntry('description', description));
     }

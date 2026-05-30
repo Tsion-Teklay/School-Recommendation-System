@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'typography.dart';
 
-/// Custom color palette for the School Recommendation System
+/// Custom color palette for Fidel Guide
 /// Designed to be distinctive, professional, and education-focused
 class AppColors {
   // Primary brand colors - Rich navy blue for trust and professionalism

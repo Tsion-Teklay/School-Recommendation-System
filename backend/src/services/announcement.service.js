@@ -37,8 +37,6 @@ export async function createAnnouncement(data, user) {
     schoolId = null;
   }
 
-  // Phase 5 — content moderation. Title + body both pass through the
-  // validator. Throws CONTENT_REJECTED before we hit the DB.
   validateContent(rest.title, { field: "title" });
   validateContent(rest.content, { field: "content" });
 
@@ -187,7 +185,7 @@ export async function getAnnouncementById(id) {
   return announcement;
 }
 
-// Phase 11 — image upload pipeline for school announcements. The multer
+// Image upload pipeline for school announcements. The multer
 // middleware writes the file to disk; this function only flips the row's
 // `imgUrl` column. SCHOOL_ADMIN owns the announcement they created (and
 // implicitly the school the announcement belongs to). MoE-level posts can

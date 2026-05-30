@@ -2,7 +2,6 @@ import { z } from "zod";
 import { paginationQuery } from "./common.schema.js";
 
 const curriculumEnum = z.enum(["LOCAL", "INTERNATIONAL"]);
-// Phase 11 — must stay in sync with the Prisma `SchoolLevel` enum.
 const schoolLevelEnum = z.enum(["PRE_PRIMARY", "PRIMARY", "SECONDARY"]);
 const schoolTypeEnum = z.enum(["PRIVATE", "GOVERNMENT", "CHURCH"]);
 
@@ -42,16 +41,13 @@ export const updateSchoolBodySchema = createSchoolBodySchema
 export const listSchoolsQuerySchema = z.object({
   search: z.string().trim().optional(),
   curriculum: curriculumEnum.optional(),
-  // Phase 11 — new filter chip on the schools list.
   schoolLevel: schoolLevelEnum.optional(),
   schoolType: schoolTypeEnum.optional(),
   subCity: z.enum(["ADDIS_KETEMA", "AKALI_KALTI", "ARADA", "BOLE", "GULELE", "KOLFE_KERANIO", "KIRKOS", "LIDETA", "NIFAS_SILK_LAFTO", "YEKKA"]).nullable().optional(),
   minFee: z.coerce.number().nonnegative().optional(),
   maxFee: z.coerce.number().nonnegative().optional(),
-  // Phase 11 — "stars and up" filter. Decimal so the UI can pass values like
-  // 4.5 if it ever wants half-star precision.
   minRating: z.coerce.number().min(0).max(5).optional(),
-  // Phase 4: proximity search.
+  // Proximity search.
   // `near` is a "lat,lng" string. Validated here for shape; the service
   // re-parses and bounds-checks the numeric ranges so the same guard fires
   // for non-HTTP callers too.

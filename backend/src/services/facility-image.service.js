@@ -6,7 +6,7 @@ import {
 } from "../utils/errors.js";
 
 /**
- * Phase 11 — facility image management.
+ * Facility image management.
  *
  * Pictures live on disk under `uploads/facility-images/` (see `uploads.js`).
  * This service only stores/removes the row in `FacilityImage`; the multer

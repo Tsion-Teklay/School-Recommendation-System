@@ -2,7 +2,7 @@ import { z } from "zod";
 import { paginationQuery } from "./common.schema.js";
 
 /**
- * Phase 4 — comparisons.
+ * Comparisons.
  *
  * A parent compares 2–5 schools side by side. We deliberately enforce the
  * cap at the schema layer (and again in the service for callers that

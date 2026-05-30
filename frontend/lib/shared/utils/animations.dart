@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme.dart';
 
-/// Comprehensive animation system for the School Recommendation System
+/// Comprehensive animation system for Fidel Guide
 /// Provides unique page transitions and micro-interactions that match the navy blue theme
 class AppAnimations {
   AppAnimations._();

@@ -130,8 +130,7 @@ class _AchievementsManageScreenState extends ConsumerState<AchievementsManageScr
       setState(() => _error = 'Please upload at least one document');
       return;
     }
-    
-    // Check if user is authenticated
+
     final authController = ref.read(authControllerProvider);
     if (!authController.isAuthenticated) {
       setState(() => _error = 'You must be logged in to submit achievements');

@@ -10,7 +10,7 @@ import '../state/notifications_controller.dart';
 
 /// Inbox view of `/api/notifications`. Two-tab toggle (All / Unread) +
 /// tap-to-mark-read. Pagination follows the same NotificationListener
-/// pattern Phase 8 introduced for the schools list.
+/// pattern introduced for the schools list.
 class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
 
@@ -203,7 +203,6 @@ String? _routeFor(AppNotification n, UserRole? role) {
     case NotificationSourceType.forumPost:
       return '/forum/$id';
     case NotificationSourceType.announcement:
-      // Phase 11 — deep-link parents into the announcement detail screen.
       return '/announcements/$id';
     case NotificationSourceType.report:
       if (role == UserRole.moderator) {

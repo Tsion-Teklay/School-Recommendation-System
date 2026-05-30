@@ -10,12 +10,11 @@ import '../../recommendations/presentation/recommendations_screen.dart';
 
 /// Role-routed home. Each role lands on its own portal:
 ///
-/// - **Parent** → recommendations dashboard (Phase 8 headline feature).
-/// - **School admin** → my-schools list + verification + announcements
-///   (Phase 9 admin portal).
+/// - **Parent** → recommendations dashboard.
+/// - **School admin** → my-schools list + verification + announcements.
 /// - **MoE / Ministry** → analytics dashboard + verification queue + ministry
-///   announcements (Phase 9 MoE portal).
-/// - **Moderator** → reports queue (Phase 9 moderation portal).
+///   announcements.
+/// - **Moderator** → reports queue.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 

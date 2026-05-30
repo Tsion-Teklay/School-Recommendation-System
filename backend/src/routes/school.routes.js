@@ -29,7 +29,6 @@ import {
 
 const router = express.Router();
 
-// Phase 11 — both `:id` (school) and `:imgId` (image) are positive ints.
 const imageParamsSchema = z.object({
   id: z.coerce.number().int().positive(),
   imgId: z.coerce.number().int().positive(),

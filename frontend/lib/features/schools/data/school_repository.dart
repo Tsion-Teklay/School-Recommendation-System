@@ -119,7 +119,7 @@ class SchoolRepository {
     if (res.statusCode != 200) throw _toApiException(res);
   }
 
-  /// Phase 11 — upload one facility image (PNG/JPEG/WebP, ≤ 10MB).
+  /// Upload one facility image (PNG/JPEG/WebP, ≤ 10MB).
   /// School admin only. Returns the newly created FacilityImage row.
   Future<FacilityImage> uploadFacilityImage({
     required int schoolId,
@@ -150,7 +150,7 @@ class SchoolRepository {
     return FacilityImage.fromJson(raw);
   }
 
-  /// Phase 11 — delete a facility image by id. School admin only.
+  /// Delete a facility image by id. School admin only.
   Future<void> deleteFacilityImage({
     required int schoolId,
     required int imageId,

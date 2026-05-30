@@ -59,7 +59,7 @@ router.get(
  * /api/analytics/dashboard.csv:
  *   get:
  *     tags: [Analytics]
- *     summary: Phase 6 — same dashboard payload, CSV-flattened (MOE_OFFICER only)
+ *     summary: Dashboard summary as CSV (MOE_OFFICER only)
  *     description: |
  *       Returns the dashboard summary, group counts, top schools, and most
  *       followed schools as a multi-section CSV suitable for opening in

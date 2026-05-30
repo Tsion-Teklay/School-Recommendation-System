@@ -9,9 +9,8 @@ const targetTypeEnum = z.enum([
 const reportStatusEnum = z.enum(["PENDING", "REVIEWED", "RESOLVED"]);
 
 /**
- * Phase 5 — typed moderator actions. The action_type column is now an
- * enum (see migration 20260427190000_phase5_forum_moderation), so the
- * schema must reject anything outside this set.
+ * Typed moderator actions. The action_type column is an
+ * enum, so the schema must reject anything outside this set.
  */
 const moderatorActionEnum = z.enum([
   "DISMISS",

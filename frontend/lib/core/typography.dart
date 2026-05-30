@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'theme.dart';
 
-/// Comprehensive typography system for the School Recommendation System
+/// Comprehensive typography system for Fidel Guide
 /// Provides consistent text styling across the application
 class AppTypography {
   AppTypography._();

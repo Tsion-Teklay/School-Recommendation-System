@@ -71,7 +71,6 @@ class _MoeAnnouncementsScreenState
     try {
       final repo = ref.read(announcementRepositoryProvider);
       final created = await repo.createForMoe(result.input);
-      // Phase 11 — attach the optional banner image after creation.
       if (result.image != null) {
         await repo.uploadImage(
           id: created.id,
@@ -227,10 +226,6 @@ class _MoeAnnouncementsScreenState
   }
 }
 
-// Phase 11: the dedicated MoE compose dialog was retired in favor of the
-// shared `AnnouncementComposeDialog` (forMoE=true) so the image-attachment
-// path is identical across roles.
-
 /// Edit dialog for MoE announcements with image management support
 class _EditAnnouncementDialog extends ConsumerStatefulWidget {
   final Announcement announcement;
@@ -321,7 +316,7 @@ class _EditAnnouncementDialogState extends ConsumerState<_EditAnnouncementDialog
       }
       
       if (mounted) {
-        Navigator.pop(context, true); // Return true to indicate success
+        Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {

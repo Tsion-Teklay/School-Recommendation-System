@@ -34,7 +34,6 @@ export async function getTrainingData(req, res) {
           school_type_score: features.scores?.school_type ?? 0,
           passing_rate_score: features.scores?.passing_rate ?? 0,
           national_exam_score: features.scores?.national_exam ?? 0,
-          // Add new features if available
           total_students_score: features.scores?.total_students ?? 0,
           gender_balance_score: features.scores?.gender_balance ?? 0,
           achievement_score: features.scores?.achievement_score ?? 0,

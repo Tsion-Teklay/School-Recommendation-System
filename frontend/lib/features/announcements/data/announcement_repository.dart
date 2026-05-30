@@ -100,7 +100,7 @@ class AnnouncementRepository {
     );
   }
 
-  /// Phase 11 — fetch a single announcement (used by the deep-linkable
+  /// Fetch a single announcement (used by the deep-linkable
   /// detail screen). Returns the announcement with `school` summary
   /// joined and `imgUrl` populated when present.
   Future<Announcement> getById(int id) async {
@@ -112,7 +112,7 @@ class AnnouncementRepository {
     );
   }
 
-  /// Phase 11 — attach (or replace) the banner image on an existing
+  /// Attach (or replace) the banner image on an existing
   /// announcement. Only the original publisher (school admin / MoE
   /// officer) may call this.
   Future<Announcement> uploadImage({
@@ -139,7 +139,7 @@ class AnnouncementRepository {
     );
   }
 
-  /// Phase 11 — clear the banner image from an announcement.
+  /// Clear the banner image from an announcement.
   Future<void> deleteImage(int id) async {
     final res = await _dio.delete('/api/announcements/$id/image');
     if (res.statusCode != 200 && res.statusCode != 204) {
