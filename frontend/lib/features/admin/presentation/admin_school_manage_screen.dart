@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/location_helper.dart';
 
 import '../../../core/config.dart';
@@ -1205,8 +1206,22 @@ class _VerificationRequestTile extends StatelessWidget {
               for (final d in req.documents)
                 Padding(
                   padding: const EdgeInsets.only(left: 8, top: 2),
-                  child: Text('· ${d.originalName ?? d.url}',
-                      style: theme.textTheme.bodySmall),
+                  child: InkWell(
+                    onTap: () async {
+                      final url = _absoluteImage(d.url);
+                      final uri = Uri.parse(url);
+                      if (await canLaunchUrl(uri)) {
+                        await launchUrl(uri);
+                      }
+                    },
+                    child: Text(
+                      '· ${d.originalName ?? d.url}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.primary,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
                 ),
             ],
           ],

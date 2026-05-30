@@ -31,6 +31,8 @@ ThemeData appTheme() {
         fontWeight: FontWeight.w600,
         color: const Color(0xFF1A1D23),
       ),
+
+
       bodyLarge: GoogleFonts.plusJakartaSans(
         fontSize: 16,
         height: 1.5,

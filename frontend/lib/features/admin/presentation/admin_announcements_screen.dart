@@ -301,6 +301,7 @@ class AnnouncementComposeDialog extends StatefulWidget {
 }
 
 class _AnnouncementComposeDialogState extends State<AnnouncementComposeDialog> {
+  final _formKey = GlobalKey<FormState>();
   final _titleCtrl = TextEditingController();
   final _contentCtrl = TextEditingController();
   AnnouncementCategory _category = AnnouncementCategory.other;
@@ -338,118 +339,319 @@ class _AnnouncementComposeDialogState extends State<AnnouncementComposeDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return AlertDialog(
-      title: Text(widget.forMoE
-          ? 'New ministry announcement'
-          : 'New school announcement'),
-      content: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 480),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (!widget.forMoE && widget.schools.isNotEmpty)
-                if (widget.schools.length == 1)
-                  // Show school name as read-only when there's only one school (school admin case)
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'School',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        widget.schools.first.schoolName,
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  )
-                else
-                  // Show dropdown when there are multiple schools (for other cases)
-                  DropdownButtonFormField<int>(
-                    initialValue: _schoolId,
-                    decoration: const InputDecoration(labelText: 'School'),
-                    items: [
-                      for (final s in widget.schools)
-                        DropdownMenuItem(value: s.id, child: Text(s.schoolName)),
-                    ],
-                    onChanged: (v) => setState(() => _schoolId = v),
+    return Dialog(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 500, maxHeight: 700),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.add_circle_outline, color: theme.colorScheme.onPrimaryContainer),
+                  const SizedBox(width: 12),
+                  Text(
+                    widget.forMoE ? 'New ministry announcement' : 'New school announcement',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      color: theme.colorScheme.onPrimaryContainer,
+                    ),
                   ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _titleCtrl,
-                decoration: const InputDecoration(labelText: 'Title'),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _contentCtrl,
-                decoration: const InputDecoration(labelText: 'Content'),
-                minLines: 3,
-                maxLines: 8,
-              ),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<AnnouncementCategory>(
-                initialValue: _category,
-                decoration: const InputDecoration(labelText: 'Category'),
-                items: [
-                  for (final c in AnnouncementCategory.values)
-                    DropdownMenuItem(value: c, child: Text(c.label())),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
                 ],
-                onChanged: (v) => setState(() => _category = v ?? _category),
               ),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<UrgencyLevel>(
-                initialValue: _urgency,
-                decoration: const InputDecoration(labelText: 'Urgency'),
-                items: [
-                  for (final u in UrgencyLevel.values)
-                    DropdownMenuItem(value: u, child: Text(u.label())),
+            ),
+            // Form content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (!widget.forMoE && widget.schools.isNotEmpty)
+                        if (widget.schools.length == 1)
+                          // Show school name as read-only when there's only one school (school admin case)
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'School',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  widget.schools.first.schoolName,
+                                  style: theme.textTheme.bodyLarge?.copyWith(
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        else
+                          // Show dropdown when there are multiple schools (for other cases)
+                          DropdownButtonFormField<int>(
+                            initialValue: _schoolId,
+                            decoration: InputDecoration(
+                              labelText: 'School',
+                              filled: true,
+                              fillColor: theme.colorScheme.surfaceContainerHighest,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                            items: [
+                              for (final s in widget.schools)
+                                DropdownMenuItem(value: s.id, child: Text(s.schoolName)),
+                            ],
+                            onChanged: (v) => setState(() => _schoolId = v),
+                          ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _titleCtrl,
+                        decoration: InputDecoration(
+                          labelText: 'Title',
+                          filled: true,
+                          fillColor: theme.colorScheme.surfaceContainerHighest,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Title is required';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _contentCtrl,
+                        decoration: InputDecoration(
+                          labelText: 'Content',
+                          filled: true,
+                          fillColor: theme.colorScheme.surfaceContainerHighest,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                        minLines: 4,
+                        maxLines: 8,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Content is required';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: DropdownButtonFormField<AnnouncementCategory>(
+                              initialValue: _category,
+                              decoration: InputDecoration(
+                                labelText: 'Category',
+                                filled: true,
+                                fillColor: theme.colorScheme.surfaceContainerHighest,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide.none,
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              ),
+                              items: [
+                                for (final c in AnnouncementCategory.values)
+                                  DropdownMenuItem(value: c, child: Text(c.label())),
+                              ],
+                              onChanged: (v) => setState(() => _category = v ?? _category),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: DropdownButtonFormField<UrgencyLevel>(
+                              initialValue: _urgency,
+                              decoration: InputDecoration(
+                                labelText: 'Urgency',
+                                filled: true,
+                                fillColor: theme.colorScheme.surfaceContainerHighest,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide.none,
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              ),
+                              items: [
+                                for (final u in UrgencyLevel.values)
+                                  DropdownMenuItem(value: u, child: Text(u.label())),
+                              ],
+                              onChanged: (v) => setState(() => _urgency = v ?? _urgency),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      // Phase 11 — optional banner image.
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: theme.colorScheme.outline.withOpacity(0.3)),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (_picked != null)
+                              ClipRRect(
+                                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                                child: Image.memory(
+                                  _picked!.bytes,
+                                  width: double.infinity,
+                                  height: 150,
+                                  fit: BoxFit.cover,
+                                ),
+                              )
+                            else
+                              Container(
+                                width: double.infinity,
+                                height: 120,
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.surfaceContainerHighest,
+                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                                ),
+                                child: Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.add_photo_alternate,
+                                        size: 40,
+                                        color: theme.colorScheme.onSurfaceVariant),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'No image selected (optional)',
+                                        style: TextStyle(
+                                          color: theme.colorScheme.onSurfaceVariant,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Row(
+                                children: [
+                                  if (_picked != null)
+                                    Expanded(
+                                      child: OutlinedButton.icon(
+                                        onPressed: () => setState(() => _picked = null),
+                                        icon: const Icon(Icons.delete_outline, size: 18),
+                                        label: const Text('Remove', style: TextStyle(fontSize: 12)),
+                                        style: OutlinedButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(vertical: 8),
+                                        ),
+                                      ),
+                                    ),
+                                  if (_picked != null) const SizedBox(width: 8),
+                                  Expanded(
+                                    child: FilledButton.icon(
+                                      onPressed: _pickImage,
+                                      icon: Icon(_picked == null ? Icons.add_photo_alternate : Icons.swap_horiz, size: 18),
+                                      label: Text(_picked == null ? 'Add Image' : 'Replace', style: TextStyle(fontSize: 12)),
+                                      style: FilledButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(vertical: 8),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (_pickError != null) ...[
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.errorContainer,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            _pickError!,
+                            style: TextStyle(color: theme.colorScheme.onErrorContainer, fontSize: 12),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            // Footer actions
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                border: Border(
+                  top: BorderSide(color: theme.colorScheme.outline.withOpacity(0.3)),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: 12),
+                  FilledButton(
+                    onPressed: () {
+                      if (!_formKey.currentState!.validate()) {
+                        return;
+                      }
+                      final input = AnnouncementInput(
+                        title: _titleCtrl.text.trim(),
+                        content: _contentCtrl.text.trim(),
+                        category: _category,
+                        urgencyLevel: _urgency,
+                        schoolId: widget.forMoE ? null : _schoolId,
+                      );
+                      Navigator.of(context).pop(
+                        AnnouncementComposeResult(input: input, image: _picked),
+                      );
+                    },
+                    child: Text(
+                        theme.platform == TargetPlatform.iOS ? 'Publish' : 'Publish'),
+                  ),
                 ],
-                onChanged: (v) => setState(() => _urgency = v ?? _urgency),
               ),
-              const SizedBox(height: 12),
-              // Phase 11 — optional banner image.
-              ImageAttachmentRow(
-                picked: _picked,
-                onPick: _pickImage,
-                onClear: () => setState(() => _picked = null),
-                error: _pickError,
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
-      actions: [
-        TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel')),
-        FilledButton(
-          onPressed: () {
-            if (_titleCtrl.text.trim().isEmpty ||
-                _contentCtrl.text.trim().isEmpty) {
-              return;
-            }
-            final input = AnnouncementInput(
-              title: _titleCtrl.text.trim(),
-              content: _contentCtrl.text.trim(),
-              category: _category,
-              urgencyLevel: _urgency,
-              schoolId: widget.forMoE ? null : _schoolId,
-            );
-            Navigator.of(context).pop(
-              AnnouncementComposeResult(input: input, image: _picked),
-            );
-          },
-          child: Text(
-              theme.platform == TargetPlatform.iOS ? 'Publish' : 'Publish'),
-        ),
-      ],
     );
   }
 }
