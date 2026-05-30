@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../shared/widgets/responsive_shell.dart';
 import '../../../shared/widgets/modern_card.dart';
+import '../../../shared/utils/animations.dart';
 import '../../../core/theme.dart';
 import '../../../core/typography.dart';
 import '../../auth/state/auth_controller.dart';
@@ -127,80 +128,85 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
           else
             Column(
               children: [
-                for (final s in _schools)
-                  ModernCard(
-                    onTap: () => context.go('/admin/schools/${s.id}'),
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                s.schoolName,
-                                style: TextStyles.cardTitle,
-                              ),
-                              const SizedBox(height: 8),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 4,
-                                children: [
-                                  _buildStatusChip(
-                                    s.curriculum.label(),
-                                    AppColors.textSecondary,
-                                  ),
-                                  _buildStatusChip(
-                                    s.verificationStatus.label(),
-                                    _getVerificationColor(s.verificationStatus),
-                                  ),
-                                  if ((s.followerCount ?? 0) > 0)
+                for (int index = 0; index < _schools.length; index++)
+                  AppAnimations.slideInListItem(
+                    delay: Duration(milliseconds: index * 50),
+                    child: ModernCard(
+                      onTap: () => context.go('/admin/schools/${_schools[index].id}'),
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _schools[index].schoolName,
+                                  style: TextStyles.cardTitle,
+                                ),
+                                const SizedBox(height: 8),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 4,
+                                  children: [
                                     _buildStatusChip(
-                                      '${s.followerCount} follower(s)',
-                                      AppColors.primary,
+                                      _schools[index].curriculum.label(),
+                                      AppColors.textSecondary,
                                     ),
-                                ],
+                                    _buildStatusChip(
+                                      _schools[index].verificationStatus.label(),
+                                      _getVerificationColor(_schools[index].verificationStatus),
+                                    ),
+                                    if ((_schools[index].followerCount ?? 0) > 0)
+                                      _buildStatusChip(
+                                        '${_schools[index].followerCount} follower(s)',
+                                        AppColors.primary,
+                                      ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Wrap(
+                            spacing: 4,
+                            children: [
+                              IconButton(
+                                tooltip: 'View public page',
+                                onPressed: () => context.go('/schools/${_schools[index].id}'),
+                                icon: const Icon(Icons.open_in_new),
+                                style: IconButton.styleFrom(
+                                  backgroundColor: AppColors.surfaceVariant,
+                                ),
+                              ),
+                              IconButton(
+                                tooltip: 'Manage',
+                                onPressed: () =>
+                                    context.go('/admin/schools/${_schools[index].id}'),
+                                icon: const Icon(Icons.settings_outlined),
+                                style: IconButton.styleFrom(
+                                  backgroundColor: AppColors.primary.withOpacity(0.1),
+                                  foregroundColor: AppColors.primary,
+                                ),
                               ),
                             ],
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Wrap(
-                          spacing: 4,
-                          children: [
-                            IconButton(
-                              tooltip: 'View public page',
-                              onPressed: () => context.go('/schools/${s.id}'),
-                              icon: const Icon(Icons.open_in_new),
-                              style: IconButton.styleFrom(
-                                backgroundColor: AppColors.surfaceVariant,
-                              ),
-                            ),
-                            IconButton(
-                              tooltip: 'Manage',
-                              onPressed: () =>
-                                  context.go('/admin/schools/${s.id}'),
-                              icon: const Icon(Icons.settings_outlined),
-                              style: IconButton.styleFrom(
-                                backgroundColor: AppColors.primary.withOpacity(0.1),
-                                foregroundColor: AppColors.primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
               ],
             ),
           const SizedBox(height: 24),
-          InfoCard(
-            title: 'Announcements',
-            description: 'Post updates that fan out to every parent who follows one of your schools.',
-            icon: Icons.campaign_outlined,
-            iconColor: AppColors.accent,
+          AppAnimations.tapScale(
             onTap: () => context.go('/admin/announcements'),
-            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+            child: InfoCard(
+              title: 'Announcements',
+              description: 'Post updates that fan out to every parent who follows one of your schools.',
+              icon: Icons.campaign_outlined,
+              iconColor: AppColors.accent,
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+            ),
           ),
         ],
       ),
