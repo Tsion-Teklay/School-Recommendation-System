@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'dart:html' as html;
+import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 
 class ShareAction extends StatelessWidget {
   final String title;
@@ -17,21 +18,16 @@ class ShareAction extends StatelessWidget {
     final shareText = '$title\n\n$content\n\n$url';
 
     try {
-      // Try Web Share API first
-      if (html.window.navigator.share != null) {
-        await html.window.navigator.share({
-          'title': title,
-          'text': content,
-          'url': url,
-        });
-      } else {
-        // Fallback: copy to clipboard
-        await html.window.navigator.clipboard?.writeText(shareText);
-        _showClipboardMessage(context);
-      }
+      await SharePlus.instance.share(
+        ShareParams(
+          text: shareText,
+        ),
+      );
     } catch (e) {
-      // If sharing fails, fallback to clipboard
-      await html.window.navigator.clipboard?.writeText(shareText);
+      await Clipboard.setData(
+        ClipboardData(text: shareText),
+      );
+
       _showClipboardMessage(context);
     }
   }
