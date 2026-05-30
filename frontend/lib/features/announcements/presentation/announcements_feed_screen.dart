@@ -4,10 +4,15 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/config.dart';
 import '../../../shared/widgets/responsive_shell.dart';
+import '../../../shared/widgets/like_action.dart';
+import '../../../shared/widgets/share_action.dart';
+import '../../../shared/widgets/report_dialog.dart';
 import '../data/announcement_dtos.dart';
 import '../state/announcements_feed_controller.dart';
 import '../../auth/state/auth_controller.dart';
 import '../../auth/data/auth_dtos.dart';
+import '../../likes/data/like_dtos.dart';
+import '../../reports/data/report_dtos.dart';
 
 /// `/announcements` — public list of school + ministry announcements.
 /// Parents get an additional "Followed schools only" toggle that bumps
@@ -284,6 +289,33 @@ class AnnouncementCard extends ConsumerWidget {
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 12),
+                  // Action bar
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      LikeAction(
+                        targetType: LikeTargetType.announcement,
+                        targetId: a.id,
+                      ),
+                      ShareAction(
+                        title: a.title,
+                        content: a.content,
+                        url: 'https://yourapp.com/announcements/${a.id}',
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.flag_outlined),
+                        onPressed: () => showDialog(
+                          context: context,
+                          builder: (_) => ReportDialog(
+                            targetType: ReportTargetType.announcement,
+                            targetId: a.id,
+                          ),
+                        ),
+                        tooltip: 'Report',
+                      ),
+                    ],
                   ),
                 ],
               ),

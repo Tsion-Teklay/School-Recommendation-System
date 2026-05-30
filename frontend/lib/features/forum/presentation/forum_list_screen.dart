@@ -3,11 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../shared/widgets/responsive_shell.dart';
+import '../../../shared/widgets/like_action.dart';
+import '../../../shared/widgets/share_action.dart';
+import '../../../shared/widgets/report_dialog.dart';
 import '../../auth/data/auth_dtos.dart';
 import '../../likes/data/like_dtos.dart';
 import '../../likes/state/like_controller.dart';
 import '../data/forum_dtos.dart';
 import '../state/forum_list_controller.dart';
+import '../../reports/data/report_dtos.dart';
 
 class ForumListScreen extends ConsumerStatefulWidget {
   const ForumListScreen({super.key});
@@ -122,31 +126,13 @@ class _ForumListScreenState extends ConsumerState<ForumListScreen> {
   }
 }
 
-class _PostTile extends ConsumerStatefulWidget {
+class _PostTile extends ConsumerWidget {
   final ForumPost post;
   const _PostTile({required this.post});
 
   @override
-  ConsumerState<_PostTile> createState() => _PostTileState();
-}
-
-class _PostTileState extends ConsumerState<_PostTile> {
-  @override
-  void initState() {
-    super.initState();
-    Future.microtask(() {
-      ref
-          .read(likeControllerProvider)
-          .refreshLikeData(LikeTargetType.forumPost, widget.post.id);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final post = widget.post;
-    final ctl = ref.watch(likeControllerProvider);
-    final likeCount = ctl.getLikeCount(LikeTargetType.forumPost, post.id);
 
     return Card(
       child: InkWell(
@@ -182,14 +168,6 @@ class _PostTileState extends ConsumerState<_PostTile> {
                       ],
                     ),
                   ),
-                  if (likeCount > 0)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 4),
-                      child: Chip(
-                        avatar: const Icon(Icons.favorite, size: 16, color: Colors.red),
-                        label: Text('$likeCount'),
-                      ),
-                    ),
                   if ((post.replyCount ?? 0) > 0)
                     Chip(
                       avatar: const Icon(Icons.chat_bubble_outline, size: 16),
@@ -199,6 +177,37 @@ class _PostTileState extends ConsumerState<_PostTile> {
               ),
               const SizedBox(height: 12),
               Text(post.content),
+              const SizedBox(height: 12),
+              // Action bar
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  LikeAction(
+                    targetType: LikeTargetType.forumPost,
+                    targetId: post.id,
+                  ),
+                  ShareAction(
+                    title: post.content.length > 50
+                        ? '${post.content.substring(0, 50)}...'
+                        : post.content,
+                    content: post.content,
+                    url: 'https://yourapp.com/forum/${post.id}',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.flag_outlined),
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (_) => ReportDialog(
+                          targetType: ReportTargetType.forumPost,
+                          targetId: post.id,
+                        ),
+                      );
+                    },
+                    tooltip: 'Report',
+                  ),
+                ],
+              ),
             ],
           ),
         ),
