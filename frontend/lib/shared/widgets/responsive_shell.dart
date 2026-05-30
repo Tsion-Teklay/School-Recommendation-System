@@ -66,12 +66,6 @@ const _allDestinations = <NavDestination>[
     visibleTo: {UserRole.schoolAdmin},
   ),
   NavDestination(
-    label: 'Ministry',
-    icon: Icons.account_balance_outlined,
-    path: '/moe',
-    visibleTo: {UserRole.moeOfficer},
-  ),
-  NavDestination(
     label: 'Reports',
     icon: Icons.report_gmailerrorred,
     path: '/moderation',
