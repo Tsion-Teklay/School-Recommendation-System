@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';  
 import 'package:flutter_riverpod/flutter_riverpod.dart';  
   
+import '../../../shared/utils/error_handler.dart';
+import '../../../shared/utils/message_helper.dart';
 import '../../../shared/widgets/responsive_shell.dart';  
 import '../../../shared/widgets/loading_button.dart';  
 import '../data/achievement_repository.dart';  
@@ -44,7 +46,7 @@ class _StaffBreakdownScreenState extends ConsumerState<StaffBreakdownScreen> {
       final data = await ref.read(achievementRepositoryProvider).getSchoolStaffBreakdown(widget.schoolId);  
       setState(() => _breakdown = data);  
     } catch (e) {  
-      setState(() => _error = e.toString());  
+      setState(() => _error = ErrorHandler.getUserFriendlyMessage(e));  
     } finally {  
       if (mounted) setState(() => _loading = false);  
     }  
@@ -57,18 +59,17 @@ class _StaffBreakdownScreenState extends ConsumerState<StaffBreakdownScreen> {
       _error = null;  
     });  
     try {  
+      final count = int.parse(_countController.text);
       await ref.read(achievementRepositoryProvider).createStaffBreakdown(  
         schoolId: widget.schoolId,  
         educationLevel: _selectedLevel,  
-        count: int.parse(_countController.text),  
+        count: count,  
       );  
       _countController.clear();  
       await _load();  
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(  
-        const SnackBar(content: Text('Staff breakdown added')),  
-      );  
+      if (mounted) MessageHelper.showSuccess(context, 'Staff breakdown added successfully');  
     } catch (e) {  
-      setState(() => _error = e.toString());  
+      setState(() => _error = ErrorHandler.getUserFriendlyMessage(e));  
     } finally {  
       if (mounted) setState(() => _loading = false);  
     }  
@@ -82,27 +83,21 @@ class _StaffBreakdownScreenState extends ConsumerState<StaffBreakdownScreen> {
         count: newCount,  
       );  
       await _load();  
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(  
-        const SnackBar(content: Text('Staff breakdown updated')),  
-      );  
+      if (mounted) MessageHelper.showSuccess(context, 'Staff breakdown updated successfully');  
     } catch (e) {  
-      setState(() => _error = e.toString());  
+      setState(() => _error = ErrorHandler.getUserFriendlyMessage(e));  
     } finally {  
       if (mounted) setState(() => _loading = false);  
     }  
   }  
   
   Future<void> _delete(int id) async {  
-    final confirmed = await showDialog<bool>(  
-      context: context,  
-      builder: (_) => AlertDialog(  
-        title: const Text('Delete Entry'),  
-        content: const Text('Are you sure you want to delete this entry?'),  
-        actions: [  
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),  
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete')),  
-        ],  
-      ),  
+    final confirmed = await MessageHelper.showConfirmationDialog(  
+      context,  
+      'Delete Entry',  
+      'Are you sure you want to delete this entry?',  
+      confirmText: 'Delete',  
+      isDestructive: true,  
     );  
     if (confirmed != true) return;  
   
@@ -110,11 +105,9 @@ class _StaffBreakdownScreenState extends ConsumerState<StaffBreakdownScreen> {
     try {  
       await ref.read(achievementRepositoryProvider).deleteStaffBreakdown(id);  
       await _load();  
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(  
-        const SnackBar(content: Text('Entry deleted')),  
-      );  
+      if (mounted) MessageHelper.showSuccess(context, 'Entry deleted successfully');  
     } catch (e) {  
-      setState(() => _error = e.toString());  
+      setState(() => _error = ErrorHandler.getUserFriendlyMessage(e));  
     } finally {  
       if (mounted) setState(() => _loading = false);  
     }  
@@ -162,7 +155,13 @@ class _StaffBreakdownScreenState extends ConsumerState<StaffBreakdownScreen> {
                               controller: _countController,  
                               decoration: const InputDecoration(labelText: 'Count *'),  
                               keyboardType: TextInputType.number,  
-                              validator: (v) => v?.isEmpty ?? true ? 'Required' : null,  
+                              validator: (v) {
+                                if (v?.isEmpty ?? true) return 'Required';
+                                final count = int.tryParse(v!);
+                                if (count == null) return 'Please enter a valid number';
+                                if (count < 0) return 'Count cannot be negative';
+                                return null;
+                              },  
                             ),  
                             const SizedBox(height: 16),  
                             LoadingButton(  
