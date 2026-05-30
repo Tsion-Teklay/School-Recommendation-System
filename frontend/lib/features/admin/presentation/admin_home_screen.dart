@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../shared/widgets/responsive_shell.dart';
+import '../../../shared/widgets/modern_card.dart';
+import '../../../core/theme.dart';
 import '../../auth/state/auth_controller.dart';
 import '../../schools/data/school_dtos.dart';
 import '../../schools/data/school_repository.dart';
@@ -87,86 +89,154 @@ class _AdminHomeScreenState extends ConsumerState<AdminHomeScreen> {
               child: Center(child: CircularProgressIndicator()),
             )
           else if (_error != null)
-            Card(
-              color: theme.colorScheme.errorContainer,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Text(_error!),
+            ModernCard(
+              backgroundColor: AppColors.errorLight,
+              padding: const EdgeInsets.all(16),
+              elevated: false,
+              bordered: true,
+              child: Text(
+                _error!,
+                style: TextStyle(color: AppColors.error),
               ),
             )
           else if (_schools.isEmpty)
-            Card(
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    const Text('You haven\'t registered a school yet.'),
-                    const SizedBox(height: 12),
-                    FilledButton.icon(
-                      onPressed: () => context.go('/admin/schools/create'),
-                      icon: const Icon(Icons.add),
-                      label: const Text('Register your school'),
-                    ),
-                  ],
-                ),
+            ModernCard(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.school_outlined,
+                    size: 48,
+                    color: AppColors.textTertiary,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'You haven\'t registered a school yet.',
+                    style: theme.textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 12),
+                  FilledButton.icon(
+                    onPressed: () => context.go('/admin/schools/create'),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Register your school'),
+                  ),
+                ],
               ),
             )
           else
             Column(
               children: [
                 for (final s in _schools)
-                  Card(
-                    child: ListTile(
-                      title: Text(s.schoolName),
-                      subtitle: Text(
-                        '${s.curriculum.label()} · ${s.verificationStatus.label()}'
-                        '${(s.followerCount ?? 0) > 0 ? ' · ${s.followerCount} follower(s)' : ''}',
-                      ),
-                      trailing: Wrap(
-                        spacing: 8,
-                        children: [
-                          IconButton(
-                            tooltip: 'View public page',
-                            onPressed: () => context.go('/schools/${s.id}'),
-                            icon: const Icon(Icons.open_in_new),
+                  ModernCard(
+                    onTap: () => context.go('/admin/schools/${s.id}'),
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                s.schoolName,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 4,
+                                children: [
+                                  _buildStatusChip(
+                                    s.curriculum.label(),
+                                    AppColors.textSecondary,
+                                  ),
+                                  _buildStatusChip(
+                                    s.verificationStatus.label(),
+                                    _getVerificationColor(s.verificationStatus),
+                                  ),
+                                  if ((s.followerCount ?? 0) > 0)
+                                    _buildStatusChip(
+                                      '${s.followerCount} follower(s)',
+                                      AppColors.primary,
+                                    ),
+                                ],
+                              ),
+                            ],
                           ),
-                          IconButton(
-                            tooltip: 'Manage',
-                            onPressed: () =>
-                                context.go('/admin/schools/${s.id}'),
-                            icon: const Icon(Icons.settings_outlined),
-                          ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(width: 12),
+                        Wrap(
+                          spacing: 4,
+                          children: [
+                            IconButton(
+                              tooltip: 'View public page',
+                              onPressed: () => context.go('/schools/${s.id}'),
+                              icon: const Icon(Icons.open_in_new),
+                              style: IconButton.styleFrom(
+                                backgroundColor: AppColors.surfaceVariant,
+                              ),
+                            ),
+                            IconButton(
+                              tooltip: 'Manage',
+                              onPressed: () =>
+                                  context.go('/admin/schools/${s.id}'),
+                              icon: const Icon(Icons.settings_outlined),
+                              style: IconButton.styleFrom(
+                                backgroundColor: AppColors.primary.withOpacity(0.1),
+                                foregroundColor: AppColors.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
               ],
             ),
           const SizedBox(height: 24),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Announcements', style: theme.textTheme.titleLarge),
-                  const SizedBox(height: 8),
-                  const Text(
-                    "Post updates that fan out to every parent who follows "
-                    "one of your schools.",
-                  ),
-                  const SizedBox(height: 12),
-                  FilledButton.icon(
-                    onPressed: () => context.go('/admin/announcements'),
-                    icon: const Icon(Icons.campaign_outlined),
-                    label: const Text('Manage announcements'),
-                  ),
-                ],
-              ),
-            ),
+          InfoCard(
+            title: 'Announcements',
+            description: 'Post updates that fan out to every parent who follows one of your schools.',
+            icon: Icons.campaign_outlined,
+            iconColor: AppColors.accent,
+            onTap: () => context.go('/admin/announcements'),
+            trailing: const Icon(Icons.arrow_forward_ios, size: 16),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildStatusChip(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+
+  Color _getVerificationColor(VerificationStatus status) {
+    switch (status) {
+      case VerificationStatus.verified:
+        return AppColors.success;
+      case VerificationStatus.pending:
+        return AppColors.warning;
+      case VerificationStatus.rejected:
+        return AppColors.error;
+      case VerificationStatus.revoked:
+        return AppColors.error;
+    }
   }
 }
