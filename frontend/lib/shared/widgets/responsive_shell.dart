@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/theme.dart';
 import '../../features/auth/data/auth_dtos.dart';
 import '../../features/auth/state/auth_controller.dart';
 import '../../features/notifications/presentation/notification_bell.dart';
+import 'custom_navigation.dart';
 
 /// Breakpoints we use everywhere. Mirrors Material 3 window-size classes.
 class Breakpoints {
@@ -30,9 +32,6 @@ class NavDestination {
   });
 }
 
-/// Phase 9 nav. Order matters — it's the same on rail (desktop/tablet) and
-/// bottom bar (mobile). Role gating drops irrelevant entries; the trim
-/// happens in [_visibleDestinations] below.
 const _allDestinations = <NavDestination>[
   NavDestination(label: 'Home', icon: Icons.home_outlined, path: '/'),
   NavDestination(
@@ -58,18 +57,6 @@ const _allDestinations = <NavDestination>[
     label: 'Inbox',
     icon: Icons.notifications_outlined,
     path: '/notifications',
-  ),
-  NavDestination(
-    label: 'Admin',
-    icon: Icons.business_outlined,
-    path: '/admin',
-    visibleTo: {UserRole.schoolAdmin},
-  ),
-  NavDestination(
-    label: 'Ministry',
-    icon: Icons.account_balance_outlined,
-    path: '/moe',
-    visibleTo: {UserRole.moeOfficer},
   ),
   NavDestination(
     label: 'Reports',
@@ -172,13 +159,13 @@ class ResponsiveShell extends ConsumerWidget {
                     ? 1100.0
                     : (isMedium ? constraints.maxWidth - 48 : double.infinity),
               ),
-              child: Column( // Add Column here  
-        mainAxisSize: MainAxisSize.min,  
-        children: [  
-          child, // Existing page content  
-          const Divider(height: 64), // Optional separator  
-          const _AppFooter(),   
-        ],  
+              child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          child,
+          const Divider(height: 64),
+          const _AppFooter(),
+        ],
       ),  
             ),
           ),
@@ -199,14 +186,8 @@ class ResponsiveShell extends ConsumerWidget {
             _selectedIndex(location, bottomDests).clamp(-1, bottomDests.length - 1);
 
         return Scaffold(
-          appBar: AppBar(
-            title: Row(  
-  children: [  
-    Image.asset('assets/logo.png', height: 32), // Ensure asset is in pubspec.yaml  
-    const SizedBox(width: 12),  
-    Text(title),  
-  ],  
-),
+          appBar: AppNavigationBar(
+            title: title,
             actions: [...?actions, ...defaultActions],
             leading: leading,
           ),
@@ -215,32 +196,31 @@ class ResponsiveShell extends ConsumerWidget {
               ? body
               : Row(
                   children: [
-                    NavigationRail(
-                      extended: isExpanded,
-                      selectedIndex: selected >= 0 ? selected : null,
-                      onDestinationSelected: (i) => context.go(dests[i].path),
-                      destinations: dests
-                          .map((d) => NavigationRailDestination(
-                                icon: Icon(d.icon),
-                                label: Text(d.label),
+                    AppNavigationRail(
+                      selectedIndex: selected >= 0 ? selected : 0,
+                      items: dests
+                          .map((d) => NavigationItem(
+                                label: d.label,
+                                icon: d.icon,
                               ))
                           .toList(),
+                      onDestinationSelected: (i) => context.go(dests[i].path),
+                      extended: isExpanded,
                     ),
                     const VerticalDivider(width: 1),
                     Expanded(child: body),
                   ],
                 ),
           bottomNavigationBar: bottomDests.isNotEmpty && isCompact
-              ? NavigationBar(
-                  selectedIndex:
-                      bottomSelected >= 0 ? bottomSelected : 0,
-                  onDestinationSelected: (i) => context.go(bottomDests[i].path),
-                  destinations: bottomDests
-                      .map((d) => NavigationDestination(
-                            icon: Icon(d.icon),
+              ? AppBottomNavigation(
+                  selectedIndex: bottomSelected >= 0 ? bottomSelected : 0,
+                  items: bottomDests
+                      .map((d) => NavigationItem(
                             label: d.label,
+                            icon: d.icon,
                           ))
                       .toList(),
+                  onDestinationSelected: (i) => context.go(bottomDests[i].path),
                 )
               : null,
         );
@@ -255,27 +235,46 @@ class _AppFooter extends StatelessWidget {
   @override  
   Widget build(BuildContext context) {  
     final theme = Theme.of(context);  
-    return Padding(  
-      padding: const EdgeInsets.only(top: 32.0),  
-      child: Column(  
-        children: [  
-          const Divider(),  
-          const SizedBox(height: 16),  
-          Text(  
-            '© ${DateTime.now().year} School Recommendation System',  
-            style: theme.textTheme.bodySmall?.copyWith(  
-              color: theme.colorScheme.onSurface.withOpacity(0.6),  
-            ),  
-          ),  
-          const SizedBox(height: 8),  
-          Text(  
-            'Ministry of Education',  
-            style: theme.textTheme.bodySmall?.copyWith(  
-              color: theme.colorScheme.onSurface.withOpacity(0.6),  
-            ),  
-          ),  
-        ],  
-      ),  
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(
+            color: theme.colorScheme.outline.withOpacity(0.2),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.email_outlined,
+                size: 14,
+                color: theme.colorScheme.onSurface.withOpacity(0.5),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'info@fidelguide.com',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.6),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '© ${DateTime.now().year} Fidel Guide. All rights reserved.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.5),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );  
   }  
 }

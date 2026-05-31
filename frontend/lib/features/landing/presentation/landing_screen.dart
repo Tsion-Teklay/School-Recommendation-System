@@ -6,6 +6,10 @@ import 'package:go_router/go_router.dart';
 import '../../ads/presentation/ad_banner_section.dart';
 import '../../ads/data/ad_dtos.dart';
 
+import '../../../core/theme.dart';
+import '../../../core/design_system.dart';
+import '../../../shared/widgets/illustrations.dart';
+
 class LandingScreen extends ConsumerWidget {
   const LandingScreen({super.key});
 
@@ -184,6 +188,21 @@ class LandingScreen extends ConsumerWidget {
 
                         const SizedBox(height: 28),
 
+                        // Brand Name with Unique Font
+                        Text(
+                          'FIDEL GUIDE',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 4,
+                            height: 1.2,
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
                         // Main Heading
                         Text(
                           'Education starts\nfrom the right choice.',
@@ -207,7 +226,7 @@ class LandingScreen extends ConsumerWidget {
                           ),
                         ),
 
-                        const SizedBox(height: 24),
+                        SpacingHelper.xxl,
 
                         // Description
                         ConstrainedBox(
@@ -306,7 +325,9 @@ class LandingScreen extends ConsumerWidget {
           'OUR SERVICES',
           style: theme.textTheme.labelLarge?.copyWith(letterSpacing: 2),
         ),
-        const SizedBox(height: 16),
+
+        SpacingHelper.lg,
+
         Text(
           'Empowering education through connected communities.',
           style: theme.textTheme.headlineMedium?.copyWith(
@@ -405,7 +426,7 @@ class LandingScreen extends ConsumerWidget {
           end: Alignment.bottomRight,
           colors: [
             theme.colorScheme.primaryContainer.withOpacity(0.3),
-            theme.colorScheme.secondaryContainer.withOpacity(0.2),
+            theme.colorScheme.tertiaryContainer.withOpacity(0.2),
           ],
         ),
         borderRadius: BorderRadius.circular(32),
@@ -481,7 +502,7 @@ class LandingScreen extends ConsumerWidget {
                         color: theme.colorScheme.primary,
                       ),
                     ),
-                    const SizedBox(height: 32),
+                    SpacingHelper.xxxl,
                     Text(
                       'Empowering Every Child\'s Future',
                       textAlign: TextAlign.center,
@@ -490,7 +511,7 @@ class LandingScreen extends ConsumerWidget {
                         height: 1.3,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SpacingHelper.lg,
                     Text(
                       'Our mission is to democratize access to quality education information across Ethiopia. Every child deserves a school that nurtures their potential, and every family deserves the tools to find it.',
                       textAlign: TextAlign.center,
@@ -520,14 +541,23 @@ class LandingScreen extends ConsumerWidget {
           'OUR IMPACT',
           style: theme.textTheme.labelLarge?.copyWith(letterSpacing: 2),
         ),
-        const SizedBox(height: 16),
+
+        SpacingHelper.lg,
+
         Text(
           'Making a difference in education.',
           style: theme.textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 48),
+
+        SizedBox(height: AppSpacing.massive),
+
+        // Feature illustrations section
+        _FeatureIllustrationsSection(theme: theme),
+
+        SizedBox(height: AppSpacing.massive),
+
         LayoutBuilder(
           builder: (context, constraints) {
             final isMobile = constraints.maxWidth < 600;
@@ -553,7 +583,7 @@ class LandingScreen extends ConsumerWidget {
                   icon: Icons.family_restroom,
                   value: '10,000+',
                   label: 'Parents',
-                  color: theme.colorScheme.secondary,
+                  color: theme.colorScheme.tertiary,
                 ),
                 _StatCard(
                   theme: theme,
@@ -567,7 +597,7 @@ class LandingScreen extends ConsumerWidget {
                   icon: Icons.star,
                   value: '98%',
                   label: 'Satisfaction',
-                  color: Colors.amber,
+                  color: AppColors.primaryLight,
                 ),
               ],
             );
@@ -611,14 +641,18 @@ class LandingScreen extends ConsumerWidget {
           'HOW IT WORKS',
           style: theme.textTheme.labelLarge?.copyWith(letterSpacing: 2),
         ),
-        const SizedBox(height: 16),
+
+        SpacingHelper.lg,
+
         Text(
           'Simple steps to find the right school.',
           style: theme.textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 48),
+
+        SizedBox(height: AppSpacing.massive),
+
         LayoutBuilder(
           builder: (context, constraints) {
             final isMobile = constraints.maxWidth < 800;
@@ -694,14 +728,18 @@ class LandingScreen extends ConsumerWidget {
           'COMMON QUESTIONS',
           style: theme.textTheme.labelLarge?.copyWith(letterSpacing: 2),
         ),
-        const SizedBox(height: 16),
+
+        SpacingHelper.lg,
+
         Text(
           'Answers to get you started.',
           style: theme.textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 32),
+
+        SpacingHelper.xxxl,
+
         _faqItem(
           theme,
           'Is the system free for parents?',
@@ -773,14 +811,18 @@ class LandingScreen extends ConsumerWidget {
           'TESTIMONIALS',
           style: theme.textTheme.labelLarge?.copyWith(letterSpacing: 2),
         ),
-        const SizedBox(height: 16),
+
+        SpacingHelper.lg,
+
         Text(
           'What parents are saying.',
           style: theme.textTheme.headlineMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 48),
+
+        SizedBox(height: AppSpacing.massive),
+
         LayoutBuilder(
           builder: (context, constraints) {
             final isMobile = constraints.maxWidth < 800;
@@ -842,7 +884,7 @@ class LandingScreen extends ConsumerWidget {
           end: Alignment.bottomRight,
           colors: [
             theme.colorScheme.primary.withOpacity(0.1),
-            theme.colorScheme.secondary.withOpacity(0.1),
+            theme.colorScheme.tertiary.withOpacity(0.1),
             theme.colorScheme.tertiary.withOpacity(0.1),
           ],
         ),
@@ -873,7 +915,7 @@ class LandingScreen extends ConsumerWidget {
               height: 100,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: theme.colorScheme.secondary.withOpacity(0.1),
+                color: theme.colorScheme.tertiary.withOpacity(0.1),
               ),
             ),
           ),
@@ -909,7 +951,9 @@ class LandingScreen extends ConsumerWidget {
                     color: theme.colorScheme.onSurface.withOpacity(0.8),
                   ),
                 ),
+
                 const SizedBox(height: 32),
+
                 FilledButton(
                   onPressed: () => context.go('/register'),
                   style: FilledButton.styleFrom(
@@ -932,7 +976,9 @@ class LandingScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
+
+                SpacingHelper.xxl,
+
                 Text(
                   'Join 10,000+ parents already using our platform',
                   textAlign: TextAlign.center,
@@ -1163,7 +1209,7 @@ class _StatCardState extends State<_StatCard>
                 color: widget.color,
               ),
             ),
-            const SizedBox(height: 16),
+            SpacingHelper.lg,
             Text(
               widget.value,
               style: widget.theme.textTheme.headlineMedium?.copyWith(
@@ -1580,20 +1626,19 @@ class _TestimonialCardState extends State<_TestimonialCard>
                   color: widget.theme.colorScheme.onSurface.withOpacity(0.85),
                 ),
               ),
-              const SizedBox(height: 24),
+              SpacingHelper.xxl,
               Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: widget.theme.colorScheme.secondaryContainer
-                          .withOpacity(0.3),
+                      color: widget.theme.colorScheme.tertiaryContainer.withOpacity(0.3),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Icon(
                       widget.icon,
                       size: 24,
-                      color: widget.theme.colorScheme.secondary,
+                      color: widget.theme.colorScheme.tertiary,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -1693,252 +1738,266 @@ class _AppFooter extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(vertical: 60),
-          child: Column(
-            children: [
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final isMobile = constraints.maxWidth < 800;
-
-                  if (isMobile) {
-                    return Column(
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        border: Border(
+          top: BorderSide(
+            color: theme.colorScheme.outline.withOpacity(0.2),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isMobile = constraints.maxWidth < 600;
+              
+              if (isMobile) {
+                return Column(
+                  children: [
+                    Text(
+                      'Fidel Guide',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Your trusted partner in education',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        _FooterColumn(
-                          theme: theme,
-                          title: 'Company',
-                          links: ['About Us', 'Contact', 'Careers'],
+                        Icon(
+                          Icons.email_outlined,
+                          size: 16,
+                          color: theme.colorScheme.onSurface.withOpacity(0.6),
                         ),
-                        const SizedBox(height: 32),
-                        _FooterColumn(
-                          theme: theme,
-                          title: 'Resources',
-                          links: ['Blog', 'Help Center', 'Community'],
+                        const SizedBox(width: 6),
+                        Text(
+                          'info@fidelguide.com',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withOpacity(0.7),
+                          ),
                         ),
-                        const SizedBox(height: 32),
-                        _FooterColumn(
-                          theme: theme,
-                          title: 'Legal',
-                          links: ['Privacy Policy', 'Terms of Service'],
-                        ),
-                        const SizedBox(height: 32),
-                        _FooterContact(theme: theme),
                       ],
-                    );
-                  } else {
-                    return Row(
+                    ),
+                  ],
+                );
+              } else {
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: _FooterColumn(
-                            theme: theme,
-                            title: 'Company',
-                            links: ['About Us', 'Contact', 'Careers'],
+                        Text(
+                          'Fidel Guide',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.primary,
                           ),
                         ),
-                        Expanded(
-                          child: _FooterColumn(
-                            theme: theme,
-                            title: 'Resources',
-                            links: ['Blog', 'Help Center', 'Community'],
+                        const SizedBox(height: 4),
+                        Text(
+                          'Your trusted partner in education',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurface.withOpacity(0.7),
                           ),
-                        ),
-                        Expanded(
-                          child: _FooterColumn(
-                            theme: theme,
-                            title: 'Legal',
-                            links: ['Privacy Policy', 'Terms of Service'],
-                          ),
-                        ),
-                        Expanded(
-                          child: _FooterContact(theme: theme),
                         ),
                       ],
-                    );
-                  }
-                },
-              ),
-              const SizedBox(height: 40),
-              const Divider(),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '© ${DateTime.now().year} School Recommendation System',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.6),
                     ),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.email_outlined,
+                          size: 16,
+                          color: theme.colorScheme.onSurface.withOpacity(0.6),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'info@fidelguide.com',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withOpacity(0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              }
+            },
+          ),
+          const SizedBox(height: 24),
+          Divider(
+            color: theme.colorScheme.outline.withOpacity(0.2),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            '© ${DateTime.now().year} Fidel Guide. All rights reserved.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.5),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Feature illustrations section showcasing key benefits with custom graphics
+class _FeatureIllustrationsSection extends StatelessWidget {
+  final ThemeData theme;
+
+  const _FeatureIllustrationsSection({required this.theme});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          'Why Choose Our Platform?',
+          style: theme.textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        SpacingHelper.lg,
+        Text(
+          'We provide comprehensive tools to help you find the perfect educational environment',
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: theme.colorScheme.onSurface.withOpacity(0.7),
+          ),
+          textAlign: TextAlign.center,
+        ),
+        SpacingHelper.xxxl,
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isMobile = constraints.maxWidth < 800;
+            if (isMobile) {
+              return Column(
+                children: [
+                  _IllustrationFeatureCard(
+                    illustration: IllustrationType.education,
+                    title: 'Quality Education',
+                    description: 'Access detailed information about curriculum, facilities, and performance metrics.',
+                    theme: theme,
                   ),
-                  Row(
-                    children: [
-                      _SocialIcon(
-                        theme: theme,
-                        icon: Icons.facebook,
-                        onTap: () {},
-                      ),
-                      const SizedBox(width: 16),
-                      _SocialIcon(
-                        theme: theme,
-                        icon: Icons.alternate_email,
-                        onTap: () {},
-                      ),
-                      const SizedBox(width: 16),
-                      _SocialIcon(
-                        theme: theme,
-                        icon: Icons.link,
-                        onTap: () {},
-                      ),
-                    ],
+                  SpacingHelper.xxl,
+                  _IllustrationFeatureCard(
+                    illustration: IllustrationType.community,
+                    title: 'Connected Community',
+                    description: 'Join a network of parents, schools, and educators sharing experiences.',
+                    theme: theme,
+                  ),
+                  SpacingHelper.xxl,
+                  _IllustrationFeatureCard(
+                    illustration: IllustrationType.growth,
+                    title: 'Continuous Growth',
+                    description: 'Track achievements and celebrate milestones in your educational journey.',
+                    theme: theme,
                   ),
                 ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _FooterColumn extends StatelessWidget {
-  final ThemeData theme;
-  final String title;
-  final List<String> links;
-
-  const _FooterColumn({
-    required this.theme,
-    required this.title,
-    required this.links,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 16),
-        ...links.map((link) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: GestureDetector(
-                  onTap: () {},
-                  child: Text(
-                    link,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+              );
+            } else {
+              return Row(
+                children: [
+                  Expanded(
+                    child: _IllustrationFeatureCard(
+                      illustration: IllustrationType.education,
+                      title: 'Quality Education',
+                      description: 'Access detailed information about curriculum, facilities, and performance metrics.',
+                      theme: theme,
                     ),
                   ),
-                ),
-              ),
-            )),
-      ],
-    );
-  }
-}
-
-class _FooterContact extends StatelessWidget {
-  final ThemeData theme;
-
-  const _FooterContact({required this.theme});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Contact Us',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Icon(
-              Icons.email_outlined,
-              size: 18,
-              color: theme.colorScheme.onSurface.withOpacity(0.6),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'info@schoolrec.com',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Icon(
-              Icons.location_on_outlined,
-              size: 18,
-              color: theme.colorScheme.onSurface.withOpacity(0.6),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              'Addis Ababa, Ethiopia',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
-              ),
-            ),
-          ],
+                  SizedBox(width: AppSpacing.xxl),
+                  Expanded(
+                    child: _IllustrationFeatureCard(
+                      illustration: IllustrationType.community,
+                      title: 'Connected Community',
+                      description: 'Join a network of parents, schools, and educators sharing experiences.',
+                      theme: theme,
+                    ),
+                  ),
+                  SizedBox(width: AppSpacing.xxl),
+                  Expanded(
+                    child: _IllustrationFeatureCard(
+                      illustration: IllustrationType.growth,
+                      title: 'Continuous Growth',
+                      description: 'Track achievements and celebrate milestones in your educational journey.',
+                      theme: theme,
+                    ),
+                  ),
+                ],
+              );
+            }
+          },
         ),
       ],
     );
   }
 }
 
-class _SocialIcon extends StatefulWidget {
+class _IllustrationFeatureCard extends StatelessWidget {
+  final IllustrationType illustration;
+  final String title;
+  final String description;
   final ThemeData theme;
-  final IconData icon;
-  final VoidCallback onTap;
 
-  const _SocialIcon({
+  const _IllustrationFeatureCard({
+    required this.illustration,
+    required this.title,
+    required this.description,
     required this.theme,
-    required this.icon,
-    required this.onTap,
   });
 
   @override
-  State<_SocialIcon> createState() => _SocialIconState();
-}
-
-class _SocialIconState extends State<_SocialIcon> {
-  bool _isHovered = false;
-
-  @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: widget.theme.colorScheme.surfaceVariant
-                .withOpacity(_isHovered ? 0.3 : 0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(
-            widget.icon,
-            size: 20,
-            color: widget.theme.colorScheme.onSurface.withOpacity(0.6),
-          ),
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.xxl),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppBorderRadius.lg),
+        border: Border.all(
+          color: theme.colorScheme.outline.withOpacity(0.2),
         ),
+      ),
+      child: Column(
+        children: [
+          AppIllustration(
+            type: illustration,
+            size: AppSizing.iconXl * 1.5,
+            color: theme.colorScheme.primary,
+            showBackground: true,
+          ),
+          SpacingHelper.lg,
+          Text(
+            title,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SpacingHelper.sm,
+          Text(
+            description,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.7),
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }

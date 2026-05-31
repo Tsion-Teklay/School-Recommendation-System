@@ -6,7 +6,7 @@ import '../../auth/data/auth_repository.dart' show ApiException;
 import 'preference_dtos.dart';
 import '../../schools/data/school_dtos.dart';
 
-/// Thin wrapper around the Phase 10 preferences endpoints. Mirrors the
+/// Thin wrapper around the preferences endpoints. Mirrors the
 /// pattern in AuthRepository — one method per route, no caching, surfaces
 /// backend `error`/`code` envelopes via ApiException.
 class PreferenceRepository {

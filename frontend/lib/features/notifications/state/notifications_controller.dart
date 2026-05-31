@@ -7,7 +7,7 @@ import '../data/notification_dtos.dart';
 import '../data/notification_repository.dart';
 
 /// Paginated controller for the inbox. Same shape as the schools list
-/// controller in Phase 8: `applyFilters` resets to page 1, `loadMore`
+/// controller: `applyFilters` resets to page 1, `loadMore`
 /// appends, `refresh` reloads the current page.
 ///
 /// We also expose a quick `unreadCount` derived from the current page so the

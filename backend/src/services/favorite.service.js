@@ -1,9 +1,7 @@
 import { db } from "../config/db.js";
 import { NotFoundError } from "../utils/errors.js";
 
-// ✅ Add favorite
 export async function addFavorite(userId, schoolId) {
-  // Check parent exists, create if not (lazy creation)
   let parent = await db.parent.findUnique({
     where: { userId },
   });
@@ -19,14 +17,12 @@ export async function addFavorite(userId, schoolId) {
     });
   }
 
-  // Check school exists
   const school = await db.school.findUnique({
     where: { id: Number(schoolId) },
   });
 
   if (!school) throw new NotFoundError("School not found");
 
-  // Create favorite (unique constraint prevents duplicates)
   const favorite = await db.favorite.create({
     data: {
       parentId: userId,
@@ -37,19 +33,17 @@ export async function addFavorite(userId, schoolId) {
   return favorite;
 }
 
-// ✅ Get my favorites
 export async function getMyFavorites(userId) {
   const favorites = await db.favorite.findMany({
     where: { parentId: userId },
     include: {
-      school: true, // return school details
+      school: true,
     },
   });
 
   return favorites;
 }
 
-// ✅ Remove favorite
 export async function removeFavorite(userId, schoolId) {
   const favorite = await db.favorite.findUnique({
     where: {

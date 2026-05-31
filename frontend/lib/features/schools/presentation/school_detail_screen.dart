@@ -13,14 +13,14 @@ import '../../auth/data/auth_dtos.dart';
 import '../../auth/state/auth_controller.dart';
 import '../../reviews/presentation/reviews_section.dart';
 import '../data/school_dtos.dart';
-import '../data/school_repository.dart'; // Added to ensure access to schoolRepositoryProvider
+import '../data/school_repository.dart';
 import '../state/compare_cart.dart';
 import '../state/school_detail_controller.dart';
 import 'school_analytics_section.dart';
 
 /// `/schools/:id` — full info card, map (when lat/lng present), follower
 /// count + follow toggle, facility image carousel, recent announcements,
-/// and the embedded reviews section (Phase 11).
+/// and the embedded reviews section.
 class SchoolDetailScreen extends ConsumerStatefulWidget {
   final int schoolId;
   final int?
@@ -676,7 +676,7 @@ class _MapCard extends StatelessWidget {
           children: [
             TileLayer(
               urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              userAgentPackageName: 'com.schoolrec.app',
+              userAgentPackageName: 'com.fidelguide.app',
               maxZoom: 19,
             ),
             MarkerLayer(

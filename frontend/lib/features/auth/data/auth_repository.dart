@@ -36,7 +36,7 @@ ApiException _toApiException(Response<dynamic> r) {
       statusCode: r.statusCode);
 }
 
-/// Thin wrapper around the Phase 0–1 auth + user-profile endpoints. One method
+/// Thin wrapper around the auth + user-profile endpoints. One method
 /// per route; no caching, no retry — keeps it easy to reason about and matches
 /// the backend's request/response surface exactly.
 class AuthRepository {

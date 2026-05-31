@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-// Phase 2: added FACILITIES + AFFORDABILITY to match the spec scenarios.
 const categoryTagEnum = z.enum([
   "SAFETY",
   "TEACHING_QUALITY",

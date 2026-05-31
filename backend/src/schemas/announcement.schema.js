@@ -21,11 +21,8 @@ export const updateAnnouncementBodySchema = createAnnouncementBodySchema
 export const listAnnouncementsQuerySchema = z.object({
   category: categoryEnum.optional(),
   urgencyLevel: urgencyEnum.optional(),
-  // Phase 11 — when set, narrows the feed to a single school. Useful both for
-  // the "recent announcements on school detail" widget and for the parents'
-  // global feed (where the UI sometimes lets them pin a school).
   schoolId: z.coerce.number().int().positive().optional(),
-  // Phase 11 — "followedOnly=true" returns only posts from schools the
+  // "followedOnly=true" returns only posts from schools the
   // logged-in parent currently subscribes to. Backend ignores this flag for
   // unauthenticated callers (the service rechecks auth).
   followedOnly: z

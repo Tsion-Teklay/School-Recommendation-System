@@ -44,7 +44,7 @@ final examScore = (school.nationalExamScore ?? 0).toDouble();
                     title: 'National Exam Score',  
                     value: examScore,  
                     subtitle: 'Average exam score: ${examScore.toStringAsFixed(0)}%',  
-                    color: theme.colorScheme.secondary,  
+                    color: theme.colorScheme.tertiary,  
                   ),  
                 ),  
               ],  

@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../shared/utils/error_handler.dart';
+import '../../../shared/utils/message_helper.dart';
 import '../../../shared/widgets/loading_button.dart';
 import '../../../shared/widgets/responsive_shell.dart';
+import '../../schools/data/school_dtos.dart';
+import '../../schools/data/school_repository.dart';
 import '../data/auth_dtos.dart';
 import '../data/auth_repository.dart';
 import '../state/auth_controller.dart';
@@ -21,12 +25,45 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _saving = false;
   String? _saveMessage;
   bool _initialized = false;
+  int? _schoolCount;
 
   void _seedFromUser(AppUser user) {
     if (_initialized) return;
     _name.text = user.fullName;
     _phone.text = user.phone ?? '';
     _initialized = true;
+    
+    // Load school count if user is a school admin
+    if (user.role == UserRole.schoolAdmin) {
+      _loadSchoolCount();
+    }
+  }
+
+  Future<void> _loadSchoolCount() async {
+    try {
+      // Use the existing list endpoint with limit=1 to get count
+      final userId = ref.read(authControllerProvider).user?.id;
+      if (userId == null) {
+        setState(() => _schoolCount = 0);
+        return;
+      }
+      
+      final result = await ref.read(schoolRepositoryProvider).list(
+        SchoolListFilters(
+          adminId: userId,
+          page: 1,
+          limit: 1,
+        ),
+      );
+      if (mounted) {
+        setState(() => _schoolCount = result.meta.total);
+      }
+    } catch (e) {
+      // Silently fail - school count is optional info
+      if (mounted) {
+        setState(() => _schoolCount = 0);
+      }
+    }
   }
 
   @override
@@ -51,9 +88,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             fullName: _name.text.trim(),
             phone: trimmedPhone.isEmpty ? null : trimmedPhone,
           );
-      if (mounted) setState(() => _saveMessage = 'Profile updated.');
+      if (mounted) {
+        setState(() => _saveMessage = 'Profile updated.');
+        MessageHelper.showSuccess(context, SuccessMessages.profileUpdated);
+      }
     } catch (e) {
-      if (mounted) setState(() => _saveMessage = e.toString());
+      if (mounted) {
+        setState(() => _saveMessage = ErrorHandler.getUserFriendlyMessage(e));
+        MessageHelper.showError(context, ErrorHandler.getUserFriendlyMessage(e));
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -71,53 +114,163 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             newPassword: result.next,
           );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password changed.')),
-      );
+      MessageHelper.showSuccess(context, SuccessMessages.passwordChanged);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      MessageHelper.showError(context, ErrorHandler.getUserFriendlyMessage(e));
     }
   }
 
   Future<void> _confirmDeactivate() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Deactivate account?'),
-        content: const Text(
-          'Your account will be marked DEACTIVATED and you will be signed out. '
-          'You can reactivate it later by logging in with your credentials.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton.tonal(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Deactivate'),
-          ),
-        ],
-      ),
+    final confirmed = await MessageHelper.showConfirmationDialog(
+      context,
+      'Deactivate account?',
+      'Your account will be marked DEACTIVATED and you will be signed out. '
+      'You can reactivate it later by logging in with your credentials.',
+      confirmText: 'Deactivate',
     );
     if (confirmed != true) return;
     try {
       await ref.read(authControllerProvider).deactivate();
+      if (mounted) MessageHelper.showSuccess(context, SuccessMessages.accountDeactivated);
       // On success the auth-state change → router redirects to /login.
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      MessageHelper.showError(context, ErrorHandler.getUserFriendlyMessage(e));
     }
   }
 
   Future<void> _logout() async {
     await ref.read(authControllerProvider).logout();
   }
+
+  Future<void> _deleteAllSchools() async {
+    final confirmed = await MessageHelper.showConfirmationDialog(
+      context,
+      'Delete All Schools',
+      'This will permanently delete all your schools. This action cannot be undone.',
+      confirmText: 'Delete All',
+      isDestructive: true,
+    );
+    if (confirmed != true) return;
+
+    setState(() => _saving = true);
+    try {
+      // Get all schools first
+      final userId = ref.read(authControllerProvider).user?.id;
+      if (userId == null) return;
+      
+      final allSchools = await ref.read(schoolRepositoryProvider).list(
+        SchoolListFilters(adminId: userId, page: 1, limit: 100),
+      );
+      
+      // Extract school IDs first to avoid reference issues
+      final schoolIds = allSchools.items.map((school) => school.id).toList();
+      
+      // Delete each school individually by ID
+      for (var schoolId in schoolIds) {
+        await ref.read(schoolRepositoryProvider).delete(schoolId);
+      }
+      
+      if (mounted) {
+        MessageHelper.showSuccess(context, 'All ${schoolIds.length} school(s) deleted successfully');
+        setState(() => _schoolCount = 0);
+      }
+    } catch (e) {
+      if (mounted) {
+        MessageHelper.showError(context, ErrorHandler.getUserFriendlyMessage(e));
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+Future<void> _handleSchoolAdminAccountDeletion() async {
+  // Load current school count
+  if (_schoolCount == null) {
+    await _loadSchoolCount();
+  }
+
+  // If admin has schools, show error message with option to delete them
+  if (_schoolCount != null && _schoolCount! > 0) {
+    MessageHelper.showError(
+      context,
+      'You have $_schoolCount school(s). Please delete all your schools before you can delete your account.',
+    );
+    
+    // Ask if they want to delete all schools now
+    final deleteSchools = await MessageHelper.showConfirmationDialog(
+      context,
+      'Delete Schools',
+      'Would you like to delete all your schools now?',
+      confirmText: 'Delete All Schools',
+      cancelText: 'Cancel',
+    );
+    
+    if (deleteSchools == true) {
+      await _deleteAllSchools();
+    }
+    return;
+  }
+
+  // If no schools, proceed with normal deletion flow
+  await _handleRegularAccountDeletion();
+}
+
+Future<void> _handleRegularAccountDeletion() async {
+  final confirmed = await MessageHelper.showConfirmationDialog(
+    context,
+    'Delete Account Permanently',
+    'This action cannot be undone. All your data will be permanently deleted.',
+    confirmText: 'Delete',
+    isDestructive: true,
+  );
+
+  if (confirmed != true) return;
+
+  final passwordController = TextEditingController();
+
+  final passwordConfirmed = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Confirm Password'),
+      content: TextField(
+        controller: passwordController,
+        obscureText: true,
+        decoration: const InputDecoration(
+          hintText: 'Enter your password',
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton.tonal(
+          onPressed: () => Navigator.pop(context, true),
+          child: const Text('Confirm'),
+        ),
+      ],
+    ),
+  );
+
+  if (passwordConfirmed == true && passwordController.text.isNotEmpty) {
+    try {
+      await ref
+          .read(authControllerProvider.notifier)
+          .deletePermanently(passwordController.text);
+
+      if (mounted) {
+        MessageHelper.showSuccess(context, 'Account deleted permanently');
+        context.go('/login');
+      }
+    } catch (e) {
+      if (mounted) {
+        MessageHelper.showError(context, ErrorHandler.getUserFriendlyMessage(e));
+      }
+    }
+  }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -224,69 +377,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 foregroundColor: Theme.of(context).colorScheme.error,
               ),
               onPressed: () async {
-                final confirmed = await showDialog<bool>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Delete Account Permanently'),
-                    content: const Text(
-                      'This action cannot be undone. All your data will be permanently deleted.',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('Cancel'),
-                      ),
-                      FilledButton.tonal(
-                        onPressed: () => Navigator.pop(context, true),
-                        child: const Text('Delete'),
-                      ),
-                    ],
-                  ),
-                );
-
-                if (confirmed == true) {
-                  final passwordController = TextEditingController();
-
-                  final passwordConfirmed = await showDialog<bool>(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Confirm Password'),
-                      content: TextField(
-                        controller: passwordController,
-                        obscureText: true,
-                        decoration: const InputDecoration(
-                          hintText: 'Enter your password',
-                        ),
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: const Text('Cancel'),
-                        ),
-                        FilledButton.tonal(
-                          onPressed: () => Navigator.pop(context, true),
-                          child: const Text('Confirm'),
-                        ),
-                      ],
-                    ),
-                  );
-
-                  if (passwordConfirmed == true &&
-                      passwordController.text.isNotEmpty) {
-                    try {
-                      await ref
-                          .read(authControllerProvider.notifier)
-                          .deletePermanently(passwordController.text);
-
-                      if (mounted) {
-                        context.go('/login');
-                      }
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error: ${e.toString()}')),
-                      );
-                    }
-                  }
+                // For school admins, check if they have schools first
+                if (user.role == UserRole.schoolAdmin) {
+                  await _handleSchoolAdminAccountDeletion();
+                } else {
+                  await _handleRegularAccountDeletion();
                 }
               },
               icon: const Icon(Icons.warning),

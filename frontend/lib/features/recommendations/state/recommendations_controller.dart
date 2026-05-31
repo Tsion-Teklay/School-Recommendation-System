@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/utils/error_handler.dart';
 import '../../auth/data/auth_repository.dart';
 import '../../schools/data/school_dtos.dart';
 import '../../schools/data/school_repository.dart';
@@ -10,14 +11,14 @@ class RecommendationsState {
   final Map<String, dynamic> criteria;
   final bool loading;
   final String? error;
-  final int? historyId; // ADD THIS
+  final int? historyId;
 
   const RecommendationsState({
     required this.items,
     required this.criteria,
     required this.loading,
     required this.error,
-    this.historyId, // ADD THIS
+    this.historyId,
   });
 
   RecommendationsState copyWith({
@@ -25,14 +26,14 @@ class RecommendationsState {
     Map<String, dynamic>? criteria,
     bool? loading,
     Object? error = _sentinel,
-    int? historyId, // ADD THIS
+    int? historyId,
   }) {
     return RecommendationsState(
       items: items ?? this.items,
       criteria: criteria ?? this.criteria,
       loading: loading ?? this.loading,
       error: identical(error, _sentinel) ? this.error : error as String?,
-      historyId: historyId ?? this.historyId, // ADD THIS
+      historyId: historyId ?? this.historyId,
     );
   }
 }
@@ -74,14 +75,14 @@ class RecommendationsController extends ChangeNotifier {
       _set(_state.copyWith(
         items: result.items,
         criteria: result.criteria,
-        historyId: result.historyId, // ADD THIS
+        historyId: result.historyId,
         loading: false,
         error: null,
       ));
     } on ApiException catch (e) {
-      _set(_state.copyWith(loading: false, error: e.message));
+      _set(_state.copyWith(loading: false, error: ErrorHandler.getUserFriendlyMessage(e)));
     } catch (e) {
-      _set(_state.copyWith(loading: false, error: e.toString()));
+      _set(_state.copyWith(loading: false, error: ErrorHandler.getUserFriendlyMessage(e)));
     }
   }
 }

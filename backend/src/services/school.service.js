@@ -34,7 +34,6 @@ export async function createSchool(data, userId) {
       contactEmail,
       ...(contactPhone ? { contactPhone } : {}),
       curriculum,
-      // Phase 11 — optional education level; omitted keeps the column null.
       ...(schoolLevel ? { schoolLevel } : {}),
       ...(schoolType ? { schoolType } : {}),
       tuitionFee,
@@ -267,15 +266,11 @@ export async function getSchoolById(id) {
           email: true,
         },
       },
-      // Phase 11 — facility images surface on the detail payload so the
-      // frontend can render a carousel without a second roundtrip.
       facilityImages: {
         select: { id: true, imageUrl: true },
         orderBy: { id: "asc" },
       },
       _count: {
-        // Phase 4: surface the live follower count on every detail fetch so
-        // the UI doesn't need a second roundtrip to /follows to render it.
         select: { subscribers: true },
       },
     },
@@ -350,11 +345,58 @@ export async function deleteSchool(id, userId) {
     throw new ForbiddenError("Not authorized to delete this school");
   }
 
+  // Delete related records first to avoid foreign key constraints
+  await db.achievement.deleteMany({ where: { schoolId: Number(id) } });
+  await db.analytics.deleteMany({ where: { schoolId: Number(id) } });
+  await db.announcement.deleteMany({ where: { schoolId: Number(id) } });
+  await db.comparisonSchool.deleteMany({ where: { schoolId: Number(id) } });
+  await db.facilityImage.deleteMany({ where: { schoolId: Number(id) } });
+  await db.favorite.deleteMany({ where: { schoolId: Number(id) } });
+  await db.recommendedSchool.deleteMany({ where: { schoolId: Number(id) } });
+  await db.review.deleteMany({ where: { schoolId: Number(id) } });
+  await db.schoolDemographics.deleteMany({ where: { schoolId: Number(id) } });
+  await db.schoolUpdate.deleteMany({ where: { schoolId: Number(id) } });
+  await db.staffBreakdown.deleteMany({ where: { schoolId: Number(id) } });
+  await db.subscription.deleteMany({ where: { schoolId: Number(id) } });
+  await db.verificationRequest.deleteMany({ where: { schoolId: Number(id) } });
+
   await db.school.delete({
     where: { id: Number(id) },
   });
 
   return { message: "School deleted successfully" };
+}
+
+// ✅ Delete All Schools for a School Admin
+export async function deleteAllSchoolsForAdmin(userId) {
+  // First, check if user has any schools
+  const schools = await db.school.findMany({
+    where: { adminId: userId },
+    select: { id: true, schoolName: true },
+  });
+
+  if (schools.length === 0) {
+    throw new ValidationError("You have no schools to delete");
+  }
+
+  // Delete all schools for this admin
+  const result = await db.school.deleteMany({
+    where: { adminId: userId },
+  });
+
+  return { 
+    message: `Successfully deleted ${result.count} school(s)`,
+    deletedCount: result.count 
+  };
+}
+
+// ✅ Get School Count for Admin
+export async function getSchoolCountForAdmin(userId) {
+  const count = await db.school.count({
+    where: { adminId: userId },
+  });
+
+  return { count };
 }
 
 export async function revokeVerification(schoolId, userId, reason) {

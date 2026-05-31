@@ -2,7 +2,7 @@ import { z } from "zod";
 import { paginationQuery } from "./common.schema.js";
 
 /**
- * Phase 5 — discussion forum schemas.
+ * Discussion forum schemas.
  *
  * The forum is intentionally minimal: top-level posts and one level of
  * replies (threadId points at the parent post). Content moderation runs

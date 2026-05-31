@@ -4,7 +4,7 @@ import { validateContent } from "./moderation.service.js";
 import { moderateText } from "./moderation.service.js";
 
 /**
- * Phase 5 — discussion forum.
+ * Discussion forum.
  *
  * Two-level model: top-level posts (`threadId == null`) + replies that
  * point at a top-level post via `threadId`. We deliberately don't allow

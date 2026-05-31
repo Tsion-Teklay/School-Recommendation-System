@@ -80,7 +80,7 @@ app.get("/api/healthz", (req, res) => {
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(openApiSpec));
 app.get("/api/docs.json", (req, res) => res.json(openApiSpec));
 
-// --- Static uploads (Phase 3) ------------------------------------------------
+// --- Static uploads -----------------------------------------------------------
 // Files saved by the multer pipeline land under UPLOAD_DIR; expose them
 // read-only at /uploads/* so the frontend can render document previews.
 app.use("/uploads", express.static(UPLOAD_DIR, { fallthrough: true }));
@@ -90,13 +90,13 @@ app.use("/api/auth", (await import("./routes/auth.routes.js")).default);
 app.use("/api/users", (await import("./routes/user.routes.js")).default);
 app.use("/api/schools", (await import("./routes/school.routes.js")).default);
 app.use("/api/demographics", demographicsRoutes);
-// Phase 4: follow/subscribe + my-follows. Mounted under two paths so the
+// Follow/subscribe + my-follows. Mounted under two paths so the
 // URL structure mirrors the conceptual model.
 const subscriptionRoutes = await import("./routes/subscription.routes.js");
 app.use("/api/schools/:schoolId/follow", subscriptionRoutes.schoolFollowRouter);
 app.use("/api/me/follows", subscriptionRoutes.myFollowsRouter);
 
-// Phase 4: side-by-side comparisons.
+// Side-by-side comparisons.
 app.use(
   "/api/comparisons",
   (await import("./routes/comparison.routes.js")).default,
@@ -119,7 +119,7 @@ app.use(
   (await import("./routes/announcement.routes.js")).default,
 );
 app.use("/api/reports", (await import("./routes/report.routes.js")).default);
-// Phase 5: discussion forum (threaded posts + replies, content moderated).
+// Discussion forum (threaded posts + replies, content moderated).
 app.use("/api/forum", (await import("./routes/forum.routes.js")).default);
 app.use(
   "/api/notifications",
@@ -135,7 +135,7 @@ app.use("/api/ads", (await import("./routes/ad.routes.js")).default);
 app.use("/api", (await import("./routes/achievement.routes.js")).default);
 app.use("/api", analyticsRoutes);
 
-// Phase 3: school-verification workflow. The router registers paths under
+// School-verification workflow. The router registers paths under
 // both /api/schools/:id/verification-requests (submit) and
 // /api/verification-requests/* (list/get/review), so it's mounted at /api.
 app.use("/api", (await import("./routes/verification.routes.js")).default);

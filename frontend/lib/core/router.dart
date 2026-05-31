@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../features/ads/presentation/ad_payment_screen.dart';
 import '../features/ads/presentation/ad_request_screen.dart';
 import '../features/ads/presentation/moderation_ad_queue_screen.dart';
+import '../shared/utils/animations.dart';
 import '../features/landing/presentation/landing_screen.dart';
 import '../features/schools/presentation/manage_followed_schools_screen.dart';
 import '../features/moderation/presentation/admin_user_create_screen.dart';
@@ -97,7 +98,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(path: '/landing', builder: (_, __) => const LandingScreen()),
+      // Public routes with smooth fade transitions
+      GoRoute(
+        path: '/landing',
+        pageBuilder: (context, state) => AppAnimations.fadeInScale(
+          key: state.pageKey,
+          child: const LandingScreen(),
+        ),
+      ),
       GoRoute(
         path: '/advertise',
         builder: (_, __) => const AdRequestScreen(),
@@ -114,49 +122,94 @@ final routerProvider = Provider<GoRouter>((ref) {
           return AdPaymentScreen(adId: id);
         },
       ),
-      GoRoute(path: '/', builder: (_, __) => const HomeScreen()),
-      GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
-      GoRoute(path: '/register', builder: (_, __) => const RegisterScreen()),
+      GoRoute(
+        path: '/login',
+        pageBuilder: (context, state) => AppAnimations.fadeInScale(
+          key: state.pageKey,
+          child: const LoginScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/register',
+        pageBuilder: (context, state) => AppAnimations.fadeInScale(
+          key: state.pageKey,
+          child: const RegisterScreen(),
+        ),
+      ),
       GoRoute(
         path: '/forgot-password',
-        builder: (_, __) => const ForgotPasswordScreen(),
+        pageBuilder: (context, state) => AppAnimations.fadeInScale(
+          key: state.pageKey,
+          child: const ForgotPasswordScreen(),
+        ),
       ),
       GoRoute(
         path: '/reset-password',
-        builder: (_, state) => ResetPasswordScreen(
-          token: state.uri.queryParameters['token'],
+        pageBuilder: (context, state) => AppAnimations.smoothFade(
+          key: state.pageKey,
+          child: ResetPasswordScreen(
+            token: state.uri.queryParameters['token'],
+          ),
         ),
       ),
       GoRoute(
         path: '/verify-email',
-        builder: (_, state) => EmailVerifyScreen(
-          token: state.uri.queryParameters['token'],
+        pageBuilder: (context, state) => AppAnimations.smoothFade(
+          key: state.pageKey,
+          child: EmailVerifyScreen(
+            token: state.uri.queryParameters['token'],
+          ),
         ),
       ),
       GoRoute(
-  path: '/verify-phone',
-  builder: (context, state) {
-    final phone = state.uri.queryParameters['phone'] ?? '';
-
-    return PhoneVerifyScreen(phone: phone);
-  },
+        path: '/verify-phone',
+        pageBuilder: (context, state) => AppAnimations.smoothFade(
+          key: state.pageKey,
+          child: PhoneVerifyScreen(
+            phone: state.uri.queryParameters['phone'] ?? '',
+          ),
+        ),
       ),
-      GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
+
+      // Main app routes with unique transitions
+      GoRoute(
+        path: '/',
+        pageBuilder: (context, state) => AppAnimations.navySweep(
+          key: state.pageKey,
+          child: const HomeScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/profile',
+        pageBuilder: (context, state) => AppAnimations.slideInFromRight(
+          key: state.pageKey,
+          child: const ProfileScreen(),
+        ),
+      ),
       GoRoute(
         path: '/followed-schools',
-        builder: (_, __) => const ManageFollowedSchoolsScreen(),
+        pageBuilder: (context, state) => AppAnimations.slideInFromRight(
+          key: state.pageKey,
+          child: const ManageFollowedSchoolsScreen(),
+        ),
       ),
       GoRoute(
         path: '/preferences',
-        builder: (_, __) => const PreferencesScreen(),
+        pageBuilder: (context, state) => AppAnimations.slideInFromRight(
+          key: state.pageKey,
+          child: const PreferencesScreen(),
+        ),
       ),
       GoRoute(
         path: '/schools',
-        builder: (_, __) => const SchoolsListScreen(),
+        pageBuilder: (context, state) => AppAnimations.slideInFromRight(
+          key: state.pageKey,
+          child: const SchoolsListScreen(),
+        ),
       ),
       GoRoute(
         path: '/schools/:id',
-        builder: (_, state) {
+        pageBuilder: (context, state) {
           final raw = state.pathParameters['id'];
           final id = int.tryParse(raw ?? '');
 
@@ -168,169 +221,256 @@ final routerProvider = Provider<GoRouter>((ref) {
               : null;
 
           if (id == null) {
-            return Scaffold(
-              body: Center(child: Text('Invalid school id: $raw')),
+            return AppAnimations.noTransition(
+              key: state.pageKey,
+              child: Scaffold(
+                body: Center(child: Text('Invalid school id: $raw')),
+              ),
             );
           }
 
-          return SchoolDetailScreen(
-            schoolId: id,
-            recommendationId: recommendationId,
+          return AppAnimations.expandFromCenter(
+            key: state.pageKey,
+            child: SchoolDetailScreen(
+              schoolId: id,
+              recommendationId: recommendationId,
+            ),
           );
         },
       ),
       GoRoute(
         path: '/compare',
-        builder: (_, __) => const ComparisonsListScreen(),
+        pageBuilder: (context, state) => AppAnimations.rotateIn(
+          key: state.pageKey,
+          child: const ComparisonsListScreen(),
+        ),
       ),
       GoRoute(
         path: '/compare/new',
-        builder: (_, __) => const NewComparisonScreen(),
+        pageBuilder: (context, state) => AppAnimations.slideInFromRight(
+          key: state.pageKey,
+          child: const NewComparisonScreen(),
+        ),
       ),
       GoRoute(
         path: '/compare/:id',
-        builder: (_, state) {
+        pageBuilder: (context, state) {
           final raw = state.pathParameters['id'];
           final id = int.tryParse(raw ?? '');
           if (id == null) {
-            return Scaffold(
-              body: Center(child: Text('Invalid comparison id: $raw')),
+            return AppAnimations.noTransition(
+              key: state.pageKey,
+              child: Scaffold(
+                body: Center(child: Text('Invalid comparison id: $raw')),
+              ),
             );
           }
-          return ComparisonDetailScreen(comparisonId: id);
+          return AppAnimations.slideInFromRight(
+            key: state.pageKey,
+            child: ComparisonDetailScreen(comparisonId: id),
+          );
         },
       ),
-      // Phase 9: notifications inbox.
       GoRoute(
         path: '/notifications',
-        builder: (_, __) => const NotificationsScreen(),
+        pageBuilder: (context, state) => AppAnimations.slideInFromRight(
+          key: state.pageKey,
+          child: const NotificationsScreen(),
+        ),
       ),
-      // Phase 11: parent-facing announcements feed + deep-linked detail.
       GoRoute(
         path: '/announcements',
-        builder: (_, __) => const AnnouncementsFeedScreen(),
+        pageBuilder: (context, state) => AppAnimations.bounceSlide(
+          key: state.pageKey,
+          child: const AnnouncementsFeedScreen(),
+        ),
       ),
       GoRoute(
         path: '/announcements/:id',
-        builder: (_, state) {
+        pageBuilder: (context, state) {
           final raw = state.pathParameters['id'];
           final id = int.tryParse(raw ?? '');
           if (id == null) {
-            return Scaffold(
-              body: Center(child: Text('Invalid announcement id: $raw')),
+            return AppAnimations.noTransition(
+              key: state.pageKey,
+              child: Scaffold(
+                body: Center(child: Text('Invalid announcement id: $raw')),
+              ),
             );
           }
-          return AnnouncementDetailScreen(announcementId: id);
+          return AppAnimations.slideInFromRight(
+            key: state.pageKey,
+            child: AnnouncementDetailScreen(announcementId: id),
+          );
         },
       ),
-      // Phase 9: forum.
       GoRoute(
         path: '/forum',
-        builder: (_, __) => const ForumListScreen(),
+        pageBuilder: (context, state) => AppAnimations.slideInFromRight(
+          key: state.pageKey,
+          child: const ForumListScreen(),
+        ),
       ),
       GoRoute(
         path: '/forum/:id',
-        builder: (_, state) {
+        pageBuilder: (context, state) {
           final raw = state.pathParameters['id'];
           final id = int.tryParse(raw ?? '');
           if (id == null) {
-            return Scaffold(
-              body: Center(child: Text('Invalid post id: $raw')),
+            return AppAnimations.noTransition(
+              key: state.pageKey,
+              child: Scaffold(
+                body: Center(child: Text('Invalid post id: $raw')),
+              ),
             );
           }
-          return ForumDetailScreen(postId: id);
+          return AppAnimations.slideInFromRight(
+            key: state.pageKey,
+            child: ForumDetailScreen(postId: id),
+          );
         },
       ),
-      // Phase 9: school-admin portal.
       GoRoute(
         path: '/admin',
-        builder: (_, __) => const AdminHomeScreen(),
+        pageBuilder: (context, state) => AppAnimations.slideInFromRight(
+          key: state.pageKey,
+          child: const AdminHomeScreen(),
+        ),
       ),
       GoRoute(
         path: '/admin/announcements',
-        builder: (_, __) => const AdminAnnouncementsScreen(),
+        pageBuilder: (context, state) => AppAnimations.slideInFromRight(
+          key: state.pageKey,
+          child: const AdminAnnouncementsScreen(),
+        ),
       ),
       GoRoute(
         path: '/admin/schools/create',
-        builder: (_, __) => const AdminSchoolCreateScreen(),
+        pageBuilder: (context, state) => AppAnimations.slideInFromRight(
+          key: state.pageKey,
+          child: const AdminSchoolCreateScreen(),
+        ),
       ),
       GoRoute(
         path: '/admin/schools/:id',
-        builder: (_, state) {
+        pageBuilder: (context, state) {
           final raw = state.pathParameters['id'];
           final id = int.tryParse(raw ?? '');
           if (id == null) {
-            return Scaffold(
-              body: Center(child: Text('Invalid school id: $raw')),
+            return AppAnimations.noTransition(
+              key: state.pageKey,
+              child: Scaffold(
+                body: Center(child: Text('Invalid school id: $raw')),
+              ),
             );
           }
-          return AdminSchoolManageScreen(schoolId: id);
+          return AppAnimations.slideInFromRight(
+            key: state.pageKey,
+            child: AdminSchoolManageScreen(schoolId: id),
+          );
         },
       ),
 
-      // Phase 9: MoE portal.
-      GoRoute(path: '/moe', builder: (_, __) => const MoeHomeScreen()),
+      GoRoute(
+        path: '/moe',
+        pageBuilder: (context, state) => AppAnimations.slideInFromRight(
+          key: state.pageKey,
+          child: const MoeHomeScreen(),
+        ),
+      ),
       GoRoute(
         path: '/moe/dashboard',
-        builder: (_, __) => const MoeDashboardScreen(),
+        pageBuilder: (context, state) => AppAnimations.slideInFromRight(
+          key: state.pageKey,
+          child: const MoeDashboardScreen(),
+        ),
       ),
       GoRoute(
         path: '/moe/verifications',
-        builder: (_, __) => const MoeVerificationQueueScreen(),
+        pageBuilder: (context, state) => AppAnimations.slideInFromRight(
+          key: state.pageKey,
+          child: const MoeVerificationQueueScreen(),
+        ),
       ),
       GoRoute(
         path: '/moe/announcements',
-        builder: (_, __) => const MoeAnnouncementsScreen(),
+        pageBuilder: (context, state) => AppAnimations.slideInFromRight(
+          key: state.pageKey,
+          child: const MoeAnnouncementsScreen(),
+        ),
       ),
-      // Phase 9: moderation portal.
       GoRoute(
         path: '/moderation',
-        builder: (_, __) => const ModerationReportsScreen(),
+        pageBuilder: (context, state) => AppAnimations.slideInFromRight(
+          key: state.pageKey,
+          child: const ModerationReportsScreen(),
+        ),
       ),
       GoRoute(
         path: '/moderation/create-user',
-        builder: (_, __) => const AdminUserCreateScreen(),
+        pageBuilder: (context, state) => AppAnimations.slideInFromRight(
+          key: state.pageKey,
+          child: const AdminUserCreateScreen(),
+        ),
       ),
       GoRoute(  
-  path: '/admin/schools/:schoolId/demographics',  
-  builder: (context, state) {  
-    final schoolId = int.parse(state.pathParameters['schoolId']!);  
-    return DemographicsManageScreen(schoolId: schoolId);  
-  },  
-),
-GoRoute(  
-  path: '/schools/:schoolId/analytics',  
-  builder: (_, state) {  
-    final schoolId = int.parse(state.pathParameters['schoolId']!);  
-    return SchoolAnalyticsScreen(schoolId: schoolId);  
-  },  
-),
-GoRoute(  
-  path: '/admin/schools/:schoolId/achievements',  
-  builder: (context, state) {  
-    final schoolId = int.parse(state.pathParameters['schoolId']!);  
-    return AchievementsManageScreen(schoolId: schoolId);  
-  },  
-),  
-GoRoute(  
-  path: '/admin/schools/:schoolId/achievements/:achievementId',  
-  builder: (context, state) {  
-    final schoolId = int.parse(state.pathParameters['schoolId']!);  
-    final achievementId = int.parse(state.pathParameters['achievementId']!);  
-    return AchievementDetailScreen(schoolId: schoolId, achievementId: achievementId);  
-  },  
-),  
-GoRoute(  
-  path: '/admin/schools/:schoolId/staff-breakdown',  
-  builder: (context, state) {  
-    final schoolId = int.parse(state.pathParameters['schoolId']!);  
-    return StaffBreakdownScreen(schoolId: schoolId);  
-  },  
-),  
-GoRoute(  
-  path: '/moe/achievements',  
-  builder: (_, __) => const MoeAchievementReviewScreen(),  
-),
+        path: '/admin/schools/:schoolId/demographics',  
+        pageBuilder: (context, state) {  
+          final schoolId = int.parse(state.pathParameters['schoolId']!);  
+          return AppAnimations.slideInFromRight(
+            key: state.pageKey,
+            child: DemographicsManageScreen(schoolId: schoolId),  
+          );
+        },  
+      ),
+      GoRoute(  
+        path: '/schools/:schoolId/analytics',  
+        pageBuilder: (_, state) {  
+          final schoolId = int.parse(state.pathParameters['schoolId']!);  
+          return AppAnimations.slideInFromRight(
+            key: state.pageKey,
+            child: SchoolAnalyticsScreen(schoolId: schoolId),  
+          );
+        },  
+      ),
+      GoRoute(  
+        path: '/admin/schools/:schoolId/achievements',  
+        pageBuilder: (context, state) {  
+          final schoolId = int.parse(state.pathParameters['schoolId']!);  
+          return AppAnimations.slideInFromRight(
+            key: state.pageKey,
+            child: AchievementsManageScreen(schoolId: schoolId),  
+          );
+        },  
+      ),
+      GoRoute(  
+        path: '/admin/schools/:schoolId/achievements/:achievementId',  
+        pageBuilder: (context, state) {  
+          final schoolId = int.parse(state.pathParameters['schoolId']!);  
+          final achievementId = int.parse(state.pathParameters['achievementId']!);  
+          return AppAnimations.slideInFromRight(
+            key: state.pageKey,
+            child: AchievementDetailScreen(schoolId: schoolId, achievementId: achievementId),  
+          );
+        },  
+      ),
+      GoRoute(  
+        path: '/admin/schools/:schoolId/staff-breakdown',  
+        pageBuilder: (context, state) {  
+          final schoolId = int.parse(state.pathParameters['schoolId']!);  
+          return AppAnimations.slideInFromRight(
+            key: state.pageKey,
+            child: StaffBreakdownScreen(schoolId: schoolId),  
+          );
+        },  
+      ),
+      GoRoute(  
+        path: '/moe/achievements',  
+        pageBuilder: (_, __) => AppAnimations.slideInFromRight(
+          key: const ValueKey('moe-achievements'),
+          child: const MoeAchievementReviewScreen(),  
+        ),
+      ),
       GoRoute(
         path: '/moderation/ads',
         builder: (_, __) => const ModerationAdQueueScreen(),

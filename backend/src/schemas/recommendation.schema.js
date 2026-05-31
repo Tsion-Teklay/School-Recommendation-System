@@ -8,7 +8,7 @@ export const recommendationsQuerySchema = z.object({
   maxFee: z.coerce.number().nonnegative().optional(),
   search: z.string().trim().optional(),
   schoolType: z.enum(["PRIVATE", "GOVERNMENT", "CHURCH"]).optional(),
-  // Phase 6 — distance-scoring overrides. Without these, Zod's default-strip
+  // Distance-scoring overrides. Without these, Zod's default-strip
   // behavior would silently drop them and the recommender would always fall
   // back to the parent's stored Parent.{lat,lng}.
   near: z

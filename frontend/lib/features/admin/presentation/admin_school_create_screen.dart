@@ -7,6 +7,8 @@ import 'package:latlong2/latlong.dart';
 
 import 'package:flutter_map/flutter_map.dart';
 
+import '../../../shared/utils/error_handler.dart';
+import '../../../shared/utils/message_helper.dart';
 import '../../../shared/widgets/responsive_shell.dart';
 import '../../auth/data/auth_repository.dart';
 import '../../schools/data/school_dtos.dart';
@@ -137,10 +139,11 @@ final _streetName = TextEditingController();
 
       if (!mounted) return;
 
+      MessageHelper.showSuccess(context, SuccessMessages.schoolCreated);
       context.go('/admin/schools/${school.id}');
     } on ApiException catch (e) {
       // Show detailed error message if available
-      String errorMessage = e.message;
+      String errorMessage = ErrorHandler.getUserFriendlyMessage(e);
       if (e.details != null && e.details!.isNotEmpty) {
         final detailMessages = e.details!.map((d) {
           if (d is Map && d.containsKey('message')) {
@@ -154,7 +157,7 @@ final _streetName = TextEditingController();
       }
       setState(() => _error = errorMessage);
     } catch (e) {
-      setState(() => _error = e.toString());
+      setState(() => _error = ErrorHandler.getUserFriendlyMessage(e));
     } finally {
       if (mounted) {
         setState(() => _loading = false);

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/utils/error_handler.dart';
 import '../../auth/data/auth_repository.dart';
 import '../data/forum_dtos.dart';
 import '../data/forum_repository.dart';
@@ -42,7 +43,9 @@ class ForumListController extends ChangeNotifier {
       _totalPages = r.totalPages;
       _initialized = true;
     } on ApiException catch (e) {
-      _error = e.message;
+      _error = ErrorHandler.getUserFriendlyMessage(e);
+    } catch (e) {
+      _error = ErrorHandler.getUserFriendlyMessage(e);
     } finally {
       _loading = false;
       notifyListeners();
@@ -59,7 +62,9 @@ class ForumListController extends ChangeNotifier {
       _page = r.page;
       _totalPages = r.totalPages;
     } on ApiException catch (e) {
-      _error = e.message;
+      _error = ErrorHandler.getUserFriendlyMessage(e);
+    } catch (e) {
+      _error = ErrorHandler.getUserFriendlyMessage(e);
     } finally {
       _appending = false;
       notifyListeners();
@@ -73,11 +78,11 @@ class ForumListController extends ChangeNotifier {
       await refresh();
       return true;
     } on ApiException catch (e) {
-      _error = e.message;
+      _error = ErrorHandler.getUserFriendlyMessage(e);
       notifyListeners();
       return false;
     } catch (e) {
-      _error = e.toString();
+      _error = ErrorHandler.getUserFriendlyMessage(e);
       notifyListeners();
       return false;
     }

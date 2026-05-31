@@ -6,10 +6,10 @@ import multer from "multer";
 import { ValidationError } from "../utils/errors.js";
 
 /**
- * Local-disk upload pipeline (Phase 3).
+ * Local-disk upload pipeline.
  *
- * Architectural decision per the roadmap: filesystem storage in dev — no
- * cloud account required. Phase 9 swaps this single module for an S3
+ * Architectural decision: filesystem storage in dev — no
+ * cloud account required. Can be swapped for an S3
  * adapter (Backblaze B2 / Spaces) without touching call sites; that's why
  * the public API here exposes `relativeUrl(req.file)` and never raw paths.
  */
@@ -42,7 +42,7 @@ const VERIFICATION_MIME_WHITELIST = new Set([
   "image/jpg",
 ]);
 
-// Phase 11 — both facility-image and announcement-image uploads must be a
+// Both facility-image and announcement-image uploads must be a
 // real picture (no PDFs). webp is allowed because modern phones default to
 // it; gif is excluded on purpose (no need for animated content here).
 const IMAGE_MIME_WHITELIST = new Set([

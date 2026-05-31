@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme.dart';
 import '../../../shared/widgets/responsive_shell.dart';
 import '../../ads/presentation/ad_banner_section.dart';
 import '../../ads/data/ad_dtos.dart';
@@ -344,8 +345,6 @@ class _Filters extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 12),
-            // Phase 11 — minimum rating slider. 0 disables the filter; 1–5
-            // map to the same scale as Review.rating.
             Row(
               children: [
                 const Text('Min rating'),

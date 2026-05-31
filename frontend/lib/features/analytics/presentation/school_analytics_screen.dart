@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';  
 import 'package:flutter_riverpod/flutter_riverpod.dart';  
 import '../../../shared/widgets/responsive_shell.dart';  
+import '../../../core/theme.dart';
 import '../../auth/data/auth_repository.dart' show ApiException;
 import '../data/analytics_repository.dart';  
 import '../data/analytics_dtos.dart';  
@@ -76,7 +77,7 @@ class _SchoolAnalyticsScreenState extends ConsumerState<SchoolAnalyticsScreen> {
   title: 'Achievement Score',  
   value: _analytics!.achievementScore.toStringAsFixed(0),  
   icon: Icons.emoji_events,  
-  color: Colors.amber,  
+  color: AppColors.primaryLight,  
 ),  
 const SizedBox(height: 12),  
 _MetricCard(  

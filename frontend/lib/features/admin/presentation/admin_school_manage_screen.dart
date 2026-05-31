@@ -5,11 +5,13 @@ import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/location_helper.dart';
 
 import '../../../core/config.dart';
 import '../../../shared/utils/image_picker.dart';
 import '../../../shared/widgets/responsive_shell.dart';
+import '../../../shared/widgets/custom_components.dart';
 import '../../auth/data/auth_repository.dart';
 import '../../schools/data/school_dtos.dart';
 import '../../schools/data/school_repository.dart';
@@ -41,10 +43,9 @@ class _AdminSchoolManageScreenState
   final List<PickedFile> _picked = [];
 
   bool _editing = false;  
-  bool _saving = false;  
-  String? _saveError;  
+  bool _saving = false;
+  String? _saveError;
 
-  // Add controllers for edit form
   final _editSchoolName = TextEditingController();
   final _editContactEmail = TextEditingController();
   final _editContactPhone = TextEditingController();
@@ -64,7 +65,6 @@ class _AdminSchoolManageScreenState
   LatLng? _pin;
   static const _defaultCentre = LatLng(9.0331, 38.7501);
 
-  // Phase 11 — facility image upload state.
   bool _uploadingImage = false;
   String? _imageError;
 
@@ -297,17 +297,15 @@ void _startEdit() {
     _editSchoolType = _school!.schoolType;
     _editSubCity = _school!.subCity;
   });
-}  
-  
-// Add this method to cancel edit  
+}
+
 void _cancelEdit() {  
   setState(() {  
     _editing = false;  
     _saveError = null;  
   });  
-}  
-  
-// Add this method to save changes
+}
+
 Future<void> _saveEdit() async {
   if (_school == null) return;
   setState(() {
@@ -581,11 +579,6 @@ onPinChanged: (latLng) {
                                         color: theme.colorScheme.error)),
                               ],
                               const SizedBox(height: 12),
-                              // We use `Wrap` rather than `Row + Spacer +
-                              // FilledButton.icon` because the latter combo
-                              // silently drops the trailing button on the
-                              // Flutter web release build (see Phase 9 PR
-                              // #22 review thread).
                               Wrap(
                                 alignment: WrapAlignment.spaceBetween,
                                 spacing: 12,
@@ -866,29 +859,36 @@ class _SchoolSummary extends StatelessWidget {
               const SizedBox(height: 4),  
                 
               const SizedBox(height: 12),  
-              Wrap(  
-                spacing: 8,  
-                runSpacing: 8,  
-                children: [  
-                  Chip(label: Text(school.curriculum.label())),  
-                  Chip(label: Text(school.verificationStatus.label())),  
-                  if ((school.tuitionFee ?? 0) > 0)  
-                    Chip(  
-                      avatar: const Icon(Icons.payments_outlined, size: 18),  
-                      label: Text('${school.tuitionFee} / year'),  
-                    ),  
-                  if ((school.followerCount ?? 0) > 0)  
-                    Chip(  
-                      avatar: const Icon(Icons.favorite_outline, size: 18),  
-                      label: Text('${school.followerCount} follower(s)'),  
-                    ),  
-                  if ((school.rating ?? 0) > 0)  
-                    Chip(  
-                      avatar: const Icon(Icons.star_outline, size: 18),  
-                      label: Text(  
-                        '${(school.rating!).toStringAsFixed(1)} '  
-                        '(${school.reviewCount ?? 0})',  
-                      ),  
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  AppBadge(
+                    label: school.curriculum.label(),
+                    small: true,
+                  ),
+                  AppBadge(
+                    label: school.verificationStatus.label(),
+                    small: true,
+                  ),
+                  if ((school.tuitionFee ?? 0) > 0)
+                    AppBadge(
+                      icon: Icons.payments_outlined,
+                      label: '${school.tuitionFee} / year',
+                      small: true,
+                    ),
+                  if ((school.followerCount ?? 0) > 0)
+                    AppBadge(
+                      icon: Icons.favorite_outline,
+                      label: '${school.followerCount} follower(s)',
+                      small: true,
+                    ),
+                  if ((school.rating ?? 0) > 0)
+                    AppBadge(
+                      icon: Icons.star_outline,
+                      label:
+                          '${(school.rating!).toStringAsFixed(1)} (${school.reviewCount ?? 0})',
+                      small: true,
                     ),  
                 ],  
               ),  
@@ -1179,10 +1179,10 @@ class _VerificationRequestTile extends StatelessWidget {
           children: [
             Row(
               children: [
-                Chip(
-                  backgroundColor: color.withValues(alpha: 0.15),
-                  label:
-                      Text(req.status.label(), style: TextStyle(color: color)),
+                AppBadge(
+                  label: req.status.label(),
+                  color: color,
+                  small: true,
                 ),
                 const Spacer(),
                 Text(
@@ -1205,8 +1205,22 @@ class _VerificationRequestTile extends StatelessWidget {
               for (final d in req.documents)
                 Padding(
                   padding: const EdgeInsets.only(left: 8, top: 2),
-                  child: Text('· ${d.originalName ?? d.url}',
-                      style: theme.textTheme.bodySmall),
+                  child: InkWell(
+                    onTap: () async {
+                      final url = _absoluteImage(d.url);
+                      final uri = Uri.parse(url);
+                      if (await canLaunchUrl(uri)) {
+                        await launchUrl(uri);
+                      }
+                    },
+                    child: Text(
+                      '· ${d.originalName ?? d.url}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.primary,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
                 ),
             ],
           ],

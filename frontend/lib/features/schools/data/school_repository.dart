@@ -119,7 +119,7 @@ class SchoolRepository {
     if (res.statusCode != 200) throw _toApiException(res);
   }
 
-  /// Phase 11 — upload one facility image (PNG/JPEG/WebP, ≤ 10MB).
+  /// Upload one facility image (PNG/JPEG/WebP, ≤ 10MB).
   /// School admin only. Returns the newly created FacilityImage row.
   Future<FacilityImage> uploadFacilityImage({
     required int schoolId,
@@ -150,7 +150,7 @@ class SchoolRepository {
     return FacilityImage.fromJson(raw);
   }
 
-  /// Phase 11 — delete a facility image by id. School admin only.
+  /// Delete a facility image by id. School admin only.
   Future<void> deleteFacilityImage({
     required int schoolId,
     required int imageId,
@@ -160,6 +160,11 @@ class SchoolRepository {
       throw _toApiException(res);
     }
   }
+
+Future<void> delete(int schoolId) async {
+  final res = await _dio.delete('/api/schools/$schoolId');
+  if (res.statusCode != 200) throw _toApiException(res);
+}
 
   /// Returns the school IDs I follow. Used by the detail screen to
   /// initialise the follow toggle without a per-school round-trip.
@@ -276,6 +281,19 @@ class SchoolRepository {
   final res = await _dio.post('/api/schools/$schoolId/revoke', data: {'reason': reason});  
   if (res.statusCode != 200) throw _toApiException(res);  
 }
+
+Future<void> deleteAllSchools() async {
+  final res = await _dio.delete('/api/schools/delete-all');
+  if (res.statusCode != 200) throw _toApiException(res);
+}
+
+Future<int> getMySchoolCount() async {
+  final res = await _dio.get('/api/schools/my-count');
+  if (res.statusCode != 200) throw _toApiException(res);
+  final body = res.data as Map<String, dynamic>;
+  return body['count'] as int;
+}
+
 Future<Map<int, int>> getRatingDistribution(int schoolId) async {  
   final res = await _dio.get('/api/reviews/$schoolId/distribution');  
   if (res.statusCode != 200) throw _toApiException(res);  

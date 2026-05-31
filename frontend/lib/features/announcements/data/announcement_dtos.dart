@@ -94,7 +94,7 @@ extension PublisherTypeX on PublisherType {
       s == 'MOE' ? PublisherType.moe : PublisherType.schoolAdmin;
 }
 
-/// Phase 11 — slim join row the backend includes on announcement payloads
+/// Slim join row the backend includes on announcement payloads
 /// so we don't have to round-trip /api/schools/:id to print "Sunrise
 /// Academy" next to a ministry-wide post.
 class AnnouncementSchoolSummary {
@@ -131,11 +131,7 @@ class Announcement {
   final AnnouncementCategory category;
   final UrgencyLevel urgencyLevel;
   final DateTime datePosted;
-  // Phase 11 — optional banner image (relative URL, e.g.
-  // `/uploads/announcement-images/abc.png`). Callers concatenate the API
-  // base URL themselves.
   final String? imgUrl;
-  // Phase 11 — joined school summary (null for ministry-wide posts).
   final AnnouncementSchoolSummary? school;
 
   const Announcement({

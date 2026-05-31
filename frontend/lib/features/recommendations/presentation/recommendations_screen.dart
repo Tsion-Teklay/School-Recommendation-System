@@ -6,6 +6,7 @@ import '../../../shared/widgets/responsive_shell.dart';
 import '../../ads/presentation/ad_banner_section.dart';
 import '../../ads/data/ad_dtos.dart';
 import '../../../shared/widgets/school_card.dart';
+import '../../../shared/widgets/custom_navigation.dart';
 import '../../auth/state/auth_controller.dart';
 import '../../schools/state/compare_cart.dart';
 import '../state/recommendations_controller.dart';
@@ -52,6 +53,12 @@ class RecommendationsScreen extends ConsumerWidget {
             'budget, location, and rating). Tap a school to see details, or '
             'add 2–5 to the compare cart.',
             style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 16),
+          SmartNavigationSuggestions(
+            currentPath: '/',
+            suggestions: _getSuggestionsForParent(cart.length),
+            onSuggestionTap: (path) => context.go(path),
           ),
           if (state.criteria.isNotEmpty) ...[
             const SizedBox(height: 12),
@@ -260,4 +267,52 @@ class _ErrorBlock extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Get context-aware navigation suggestions for parents
+List<NavigationSuggestion> _getSuggestionsForParent(int cartItemCount) {
+  final suggestions = <NavigationSuggestion>[];
+
+  // Always suggest browsing schools
+  suggestions.add(const NavigationSuggestion(
+    label: 'Browse Schools',
+    icon: Icons.search,
+    path: '/schools',
+    reason: 'Explore all available schools',
+  ));
+
+  // Suggest announcements for parents
+  suggestions.add(const NavigationSuggestion(
+    label: 'Announcements',
+    icon: Icons.campaign,
+    path: '/announcements',
+    reason: 'Latest updates from schools',
+  ));
+
+  // Suggest compare when they have items in cart
+  if (cartItemCount >= 2) {
+    suggestions.add(NavigationSuggestion(
+      label: 'Compare $cartItemCount Schools',
+      icon: Icons.compare_arrows,
+      path: '/compare/new',
+      reason: 'You have schools ready to compare',
+    ));
+  } else if (cartItemCount == 1) {
+    suggestions.add(const NavigationSuggestion(
+      label: 'Add More to Compare',
+      icon: Icons.add_circle,
+      path: '/schools',
+      reason: 'Add at least one more school to compare',
+    ));
+  }
+
+  // Suggest forum for community engagement
+  suggestions.add(const NavigationSuggestion(
+    label: 'Community Forum',
+    icon: Icons.forum,
+    path: '/forum',
+    reason: 'Connect with other parents',
+  ));
+
+  return suggestions;
 }

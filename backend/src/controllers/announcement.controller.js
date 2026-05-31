@@ -20,7 +20,7 @@ export const create = asyncHandler(async (req, res) => {
 });
 
 export const getAll = asyncHandler(async (req, res) => {
-  // Phase 11 — pass `req.user` so the `followedOnly` filter can resolve. The
+  // Pass `req.user` so the `followedOnly` filter can resolve. The
   // listing endpoint stays public, so `user` may be undefined for anonymous
   // visitors; the service handles that.
   const result = await getAllAnnouncements(req.query, req.user);

@@ -17,7 +17,7 @@ class SchoolRecApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
     return MaterialApp.router(
-      title: 'School Recommendation System',
+      title: 'Fidel Guide',
       theme: appTheme(),
       routerConfig: router,
       debugShowCheckedModeBanner: false,

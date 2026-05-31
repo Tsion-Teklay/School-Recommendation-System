@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../shared/utils/error_handler.dart';
+import '../../../shared/utils/message_helper.dart';
 import '../../../shared/widgets/loading_button.dart';
 import '../../../shared/widgets/responsive_shell.dart';
 import '../state/auth_controller.dart';
@@ -52,10 +54,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           .read(authControllerProvider)
           .login(_identifier.text.trim(), _password.text);
 
+      // Show success message
+      if (mounted) {
+        MessageHelper.showSuccess(context, SuccessMessages.login);
+      }
       // Router redirect handles navigation.
     } catch (e) {
       if (e is ApiException && e.code == 'PHONE_NOT_VERIFIED') {
         if (mounted) {
+          MessageHelper.showInfo(context, 'Please verify your phone number to continue.');
           context.go(
             '/verify-phone?phone=${Uri.encodeComponent(_identifier.text.trim())}',
           );
@@ -65,8 +72,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
       if (mounted) {
         setState(() {
-          _error = e.toString();
-
+          _error = ErrorHandler.getUserFriendlyMessage(e);
           _isSelfDeactivated =
               (e is ApiException && e.code == 'ACCOUNT_SELF_DEACTIVATED');
         });
@@ -197,13 +203,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     );
                 if (context.mounted) {
                   Navigator.pop(context);
+                  MessageHelper.showSuccess(context, SuccessMessages.accountReactivated);
                   context.go('/');
                 }
               } catch (e) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Reactivation failed: $e')),
-                  );
+                  MessageHelper.showError(context, ErrorHandler.getUserFriendlyMessage(e));
                 }
               }
             },

@@ -5,6 +5,8 @@ import {
   getSchoolById,
   updateSchool,
   deleteSchool,
+  deleteAllSchoolsForAdmin,
+  getSchoolCountForAdmin,
   revokeVerification,
 } from "../services/school.service.js";
 
@@ -49,6 +51,16 @@ export const update = asyncHandler(async (req, res) => {
 
 export const remove = asyncHandler(async (req, res) => {
   const result = await deleteSchool(req.params.id, req.user.id);
+  res.json(result);
+});
+
+export const removeAll = asyncHandler(async (req, res) => {
+  const result = await deleteAllSchoolsForAdmin(req.user.id);
+  res.json(result);
+});
+
+export const getSchoolCount = asyncHandler(async (req, res) => {
+  const result = await getSchoolCountForAdmin(req.user.id);
   res.json(result);
 });
 

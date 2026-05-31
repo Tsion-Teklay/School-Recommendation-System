@@ -3,8 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';  
   
+import '../../../core/design_system.dart';
 import '../../../shared/widgets/responsive_shell.dart';  
 import '../../../shared/widgets/loading_button.dart';  
+import '../../../shared/widgets/custom_components.dart';
+import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/illustrations.dart';
 import '../../auth/data/auth_repository.dart' show ApiException;
 import '../../auth/state/auth_controller.dart';
 import '../data/achievement_repository.dart';  
@@ -126,8 +130,7 @@ class _AchievementsManageScreenState extends ConsumerState<AchievementsManageScr
       setState(() => _error = 'Please upload at least one document');
       return;
     }
-    
-    // Check if user is authenticated
+
     final authController = ref.read(authControllerProvider);
     if (!authController.isAuthenticated) {
       setState(() => _error = 'You must be logged in to submit achievements');
@@ -219,13 +222,13 @@ class _AchievementsManageScreenState extends ConsumerState<AchievementsManageScr
     }  
   }  
   
-  Color _getTierColor(String? tier) {  
-    switch (tier) {  
-      case 'GOLD': return Colors.amber;  
-      case 'SILVER': return Colors.grey;  
-      case 'BRONZE': return Colors.brown;  
-      default: return Colors.grey;  
-    }  
+  Color _getTierColor(String? tier) {
+    switch (tier) {
+      case 'GOLD': return const Color(0xFF60A5FA); // Light blue for premium feel
+      case 'SILVER': return Colors.grey;
+      case 'BRONZE': return Colors.brown;
+      default: return Colors.grey;
+    }
   }  
   
   @override  
@@ -235,7 +238,7 @@ class _AchievementsManageScreenState extends ConsumerState<AchievementsManageScr
       child: _loading && _achievements.isEmpty  
           ? const Center(child: CircularProgressIndicator())  
           : SingleChildScrollView(  
-              padding: const EdgeInsets.all(16),  
+              padding: const EdgeInsets.all(AppSpacing.lg),
               child: Form(  
                 key: _form,  
                 child: Column(  
@@ -243,28 +246,28 @@ class _AchievementsManageScreenState extends ConsumerState<AchievementsManageScr
                   children: [  
                     if (_error != null) ...[  
                       Text(_error!, style: const TextStyle(color: Colors.red)),  
-                      const SizedBox(height: 16),  
+                      SpacingHelper.lg,
                     ],  
                     Card(  
                       child: Padding(  
-                        padding: const EdgeInsets.all(16),  
+                        padding: const EdgeInsets.all(AppSpacing.lg),
                         child: Column(  
                           crossAxisAlignment: CrossAxisAlignment.stretch,  
                           children: [  
                             const Text('Add New Achievement', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),  
-                            const SizedBox(height: 16),  
+                            SpacingHelper.lg,
                             TextFormField(  
                               controller: _title,  
                               decoration: const InputDecoration(labelText: 'Title *'),  
                               validator: (v) => v?.trim().isEmpty ?? true ? 'Required' : null,  
                             ),  
-                            const SizedBox(height: 12),  
+                            SpacingHelper.md,
                             TextFormField(  
                               controller: _description,  
                               decoration: const InputDecoration(labelText: 'Description (optional)'),  
                               maxLines: 3,  
                             ),  
-                            const SizedBox(height: 12),
+                            SpacingHelper.md,
                             ElevatedButton.icon(
                               onPressed: _loading ? null : _pickFile,
                               icon: const Icon(Icons.upload_file),
@@ -272,18 +275,18 @@ class _AchievementsManageScreenState extends ConsumerState<AchievementsManageScr
                             ),
                             if (_pickedFiles.isNotEmpty)
                               Padding(
-                                padding: const EdgeInsets.only(top: 8.0),
+                                padding: const EdgeInsets.only(top: AppSpacing.sm),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     const Text('Uploaded documents:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                                    const SizedBox(height: 4),
+                                    SpacingHelper.xs,
                                     ..._pickedFiles.asMap().entries.map((entry) => Padding(
-                                      padding: const EdgeInsets.only(bottom: 4.0),
+                                      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
                                       child: Row(
                                         children: [
                                           const Icon(Icons.description, size: 16),
-                                          const SizedBox(width: 8),
+                                          SizedBox(width: AppSpacing.sm),
                                           Expanded(
                                             child: Text(
                                               entry.value.filename,
@@ -319,13 +322,17 @@ class _AchievementsManageScreenState extends ConsumerState<AchievementsManageScr
                             ),  
                           ],  
                         ),  
-                      ),  
-                    ),  
-                    const SizedBox(height: 24),  
-                    const Text('Existing Achievements:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),  
-                    const SizedBox(height: 12),  
-                    if (_achievements.isEmpty)  
-                      const Card(child: Padding(padding: EdgeInsets.all(16), child: Text('No achievements yet')))  
+                      ),
+                    ),
+                    SpacingHelper.xxl,
+                    const Text('Existing Achievements:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                    SpacingHelper.md,
+                    if (_achievements.isEmpty)
+                      EmptyStateCard(
+                        illustrationType: IllustrationType.emptyAchievements,
+                        title: 'No achievements yet',
+                        description: 'Submit your school achievements to build your reputation and attract more parents.',
+                      )
                     else  
                       ..._achievements.map((a) => Card(
                         child: ListTile(
@@ -343,9 +350,10 @@ class _AchievementsManageScreenState extends ConsumerState<AchievementsManageScr
                           trailing: Row(  
                             mainAxisSize: MainAxisSize.min,  
                             children: [  
-                              Chip(  
-                                label: Text(a.status),  
-                                backgroundColor: _getStatusColor(a.status).withOpacity(0.2),  
+                              AppBadge(
+                                label: a.status,
+                                color: _getStatusColor(a.status),
+                                small: true,
                               ),  
                               if (a.status == 'PENDING')  
                                 IconButton(  

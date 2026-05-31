@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/utils/error_handler.dart';
 import '../../auth/data/auth_dtos.dart';
 import '../../auth/data/auth_repository.dart';
 import '../../auth/state/auth_controller.dart';
@@ -8,7 +9,7 @@ import '../data/announcement_dtos.dart';
 import '../data/announcement_repository.dart';
 
 /// Paginated controller for `/announcements`. Mirrors the schools list
-/// controller (Phase 8) — `refresh()` resets to page 1, `loadMore()`
+/// controller — `refresh()` resets to page 1, `loadMore()`
 /// appends one more page, `applyFilters()` resets when filters change.
 ///
 /// `followedOnly` only makes sense for parents (the backend ignores it
@@ -104,7 +105,9 @@ class AnnouncementsFeedController extends ChangeNotifier {
       _page = result.page;
       _totalPages = result.totalPages;
     } on ApiException catch (e) {
-      _error = e.message;
+      _error = ErrorHandler.getUserFriendlyMessage(e);
+    } catch (e) {
+      _error = ErrorHandler.getUserFriendlyMessage(e);
     } finally {
       _appending = false;
       notifyListeners();
@@ -136,9 +139,9 @@ class AnnouncementsFeedController extends ChangeNotifier {
       _totalPages = result.totalPages;
       _initialized = true;
     } on ApiException catch (e) {
-      _error = e.message;
+      _error = ErrorHandler.getUserFriendlyMessage(e);
     } catch (e) {
-      _error = e.toString();
+      _error = ErrorHandler.getUserFriendlyMessage(e);
     } finally {
       _loading = false;
       notifyListeners();
