@@ -50,6 +50,18 @@ class LandingScreen extends ConsumerWidget {
                         const SizedBox(height: 100),
 
                         _FadeInSection(
+                          child: _buildAboutSection(theme),
+                        ),
+
+                        const SizedBox(height: 100),
+
+                        _FadeInSection(
+                          child: _buildWhoBenefitsSection(theme),
+                        ),
+
+                        const SizedBox(height: 100),
+
+                        _FadeInSection(
                           child: _buildMissionSection(theme),
                         ),
 
@@ -63,6 +75,12 @@ class LandingScreen extends ConsumerWidget {
 
                         _FadeInSection(
                           child: _buildHowItWorksSection(theme),
+                        ),
+
+                        const SizedBox(height: 100),
+
+                        _FadeInSection(
+                          child: _buildEducationalGuideSection(theme),
                         ),
 
                         const SizedBox(height: 100),
@@ -398,124 +416,427 @@ class LandingScreen extends ConsumerWidget {
   }
 
   // =========================================================
+  // ABOUT SECTION
+  // =========================================================
+
+  Widget _buildAboutSection(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'OUR STORY',
+          style: theme.textTheme.labelLarge?.copyWith(letterSpacing: 2),
+        ),
+
+        SpacingHelper.lg,
+
+        Text(
+          'Why We Built Fidel Guide',
+          style: theme.textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+
+        SpacingHelper.xxxl,
+
+        Text(
+          'Education is the foundation of every child\'s future, yet finding the right school in Ethiopia has never been easy. We spoke with hundreds of parents across Addis Ababa who shared similar frustrations: spending countless hours visiting schools, relying on word-of-mouth recommendations that often proved unreliable, and struggling to find accurate information about curriculum, facilities, and fees. Many families felt overwhelmed by the lack of centralized, trustworthy information, often making one of the most important decisions for their children based on incomplete or outdated data.',
+          style: theme.textTheme.bodyLarge?.copyWith(
+            height: 1.8,
+            color: theme.colorScheme.onSurface.withOpacity(0.85),
+          ),
+        ),
+
+        SpacingHelper.xl,
+
+        Text(
+          'We realized that technology could bridge this gap - creating a platform that not only aggregates information but makes it accessible, understandable, and actionable for every Ethiopian family. Our vision extends beyond simply connecting families with schools. We aim to transform how educational decisions are made in Ethiopia by fostering transparency, empowering parents with data-driven insights, and creating a community where knowledge is shared freely.',
+          style: theme.textTheme.bodyLarge?.copyWith(
+            height: 1.8,
+            color: theme.colorScheme.onSurface.withOpacity(0.85),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // =========================================================
+  // WHO BENEFITS SECTION
+  // =========================================================
+
+  Widget _buildWhoBenefitsSection(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'WHO WE SERVE',
+          style: theme.textTheme.labelLarge?.copyWith(letterSpacing: 2),
+        ),
+
+        SpacingHelper.lg,
+
+        Text(
+          'Empowering the entire education ecosystem',
+          style: theme.textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+
+        SpacingHelper.xxxl,
+
+        // For Parents
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(40),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primaryContainer.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: theme.colorScheme.outlineVariant.withOpacity(0.3),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.family_restroom,
+                      size: 28,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Text(
+                    'For Parents',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'We understand that choosing a school is one of the most important decisions you\'ll make as a parent. Our platform saves you countless hours of research by providing comprehensive, verified information all in one place. You can compare schools side-by-side based on curriculum type, facilities, extracurricular activities, location, and tuition fees - factors that matter most to your family\'s unique situation. Beyond basic information, we offer personalized recommendations that consider your child\'s academic strengths, learning style, and your family\'s preferences, while connecting you with other parents who have firsthand experience with the schools you\'re considering.',
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  height: 1.8,
+                  color: theme.colorScheme.onSurface.withOpacity(0.85),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 40),
+
+        // For Schools
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(40),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.tertiaryContainer.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: theme.colorScheme.outlineVariant.withOpacity(0.3),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.tertiary.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.school,
+                      size: 28,
+                      color: theme.colorScheme.tertiary,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Text(
+                    'For Schools',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Schools are the heart of our education system, and we\'re committed to helping you connect with families who are the right fit for your institution. By creating a comprehensive profile on our platform, you can showcase what makes your school unique - your curriculum approach, teaching philosophy, facilities, achievements, and the values that define your community. Our platform streamlines the admissions process by providing tools to manage inquiries, schedule tours, and communicate with prospective families efficiently, while offering analytics that help you understand what families are looking for and connect with a network of schools across Ethiopia.',
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  height: 1.8,
+                  color: theme.colorScheme.onSurface.withOpacity(0.85),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // =========================================================
+  // EDUCATIONAL GUIDE SECTION
+  // =========================================================
+
+  Widget _buildEducationalGuideSection(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'EDUCATIONAL GUIDE',
+          style: theme.textTheme.labelLarge?.copyWith(letterSpacing: 2),
+        ),
+
+        SpacingHelper.lg,
+
+        Text(
+          '5 Things to Consider When Choosing a School',
+          style: theme.textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+
+        SpacingHelper.xxxl,
+
+        _guideItem(
+          theme,
+          '1. Curriculum and Educational Philosophy',
+          'Understanding a school\'s curriculum approach is fundamental to ensuring it aligns with your child\'s learning style and your family\'s educational values. Some schools follow traditional Ethiopian curriculum, while others offer international programs like Cambridge or International Baccalaureate. Consider whether the school emphasizes rote learning or critical thinking, and don\'t hesitate to ask about class sizes, teacher qualifications, and support for students who need extra help.',
+        ),
+
+        SpacingHelper.xl,
+
+        _guideItem(
+          theme,
+          '2. Location and Logistics',
+          'The practical aspects of school attendance can significantly impact your daily life and your child\'s overall experience. Consider commute time and transportation options - long journeys can leave children exhausted and reduce time for homework and family activities. Think about traffic patterns during peak hours, whether the school offers transportation services, and evaluate the safety of the route and surrounding neighborhood.',
+        ),
+
+        SpacingHelper.xl,
+
+        _guideItem(
+          theme,
+          '3. Facilities and Learning Environment',
+          'The physical environment plays a crucial role in your child\'s daily experience and learning outcomes. Visit the school to observe classrooms, libraries, science labs, computer facilities, and sports infrastructure. Consider whether the spaces are well-maintained, safe, and conducive to learning, and look for age-appropriate facilities that support your child\'s developmental needs.',
+        ),
+
+        SpacingHelper.xl,
+
+        _guideItem(
+          theme,
+          '4. School Culture and Community',
+          'The intangible aspects of school life often determine whether a child truly thrives. Observe interactions between students and teachers during your visit - are they respectful and warm? Does the school foster a sense of community and belonging? Consider the school\'s values and whether they align with your family\'s principles, and look into extracurricular activities that contribute to school spirit and student engagement.',
+        ),
+
+        SpacingHelper.xl,
+
+        _guideItem(
+          theme,
+          '5. Cost and Financial Considerations',
+          'Education is an investment, and it\'s important to have a clear understanding of all costs involved. Beyond tuition, consider registration fees, textbook costs, uniforms, meal programs, extracurricular fees, and transportation expenses. Ask about payment schedules and whether the school offers financial aid or scholarships. Consider whether the cost aligns with the value provided and fits within your family\'s budget long-term.',
+        ),
+      ],
+    );
+  }
+
+  Widget _guideItem(
+    ThemeData theme,
+    String title,
+    String content,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.primary,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          content,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            height: 1.8,
+            color: theme.colorScheme.onSurface.withOpacity(0.85),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // =========================================================
   // MISSION SECTION
   // =========================================================
 
   Widget _buildMissionSection(ThemeData theme) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 40,
-        vertical: 80,
-      ),
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            theme.colorScheme.primaryContainer.withOpacity(0.3),
-            theme.colorScheme.tertiaryContainer.withOpacity(0.2),
-          ],
-        ),
         borderRadius: BorderRadius.circular(32),
       ),
-      child: Column(
-        children: [
-          Text(
-            'MISSION',
-            style:
-                theme.textTheme.labelLarge?.copyWith(letterSpacing: 2),
-          ),
+      child: SizedBox(
+        width: double.infinity,
+        height: 500,
+        child: Stack(
+          children: [
+            // Background Image
+            Image.asset(
+              'assets/hero.png',
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: 500,
+            ),
 
-          const SizedBox(height: 40),
+            // Dark Overlay
+            Container(
+              width: double.infinity,
+              height: 500,
+              color: Colors.black.withOpacity(0.5),
+            ),
 
-          LayoutBuilder(
-            builder: (context, constraints) {
-              if (constraints.maxWidth > 600) {
-                // Two-column layout for larger screens
-                return Row(
-                  children: [
-                    Expanded(
-                      child: Center(
-                        child: Container(
-                          padding: const EdgeInsets.all(32),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withOpacity(0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.school_outlined,
-                            size: 120,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 40),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Empowering Every Child\'s Future',
-                            style: theme.textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              height: 1.3,
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          Text(
-                            'Our mission is to democratize access to quality education information across Ethiopia. Every child deserves a school that nurtures their potential, and every family deserves the tools to find it.',
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              height: 1.7,
-                              color: theme.colorScheme.onSurface.withOpacity(0.85),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+            // Decorative Gradient
+            Container(
+              width: double.infinity,
+              height: 500,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.3),
+                    Colors.black.withOpacity(0.6),
                   ],
-                );
-              } else {
-                // Single column layout for smaller screens
-                return Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.school_outlined,
-                        size: 80,
-                        color: theme.colorScheme.primary,
-                      ),
+                ),
+              ),
+            ),
+
+            // Main Content
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 40,
+                vertical: 80,
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    'MISSION',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      letterSpacing: 2,
+                      color: Colors.white,
                     ),
-                    SpacingHelper.xxxl,
-                    Text(
-                      'Empowering Every Child\'s Future',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        height: 1.3,
-                      ),
-                    ),
-                    SpacingHelper.lg,
-                    Text(
-                      'Our mission is to democratize access to quality education information across Ethiopia. Every child deserves a school that nurtures their potential, and every family deserves the tools to find it.',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        height: 1.7,
-                        color: theme.colorScheme.onSurface.withOpacity(0.85),
-                      ),
-                    ),
-                  ],
-                );
-              }
-            },
-          ),
-        ],
+                  ),
+
+                  const SizedBox(height: 40),
+
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      if (constraints.maxWidth > 600) {
+                        // Two-column layout for larger screens
+                        return Row(
+                          children: [
+                            Expanded(
+                              child: Center(
+                                child: Container(
+                                  padding: const EdgeInsets.all(32),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.15),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.school_outlined,
+                                    size: 120,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 40),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Empowering Every Child\'s Future',
+                                    style: theme.textTheme.headlineMedium?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      height: 1.3,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 20),
+                                  Text(
+                                    'Our mission is to democratize access to quality education information across Ethiopia. Every child deserves a school that nurtures their potential, and every family deserves the tools to find it.',
+                                    style: theme.textTheme.bodyLarge?.copyWith(
+                                      height: 1.7,
+                                      color: Colors.white.withOpacity(0.9),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        );
+                      } else {
+                        // Single column layout for smaller screens
+                        return Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(24),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.15),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.school_outlined,
+                                size: 80,
+                                color: Colors.white,
+                              ),
+                            ),
+                            SpacingHelper.xxxl,
+                            Text(
+                              'Empowering Every Child\'s Future',
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                height: 1.3,
+                                color: Colors.white,
+                              ),
+                            ),
+                            SpacingHelper.lg,
+                            Text(
+                              'Our mission is to democratize access to quality education information across Ethiopia. Every child deserves a school that nurtures their potential, and every family deserves the tools to find it.',
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                height: 1.7,
+                                color: Colors.white.withOpacity(0.9),
+                              ),
+                            ),
+                          ],
+                        );
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -533,13 +854,6 @@ class LandingScreen extends ConsumerWidget {
         ),
 
         SpacingHelper.lg,
-
-        Text(
-          'Making a difference in education.',
-          style: theme.textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
 
         SizedBox(height: AppSpacing.massive),
 
