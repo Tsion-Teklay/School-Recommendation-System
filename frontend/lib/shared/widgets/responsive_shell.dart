@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme.dart';
 import '../../features/auth/data/auth_dtos.dart';
 import '../../features/auth/state/auth_controller.dart';
-import '../../features/notifications/presentation/notification_bell.dart';
+import '../../features/notifications/state/notifications_controller.dart';
 import 'custom_navigation.dart';
 
 /// Breakpoints we use everywhere. Mirrors Material 3 window-size classes.
@@ -133,22 +133,16 @@ class ResponsiveShell extends ConsumerWidget {
     final location = GoRouterState.of(context).uri.path;
     final selected = _selectedIndex(location, dests);
 
-    final defaultActions = <Widget>[
-      if (auth.isAuthenticated) const NotificationBell(),
-      if (auth.isAuthenticated)
-        IconButton(
-          tooltip: 'Profile',
-          onPressed: () => context.go('/profile'),
-          icon: const Icon(Icons.person_outline),
-        ),
-    ];
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final isMedium = constraints.maxWidth >= Breakpoints.compact &&
             constraints.maxWidth < Breakpoints.medium;
         final isExpanded = constraints.maxWidth >= Breakpoints.medium;
         final isCompact = constraints.maxWidth < Breakpoints.compact;
+
+        final defaultActions = <Widget>[
+          // No actions in navbar - profile and notifications are floating buttons
+        ];
 
         final scrollable = SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
@@ -163,8 +157,6 @@ class ResponsiveShell extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           child,
-          const Divider(height: 64),
-          const _AppFooter(),
         ],
       ),  
             ),
@@ -192,25 +184,41 @@ class ResponsiveShell extends ConsumerWidget {
             leading: leading,
           ),
           floatingActionButton: floatingActionButton,
-          body: dests.isEmpty || isCompact
-              ? body
-              : Row(
-                  children: [
-                    AppNavigationRail(
-                      selectedIndex: selected >= 0 ? selected : 0,
-                      items: dests
-                          .map((d) => NavigationItem(
-                                label: d.label,
-                                icon: d.icon,
-                              ))
-                          .toList(),
-                      onDestinationSelected: (i) => context.go(dests[i].path),
-                      extended: isExpanded,
+          body: Stack(
+            children: [
+              dests.isEmpty || isCompact
+                  ? body
+                  : Row(
+                      children: [
+                        AppNavigationRail(
+                          selectedIndex: selected >= 0 ? selected : 0,
+                          items: dests
+                              .map((d) => NavigationItem(
+                                    label: d.label,
+                                    icon: d.icon,
+                                  ))
+                              .toList(),
+                          onDestinationSelected: (i) => context.go(dests[i].path),
+                          extended: isExpanded,
+                        ),
+                        const VerticalDivider(width: 1),
+                        Expanded(child: body),
+                      ],
                     ),
-                    const VerticalDivider(width: 1),
-                    Expanded(child: body),
-                  ],
+              // Floating notification button
+              if (auth.isAuthenticated)
+                FloatingNotificationButton(
+                  unreadCount: ref.watch(notificationsControllerProvider).unreadTotal,
+                  onTap: () => context.go('/notifications'),
                 ),
+              // Floating profile button (consistent - at very top corner)
+              // Only show when not on profile page
+              if (auth.isAuthenticated && !location.startsWith('/profile'))
+                FloatingProfileButton(
+                  onTap: () => context.go('/profile'),
+                ),
+            ],
+          ),
           bottomNavigationBar: bottomDests.isNotEmpty && isCompact
               ? AppBottomNavigation(
                   selectedIndex: bottomSelected >= 0 ? bottomSelected : 0,
@@ -227,54 +235,4 @@ class ResponsiveShell extends ConsumerWidget {
       },
     );
   }
-}
-
-class _AppFooter extends StatelessWidget {  
-  const _AppFooter();  
-  
-  @override  
-  Widget build(BuildContext context) {  
-    final theme = Theme.of(context);  
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
-      decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(
-            color: theme.colorScheme.outline.withOpacity(0.2),
-            width: 1,
-          ),
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.email_outlined,
-                size: 14,
-                color: theme.colorScheme.onSurface.withOpacity(0.5),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                'info@fidelguide.com',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.6),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            '© ${DateTime.now().year} Fidel Guide. All rights reserved.',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.5),
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );  
-  }  
 }

@@ -19,8 +19,11 @@ import '../../reports/data/report_dtos.dart';
 /// Parents get an additional "Followed schools only" toggle that bumps
 /// the backend's `followedOnly=true` filter on; non-parents always see
 /// every visible announcement.
+/// 
+/// If [schoolId] is provided, shows only announcements from that specific school.
 class AnnouncementsFeedScreen extends ConsumerStatefulWidget {
-  const AnnouncementsFeedScreen({super.key});
+  final int? schoolId;
+  const AnnouncementsFeedScreen({super.key, this.schoolId});
 
   @override
   ConsumerState<AnnouncementsFeedScreen> createState() =>
@@ -33,7 +36,11 @@ class _AnnouncementsFeedScreenState
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(announcementsFeedControllerProvider).ensureLoaded();
+      final controller = ref.read(announcementsFeedControllerProvider);
+      if (widget.schoolId != null) {
+        controller.applyFilters(schoolId: widget.schoolId);
+      }
+      controller.ensureLoaded();
     });
   }
 
@@ -51,13 +58,15 @@ class _AnnouncementsFeedScreenState
     final theme = Theme.of(context);
 
     return ResponsiveShell(
-      title: 'Announcements',
+      title: widget.schoolId != null ? 'School Announcements' : 'Announcements',
       onScrollNotification: _onScroll,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _FiltersBar(controller: ctl),
-          const SizedBox(height: 16),
+          if (widget.schoolId == null) ...[
+            _FiltersBar(controller: ctl),
+            const SizedBox(height: 16),
+          ],
           if (ctl.error != null)
             Card(
               color: theme.colorScheme.errorContainer,

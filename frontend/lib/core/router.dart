@@ -42,6 +42,7 @@ import '../features/achievements/presentation/achievements_manage_screen.dart';
 import '../features/achievements/presentation/achievement_detail_screen.dart';  
 import '../features/achievements/presentation/staff_breakdown_screen.dart';  
 import '../features/achievements/presentation/moe_achievement_review_screen.dart';
+import '../features/reviews/presentation/school_reviews_screen.dart';
 
 /// Lists routes that anyone (logged in or not) is allowed to hit. Email-verify
 /// + reset-password are public because they're entered from email deep links;
@@ -214,6 +215,25 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
+        path: '/schools/:id/reviews',
+        pageBuilder: (context, state) {
+          final raw = state.pathParameters['id'];
+          final id = int.tryParse(raw ?? '');
+          if (id == null) {
+            return AppAnimations.noTransition(
+              key: state.pageKey,
+              child: Scaffold(
+                body: Center(child: Text('Invalid school id: $raw')),
+              ),
+            );
+          }
+          return AppAnimations.slideInFromRight(
+            key: state.pageKey,
+            child: SchoolReviewsScreen(schoolId: id),
+          );
+        },
+      ),
+      GoRoute(
         path: '/compare',
         pageBuilder: (context, state) => AppAnimations.rotateIn(
           key: state.pageKey,
@@ -255,10 +275,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/announcements',
-        pageBuilder: (context, state) => AppAnimations.bounceSlide(
-          key: state.pageKey,
-          child: const AnnouncementsFeedScreen(),
-        ),
+        pageBuilder: (context, state) {
+          final schoolIdRaw = state.uri.queryParameters['schoolId'];
+          final schoolId = schoolIdRaw != null ? int.tryParse(schoolIdRaw) : null;
+          return AppAnimations.bounceSlide(
+            key: state.pageKey,
+            child: AnnouncementsFeedScreen(schoolId: schoolId),
+          );
+        },
       ),
       GoRoute(
         path: '/announcements/:id',

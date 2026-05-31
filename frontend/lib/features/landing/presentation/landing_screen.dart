@@ -33,14 +33,20 @@ class LandingScreen extends ConsumerWidget {
               // MAIN CONTENT
               // =========================================================
 
-              Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1100),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 60,
-                    ),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isMobile = constraints.maxWidth < 600;
+                  final horizontalPadding = isMobile ? 16.0 : 20.0;
+                  final verticalPadding = isMobile ? 40.0 : 60.0;
+                  
+                  return Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1100),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: horizontalPadding,
+                          vertical: verticalPadding,
+                        ),
                     child: Column(
                       children: [
                         _FadeInSection(
@@ -108,6 +114,8 @@ class LandingScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
+                  );
+                },
               ),
             ],
           ),
@@ -124,12 +132,19 @@ class LandingScreen extends ConsumerWidget {
     BuildContext context,
     ThemeData theme,
   ) {
-    return SizedBox(
-      width: double.infinity,
-      height: MediaQuery.of(context).size.height * 0.92,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 600;
+        final heroHeight = isMobile
+            ? MediaQuery.of(context).size.height * 1.05
+            : MediaQuery.of(context).size.height * 0.92;
+        
+        return SizedBox(
+          width: double.infinity,
+          height: heroHeight,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
           // Background Image
           Image.asset(
             'assets/hero.png',
@@ -158,20 +173,20 @@ class LandingScreen extends ConsumerWidget {
           // Main Content
           Center(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 24),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(32),
+                borderRadius: BorderRadius.circular(isMobile ? 20 : 32),
                 child: BackdropFilter(
                   filter: ImageFilter.blur(
                     sigmaX: 16,
                     sigmaY: 16,
                   ),
                   child: Container(
-                    width: 760,
-                    padding: const EdgeInsets.all(42),
+                    width: isMobile ? double.infinity : 760,
+                    padding: EdgeInsets.all(isMobile ? 12 : 42),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(32),
+                      borderRadius: BorderRadius.circular(isMobile ? 20 : 32),
                       border: Border.all(
                         color: Colors.white.withOpacity(0.2),
                         width: 1.5,
@@ -182,36 +197,36 @@ class LandingScreen extends ConsumerWidget {
                       children: [
                         // Location Chip
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 8,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isMobile ? 10 : 14,
+                            vertical: isMobile ? 6 : 8,
                           ),
                           decoration: BoxDecoration(
                             color: Colors.black.withOpacity(0.3),
                             borderRadius: BorderRadius.circular(40),
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
                                 Icons.location_on_outlined,
                                 color: Colors.white,
-                                size: 16,
+                                size: isMobile ? 14 : 16,
                               ),
-                              SizedBox(width: 6),
+                              SizedBox(width: isMobile ? 4 : 6),
                               Text(
                                 'Addis Ababa, Ethiopia',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w500,
-                                  fontSize: 13,
+                                  fontSize: isMobile ? 11 : 13,
                                 ),
                               ),
                             ],
                           ),
                         ),
 
-                        const SizedBox(height: 28),
+                        SizedBox(height: isMobile ? 12 : 28),
 
                         // Brand Name with Unique Font
                         Text(
@@ -219,14 +234,14 @@ class LandingScreen extends ConsumerWidget {
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 16,
+                            fontSize: isMobile ? 12 : 16,
                             fontWeight: FontWeight.w700,
-                            letterSpacing: 4,
+                            letterSpacing: isMobile ? 3 : 4,
                             height: 1.2,
                           ),
                         ),
 
-                        const SizedBox(height: 24),
+                        SizedBox(height: isMobile ? 12 : 24),
 
                         // Main Heading
                         Text(
@@ -237,10 +252,11 @@ class LandingScreen extends ConsumerWidget {
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                             height: 1.1,
+                            fontSize: isMobile ? 24 : null,
                           ),
                         ),
 
-                        const SizedBox(height: 18),
+                        SizedBox(height: isMobile ? 8 : 18),
 
                         // Amharic Subtitle
                         Text(
@@ -250,28 +266,30 @@ class LandingScreen extends ConsumerWidget {
                               theme.textTheme.headlineSmall?.copyWith(
                             color: Colors.white.withOpacity(0.92),
                             fontWeight: FontWeight.w500,
+                            fontSize: isMobile ? 14 : null,
                           ),
                         ),
 
-                        SpacingHelper.xxl,
+                        SizedBox(height: isMobile ? 16 : 24),
 
                         // Description
                         ConstrainedBox(
                           constraints:
                               const BoxConstraints(maxWidth: 580),
                           child: Text(
-                            'A modern platform helping Ethiopian families discover, compare, and choose schools that truly fit their child’s needs, aspirations, and future.',
+                            "A modern platform helping Ethiopian families discover, compare, and choose schools that truly fit their child's needs, aspirations, and future.",
                             textAlign: TextAlign.center,
                             style:
                                 theme.textTheme.bodyLarge?.copyWith(
                               color:
                                   Colors.white.withOpacity(0.85),
                               height: 1.7,
+                              fontSize: isMobile ? 13 : null,
                             ),
                           ),
                         ),
 
-                        const SizedBox(height: 40),
+                        SizedBox(height: isMobile ? 24 : 40),
 
                         // Buttons
                         Wrap(
@@ -286,18 +304,19 @@ class LandingScreen extends ConsumerWidget {
                                 backgroundColor: Colors.white,
                                 foregroundColor: Colors.black,
                                 padding:
-                                    const EdgeInsets.symmetric(
-                                  horizontal: 30,
-                                  vertical: 20,
+                                    EdgeInsets.symmetric(
+                                  horizontal: isMobile ? 20 : 30,
+                                  vertical: isMobile ? 14 : 20,
                                 ),
                                 shape: const StadiumBorder(),
                               ),
-                              icon: const Text(
+                              icon: Text(
                                 'Start Exploring',
+                                style: TextStyle(fontSize: isMobile ? 13 : null),
                               ),
-                              label: const Icon(
+                              label: Icon(
                                 Icons.arrow_forward,
-                                size: 18,
+                                size: isMobile ? 16 : 18,
                               ),
                             ),
 
@@ -310,13 +329,13 @@ class LandingScreen extends ConsumerWidget {
                                   color: Colors.white,
                                 ),
                                 padding:
-                                    const EdgeInsets.symmetric(
-                                  horizontal: 30,
-                                  vertical: 20,
+                                    EdgeInsets.symmetric(
+                                  horizontal: isMobile ? 20 : 30,
+                                  vertical: isMobile ? 14 : 20,
                                 ),
                                 shape: const StadiumBorder(),
                               ),
-                              child: const Text('Sign In'),
+                              child: Text('Sign In', style: TextStyle(fontSize: isMobile ? 13 : null)),
                             ),
                           ],
                         ),
@@ -329,6 +348,8 @@ class LandingScreen extends ConsumerWidget {
           ),
         ],
       ),
+        );
+      },
     );
   }
 
@@ -359,42 +380,55 @@ class LandingScreen extends ConsumerWidget {
 
         LayoutBuilder(
           builder: (context, constraints) {
-            // Determine number of columns based on screen width
-            int crossAxisCount;
-            double mainAxisExtent;
-            
-            if (constraints.maxWidth > 1000) {
-              crossAxisCount = 4;
-              mainAxisExtent = 180;
-            } else if (constraints.maxWidth > 700) {
-              crossAxisCount = 2;
-              mainAxisExtent = 180;
+            final isMobile = constraints.maxWidth < 600;
+            final features = [
+              {'icon': Icons.auto_awesome_outlined, 'title': 'School Recommendations', 'description': "Tailored school suggestions based on your child's academic and personal needs."},
+              {'icon': Icons.location_searching_outlined, 'title': 'Smart Discovery', 'description': 'Compare schools by curriculum, facilities, tuition, and location.'},
+              {'icon': Icons.groups_outlined, 'title': 'Parent Engagement', 'description': 'Strengthening communication between schools and families.'},
+              {'icon': Icons.trending_up_outlined, 'title': 'Educational Insights', 'description': 'Helping schools and parents make more informed decisions.'},
+            ];
+
+            if (isMobile) {
+              // Vertical list for mobile
+              return Column(
+                children: features.map((feature) => _FeatureListItem(
+                  theme: theme,
+                  icon: feature['icon'] as IconData,
+                  title: feature['title'] as String,
+                  description: feature['description'] as String,
+                )).toList(),
+              );
             } else {
-              crossAxisCount = 1;
-              mainAxisExtent = 160;
+              // Two-column grid for desktop
+              return Column(
+                children: [
+                  for (int i = 0; i < features.length; i += 2)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _FeatureListItem(
+                            theme: theme,
+                            icon: features[i]['icon'] as IconData,
+                            title: features[i]['title'] as String,
+                            description: features[i]['description'] as String,
+                          ),
+                        ),
+                        if (i + 1 < features.length) ...[
+                          const SizedBox(width: 24),
+                          Expanded(
+                            child: _FeatureListItem(
+                              theme: theme,
+                              icon: features[i + 1]['icon'] as IconData,
+                              title: features[i + 1]['title'] as String,
+                              description: features[i + 1]['description'] as String,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                ],
+              );
             }
-            
-            return GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: 4, // Number of features
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: crossAxisCount,
-                mainAxisSpacing: 16,
-                crossAxisSpacing: 16,
-                mainAxisExtent: mainAxisExtent,
-              ),
-        itemBuilder: (context, index) {
-                // Put your list of card data here and map it
-                final features = [
-                  _featureCard(theme, Icons.auto_awesome_outlined, 'School Recommendations', 'Tailored school suggestions based on your child’s academic and personal needs.'),
-                  _featureCard(theme, Icons.location_searching_outlined, 'Smart Discovery', 'Compare schools by curriculum, facilities, tuition, and location.'),
-                  _featureCard(theme, Icons.groups_outlined, 'Parent Engagement', 'Strengthening communication between schools and families.'),
-                  _featureCard(theme, Icons.trending_up_outlined, 'Educational Insights', 'Helping schools and parents make more informed decisions.'),
-                ];
-                return features[index];
-              },
-            );
           },
         ),
       ],
@@ -412,6 +446,66 @@ class LandingScreen extends ConsumerWidget {
       icon: icon,
       title: title,
       description: description,
+    );
+  }
+
+  Widget _FeatureListItem({
+    required ThemeData theme,
+    required IconData icon,
+    required String title,
+    required String description,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withOpacity(0.3),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              size: 32,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  description,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    height: 1.5,
+                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -684,54 +778,61 @@ class LandingScreen extends ConsumerWidget {
   // =========================================================
 
   Widget _buildMissionSection(ThemeData theme) {
-    return Container(
-      width: double.infinity,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(32),
-      ),
-      child: SizedBox(
-        width: double.infinity,
-        height: 500,
-        child: Stack(
-          children: [
-            // Background Image
-            Image.asset(
-              'assets/hero.png',
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: 500,
-            ),
-
-            // Dark Overlay
-            Container(
-              width: double.infinity,
-              height: 500,
-              color: Colors.black.withOpacity(0.5),
-            ),
-
-            // Decorative Gradient
-            Container(
-              width: double.infinity,
-              height: 500,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withOpacity(0.3),
-                    Colors.black.withOpacity(0.6),
-                  ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 600;
+        final sectionHeight = isMobile ? 650.0 : 500.0;
+        final horizontalPadding = isMobile ? 16.0 : 40.0;
+        final verticalPadding = isMobile ? 32.0 : 80.0;
+        
+        return Container(
+          width: double.infinity,
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(32),
+          ),
+          child: SizedBox(
+            width: double.infinity,
+            height: sectionHeight,
+            child: Stack(
+              children: [
+                // Background Image
+                Image.asset(
+                  'assets/hero.png',
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: sectionHeight,
                 ),
-              ),
-            ),
 
-            // Main Content
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 40,
-                vertical: 80,
-              ),
+                // Dark Overlay
+                Container(
+                  width: double.infinity,
+                  height: sectionHeight,
+                  color: Colors.black.withOpacity(0.5),
+                ),
+
+                // Decorative Gradient
+                Container(
+                  width: double.infinity,
+                  height: sectionHeight,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withOpacity(0.3),
+                        Colors.black.withOpacity(0.6),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Main Content
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: horizontalPadding,
+                    vertical: verticalPadding,
+                  ),
               child: Column(
                 children: [
                   Text(
@@ -839,6 +940,8 @@ class LandingScreen extends ConsumerWidget {
         ),
       ),
     );
+      },
+    );
   }
 
   // =========================================================
@@ -871,9 +974,9 @@ class LandingScreen extends ConsumerWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               crossAxisCount: crossAxisCount,
-              mainAxisSpacing: 24,
-              crossAxisSpacing: 24,
-              childAspectRatio: isMobile ? 1.2 : 1.0,
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
+              childAspectRatio: isMobile ? 0.9 : 0.85,
               children: [
                 _StatCard(
                   theme: theme,
@@ -967,35 +1070,79 @@ class LandingScreen extends ConsumerWidget {
             } else {
               // Horizontal layout for desktop
               return Row(
-                children: steps.asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final step = entry.value;
-                  return Expanded(
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _StepCard(
-                            theme: theme,
-                            stepNumber: index + 1,
-                            icon: step['icon'] as IconData,
-                            title: step['title'] as String,
-                            description: step['description'] as String,
-                            isLast: index == steps.length - 1,
-                          ),
-                        ),
-                        if (index < steps.length - 1)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Icon(
-                              Icons.arrow_forward,
-                              color: theme.colorScheme.primary.withOpacity(0.5),
-                              size: 32,
-                            ),
-                          ),
-                      ],
+                children: [
+                  // Card 1
+                  Expanded(
+                    child: _StepCard(
+                      theme: theme,
+                      stepNumber: 1,
+                      icon: steps[0]['icon'] as IconData,
+                      title: steps[0]['title'] as String,
+                      description: steps[0]['description'] as String,
+                      isLast: false,
                     ),
-                  );
-                }).toList(),
+                  ),
+                  // Arrow
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Icon(
+                      Icons.arrow_forward,
+                      color: theme.colorScheme.primary.withOpacity(0.5),
+                      size: 32,
+                    ),
+                  ),
+                  // Card 2
+                  Expanded(
+                    child: _StepCard(
+                      theme: theme,
+                      stepNumber: 2,
+                      icon: steps[1]['icon'] as IconData,
+                      title: steps[1]['title'] as String,
+                      description: steps[1]['description'] as String,
+                      isLast: false,
+                    ),
+                  ),
+                  // Arrow
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Icon(
+                      Icons.arrow_forward,
+                      color: theme.colorScheme.primary.withOpacity(0.5),
+                      size: 32,
+                    ),
+                  ),
+                  // Card 3
+                  Expanded(
+                    child: _StepCard(
+                      theme: theme,
+                      stepNumber: 3,
+                      icon: steps[2]['icon'] as IconData,
+                      title: steps[2]['title'] as String,
+                      description: steps[2]['description'] as String,
+                      isLast: false,
+                    ),
+                  ),
+                  // Arrow
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Icon(
+                      Icons.arrow_forward,
+                      color: theme.colorScheme.primary.withOpacity(0.5),
+                      size: 32,
+                    ),
+                  ),
+                  // Card 4
+                  Expanded(
+                    child: _StepCard(
+                      theme: theme,
+                      stepNumber: 4,
+                      icon: steps[3]['icon'] as IconData,
+                      title: steps[3]['title'] as String,
+                      description: steps[3]['description'] as String,
+                      isLast: true,
+                    ),
+                  ),
+                ],
               );
             }
           },
@@ -1163,24 +1310,27 @@ class LandingScreen extends ConsumerWidget {
     BuildContext context,
     ThemeData theme,
   ) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(60),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(32),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            theme.colorScheme.primary.withOpacity(0.1),
-            theme.colorScheme.tertiary.withOpacity(0.1),
-            theme.colorScheme.tertiary.withOpacity(0.1),
-          ],
-        ),
-        border: Border.all(
-          color: theme.colorScheme.outlineVariant.withOpacity(0.3),
-        ),
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 600;
+        return Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(isMobile ? 32 : 60),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(32),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                theme.colorScheme.primary.withOpacity(0.1),
+                theme.colorScheme.tertiary.withOpacity(0.1),
+                theme.colorScheme.tertiary.withOpacity(0.1),
+              ],
+            ),
+            border: Border.all(
+              color: theme.colorScheme.outlineVariant.withOpacity(0.3),
+            ),
+          ),
       child: Stack(
         children: [
           // Decorative circles
@@ -1222,66 +1372,73 @@ class LandingScreen extends ConsumerWidget {
           ),
           
           // Main content
-          Center(
-            child: Column(
-              children: [
-                Text(
-                  'Ready to find the right school?',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                Text(
-                  'Create your account and begin exploring schools tailored to your child.',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.8),
-                  ),
-                ),
-
-                SpacingHelper.xxxl,
-
-                FilledButton(
-                  onPressed: () => context.go('/register'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: theme.colorScheme.primary,
-                    foregroundColor: theme.colorScheme.onPrimary,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 40,
-                      vertical: 24,
-                    ),
-                    shape: const StadiumBorder(),
-                    elevation: 2,
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 24),
+            child: Center(
+                  child: Column(
                     children: [
-                      Text('Create Your Account', style: TextStyle(fontSize: 16)),
-                      SizedBox(width: 8),
-                      Icon(Icons.arrow_forward, size: 20),
+                      Text(
+                        'Ready to find the right school?',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontSize: isMobile ? 16 : null,
+                        ),
+                      ),
+
+                      SizedBox(height: isMobile ? 12 : 20),
+
+                      Text(
+                        'Create your account and begin exploring schools tailored to your child.',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.8),
+                          fontSize: isMobile ? 12 : null,
+                        ),
+                      ),
+
+                      SpacingHelper.xxxl,
+
+                      FilledButton(
+                        onPressed: () => context.go('/register'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: theme.colorScheme.primary,
+                          foregroundColor: theme.colorScheme.onPrimary,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isMobile ? 16.0 : 40.0,
+                            vertical: isMobile ? 12.0 : 24.0,
+                          ),
+                          shape: const StadiumBorder(),
+                          elevation: 2,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text('Create Your Account', style: TextStyle(fontSize: isMobile ? 12 : 16)),
+                            SizedBox(width: isMobile ? 4 : 8),
+                            Icon(Icons.arrow_forward, size: isMobile ? 16 : 20),
+                          ],
+                        ),
+                      ),
+
+                      SpacingHelper.xxl,
+
+                      Text(
+                        'Join 10,000+ parents already using our platform',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.6),
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
                     ],
                   ),
                 ),
-
-                SpacingHelper.xxl,
-
-                Text(
-                  'Join 10,000+ parents already using our platform',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ],
-            ),
-          ),
+              ),
         ],
       ),
+        );
+      },
     );
   }
 }
@@ -1343,68 +1500,73 @@ class _FeatureCardState extends State<_FeatureCard> with SingleTickerProviderSta
       },
       child: ScaleTransition(
         scale: _scaleAnimation,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                widget.theme.colorScheme.surface,
-                widget.theme.colorScheme.surface.withOpacity(0.95),
-              ],
-            ),
-            border: Border.all(
-              color: widget.theme.colorScheme.outlineVariant.withOpacity(0.5),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: widget.theme.colorScheme.shadow.withOpacity(_isHovered ? 0.15 : 0.05),
-                blurRadius: _isHovered ? 20 : 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: widget.theme.colorScheme.primaryContainer.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(10),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isMobile = constraints.maxWidth < 600;
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: EdgeInsets.all(isMobile ? 12 : 24),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    widget.theme.colorScheme.surface,
+                    widget.theme.colorScheme.surface.withOpacity(0.95),
+                  ],
                 ),
-                child: Icon(
-                  widget.icon,
-                  size: 20,
-                  color: widget.theme.colorScheme.primary,
+                border: Border.all(
+                  color: widget.theme.colorScheme.outlineVariant.withOpacity(0.5),
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: widget.theme.colorScheme.shadow.withOpacity(_isHovered ? 0.15 : 0.05),
+                    blurRadius: _isHovered ? 20 : 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(isMobile ? 5 : 20),
+                    decoration: BoxDecoration(
+                      color: widget.theme.colorScheme.primaryContainer.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      widget.icon,
+                      size: isMobile ? 16 : 48,
+                      color: widget.theme.colorScheme.primary,
+                    ),
+                  ),
 
-              const SizedBox(height: 14),
+                  SizedBox(height: isMobile ? 8 : 28),
 
-              Text(
-                widget.title,
-                style: widget.theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+                  Text(
+                    widget.title,
+                    style: widget.theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: isMobile ? 13 : 32,
+                    ),
+                  ),
+
+                  SizedBox(height: isMobile ? 4 : 18),
+
+                  Text(
+                    widget.description,
+                    style: widget.theme.textTheme.bodySmall?.copyWith(
+                      height: 1.5,
+                      fontSize: isMobile ? 11 : 20,
+                      color: widget.theme.colorScheme.onSurface.withOpacity(0.8),
+                    ),
+                  ),
+                ],
               ),
-
-              const SizedBox(height: 8),
-
-              Text(
-                widget.description,
-                style: widget.theme.textTheme.bodySmall?.copyWith(
-                  height: 1.4,
-                  fontSize: 13,
-                  color: widget.theme.colorScheme.onSurface.withOpacity(0.8),
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
@@ -1459,10 +1621,12 @@ class _StatCardState extends State<_StatCard> with SingleTickerProviderStateMixi
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
+    
     return FadeTransition(
       opacity: _fadeInAnimation,
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(isMobile ? 16 : 24),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
@@ -1488,30 +1652,32 @@ class _StatCardState extends State<_StatCard> with SingleTickerProviderStateMixi
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(isMobile ? 8 : 12),
               decoration: BoxDecoration(
                 color: widget.color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 widget.icon,
-                size: 32,
+                size: isMobile ? 24 : 32,
                 color: widget.color,
               ),
             ),
-            SpacingHelper.lg,
+            SizedBox(height: isMobile ? 8 : 16),
             Text(
               widget.value,
               style: widget.theme.textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: widget.color,
+                fontSize: isMobile ? 20 : null,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: isMobile ? 4 : 8),
             Text(
               widget.label,
               style: widget.theme.textTheme.bodyMedium?.copyWith(
                 color: widget.theme.colorScheme.onSurface.withOpacity(0.7),
+                fontSize: isMobile ? 12 : null,
               ),
             ),
           ],
@@ -1646,8 +1812,9 @@ class _StepCardState extends State<_StepCard> with SingleTickerProviderStateMixi
               ),
               Text(
                 widget.title,
-                style: widget.theme.textTheme.titleLarge?.copyWith(
+                style: widget.theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
+                  fontSize: 18,
                 ),
               ),
               Text(
@@ -1859,8 +2026,12 @@ class _TestimonialCardState extends State<_TestimonialCard> with SingleTickerPro
       },
       child: ScaleTransition(
         scale: _scaleAnimation,
-        child: Container(
-          padding: const EdgeInsets.all(28),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isMobile = constraints.maxWidth < 800;
+            return Container(
+              height: isMobile ? 340 : 320,
+              padding: EdgeInsets.all(isMobile ? 20 : 28),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
@@ -1884,6 +2055,7 @@ class _TestimonialCardState extends State<_TestimonialCard> with SingleTickerPro
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
@@ -1943,6 +2115,8 @@ class _TestimonialCardState extends State<_TestimonialCard> with SingleTickerPro
               ),
             ],
           ),
+            );
+          },
         ),
       ),
     );
@@ -2115,18 +2289,6 @@ class _AppFooter extends StatelessWidget {
                 );
               }
             },
-          ),
-          const SizedBox(height: 24),
-          Divider(
-            color: theme.colorScheme.outline.withOpacity(0.2),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            '© ${DateTime.now().year} Fidel Guide. All rights reserved.',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.5),
-            ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),

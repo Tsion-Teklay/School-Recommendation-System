@@ -145,6 +145,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     await ref.read(authControllerProvider).logout();
   }
 
+  String _getDisplayText(AppUser user) {
+    // Check if user signed up with phone number
+    if (user.email.startsWith('phone-')) {
+      // Extract phone number from "phone-number@placeholder.invalid"
+      final phoneNumber = user.email.split('-')[1].split('@')[0];
+      return '$phoneNumber · ${user.role.label()}';
+    }
+    // Normal email display
+    return '${user.email} · ${user.role.label()}${user.emailVerified ? '' : ' · Email NOT verified'}';
+  }
+
   Future<void> _deleteAllSchools() async {
     final confirmed = await MessageHelper.showConfirmationDialog(
       context,
@@ -283,13 +294,6 @@ Future<void> _handleRegularAccountDeletion() async {
 
     return ResponsiveShell(
       title: 'Profile',
-      actions: [
-        IconButton(
-          tooltip: 'Sign out',
-          onPressed: _logout,
-          icon: const Icon(Icons.logout),
-        ),
-      ],
       leading: IconButton(
         icon: const Icon(Icons.arrow_back),
         onPressed: () => context.go('/'),
@@ -300,14 +304,30 @@ Future<void> _handleRegularAccountDeletion() async {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const CircleAvatar(child: Icon(Icons.person)),
-              title: Text(user.fullName,
-                  style: Theme.of(context).textTheme.titleLarge),
-              subtitle: Text(
-                  '${user.email} · ${user.role.label()}'
-                  '${user.emailVerified ? '' : ' · Email NOT verified'}'),
+            // User info with signout button
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const CircleAvatar(child: Icon(Icons.person)),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user.fullName,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      Text(_getDisplayText(user)),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Sign out',
+                  onPressed: _logout,
+                  icon: const Icon(Icons.logout),
+                ),
+              ],
             ),
             const Divider(height: 32),
             TextFormField(

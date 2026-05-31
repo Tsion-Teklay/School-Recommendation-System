@@ -86,31 +86,6 @@ class AppNavigationRail extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
         children: [
-          // Header with logo
-          if (extended) ...[
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: Row(
-                children: [
-                  Image.asset('assets/logo.png', height: 24),
-                  SpacingHelper.sm,
-                  Text(
-                    'Fidel Guide',
-                    style: AppTypography.titleSmall.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-          ] else
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-              child: Image.asset('assets/logo.png', height: 32),
-            ),
-          const SizedBox(height: 16),
           // Navigation items
           ...items.asMap().entries.map((entry) {
             final index = entry.key;
@@ -844,6 +819,133 @@ class _FloatingNavItem extends StatelessWidget {
   }
 }
 
+/// Floating profile button that consistently appears on top right
+class FloatingProfileButton extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const FloatingProfileButton({
+    super.key,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      top: 8,
+      right: 8,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(28),
+          child: Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+              border: Border.all(
+                color: AppColors.primary.withOpacity(0.3),
+                width: 2,
+              ),
+            ),
+            child: const Icon(
+              Icons.person,
+              color: AppColors.primary,
+              size: 24,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Floating notification button that appears only when there are unread notifications
+class FloatingNotificationButton extends StatelessWidget {
+  final int unreadCount;
+  final VoidCallback onTap;
+
+  const FloatingNotificationButton({
+    super.key,
+    required this.unreadCount,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (unreadCount <= 0) {
+      return const SizedBox.shrink();
+    }
+
+    return Positioned(
+      top: 80,
+      right: 80,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(28),
+          child: Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: AppColors.primary,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.4),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Stack(
+              children: [
+                Center(
+                  child: Icon(
+                    Icons.notifications_outlined,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+                if (unreadCount > 0)
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                      child: Text(
+                        unreadCount > 99 ? '99+' : '$unreadCount',
+                        style: AppTypography.labelSmall.copyWith(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Custom navigation bar with unique styling for top-level navigation
 class AppNavigationBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -893,20 +995,20 @@ class AppNavigationBar extends StatelessWidget implements PreferredSizeWidget {
           child: Row(
             children: [
               if (leading != null) leading!,
-              if (showLogo) ...[
-                Image.asset('assets/logo.png', height: 32),
-                const SizedBox(width: AppSpacing.md),
-              ],
-              Expanded(
-                child: Text(
-                  title,
-                  style: AppTypography.titleMedium.copyWith(
-                    color: AppColors.textPrimary,
-                    fontWeight: FontWeight.bold,
-                  ),
+              // Always show logo and FIDEL GUIDE text
+              Image.asset('assets/logo.png', height: 32),
+              const SizedBox(width: AppSpacing.md),
+              Text(
+                'FIDEL GUIDE',
+                style: AppTypography.titleMedium.copyWith(
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-              if (actions != null) ...actions!,
+              if (actions != null) ...[
+                const Spacer(),
+                ...actions!,
+              ],
             ],
           ),
         ),

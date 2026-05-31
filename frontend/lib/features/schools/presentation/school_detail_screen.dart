@@ -463,7 +463,11 @@ class _DetailBody extends StatelessWidget {
           ),
         _SchoolAnnouncementsSection(schoolId: school.id),
         const SizedBox(height: 16),
-        ReviewsSection(schoolId: school.id, onReviewSubmitted: onReviewSubmitted),
+        ReviewsSection(
+          schoolId: school.id,
+          onReviewSubmitted: onReviewSubmitted,
+          totalReviewCount: school.reviewCount ?? 0,
+        ),
       ],
     );
   }

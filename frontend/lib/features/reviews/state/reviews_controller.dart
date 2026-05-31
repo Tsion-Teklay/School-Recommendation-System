@@ -13,15 +13,21 @@ class ReviewsController extends ChangeNotifier {
 
   ReviewsController(this._repo, this.schoolId);
 
+  static const int _pageSize = 10;
+
   bool _initialized = false;
   bool _loading = false;
   bool _saving = false;
+  bool _appending = false;
+  bool _hasMore = true;
   String? _error;
   final List<Review> _items = [];
 
   bool get initialized => _initialized;
   bool get loading => _loading;
   bool get saving => _saving;
+  bool get appending => _appending;
+  bool get hasMore => _hasMore;
   String? get error => _error;
   List<Review> get items => List.unmodifiable(_items);
 
@@ -35,15 +41,36 @@ class ReviewsController extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      final items = await _repo.listForSchool(schoolId);
+      final items = await _repo.listForSchool(schoolId, limit: _pageSize);
       _items
         ..clear()
         ..addAll(items);
+      _hasMore = items.length == _pageSize;
       _initialized = true;
     } on ApiException catch (e) {
       _error = e.message;
     } finally {
       _loading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadMore() async {
+    if (_loading || _appending || !_hasMore) return;
+    _appending = true;
+    notifyListeners();
+    try {
+      final items = await _repo.listForSchool(
+        schoolId,
+        offset: _items.length,
+        limit: _pageSize,
+      );
+      _items.addAll(items);
+      _hasMore = items.length == _pageSize;
+    } on ApiException catch (e) {
+      _error = e.message;
+    } finally {
+      _appending = false;
       notifyListeners();
     }
   }

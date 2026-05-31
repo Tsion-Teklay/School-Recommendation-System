@@ -47,10 +47,8 @@ class SchoolCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (school.rating != null && school.rating! > 0) ...[
-                          SizedBox(width: AppSpacing.sm),
-                          _StarRating(rating: school.rating!.toDouble()),
-                        ],
+                        SizedBox(width: AppSpacing.sm),
+                        _StarRating(rating: school.rating?.toDouble() ?? 0),
                       ],
                     ),
                     SpacingHelper.xs,
