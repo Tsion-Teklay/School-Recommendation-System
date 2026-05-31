@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../shared/utils/error_handler.dart';
 import '../../../shared/utils/message_helper.dart';
 import '../../../shared/widgets/loading_button.dart';
+import '../../../shared/widgets/password_field.dart';
 import '../../../shared/widgets/responsive_shell.dart';
 import '../data/auth_dtos.dart';
 import '../state/auth_controller.dart';
@@ -27,6 +28,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _email = TextEditingController();
   final _phone = TextEditingController();
   final _password = TextEditingController();
+  final _confirmPassword = TextEditingController();
   // MoE / Moderator accounts are admin-created per the spec, so the public
   // self-registration form only exposes the two consumer roles.
   UserRole _role = UserRole.parent;
@@ -41,6 +43,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     _email.dispose();
     _phone.dispose();
     _password.dispose();
+    _confirmPassword.dispose();
     super.dispose();
   }
 
@@ -190,17 +193,23 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 
               ),
             const SizedBox(height: 12),
-            TextFormField(
+            PasswordField(
               controller: _password,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Password',
-                helperText: 'Minimum 6 characters',
-              ),
-              validator: (v) {  
-  final t = (v ?? '').trim();  
-  if (t.isEmpty) return null; // Don't show error for empty  
-  return t.length >= 6 ? null : 'At least 6 characters';  
+              labelText: 'Password',
+              helperText: 'Minimum 6 characters',
+              validator: (v) {
+  final t = (v ?? '').trim();
+  if (t.isEmpty) return null; // Don't show error for empty
+  return t.length >= 6 ? null : 'At least 6 characters';
+},
+            ),
+            const SizedBox(height: 12),
+            PasswordField(
+              controller: _confirmPassword,
+              labelText: 'Confirm password',
+              validator: (v) {
+  if (v != _password.text) return 'Passwords do not match';
+  return null;
 },
             ),
             const SizedBox(height: 12),

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../shared/utils/error_handler.dart';
 import '../../../shared/utils/message_helper.dart';
 import '../../../shared/widgets/loading_button.dart';
+import '../../../shared/widgets/password_field.dart';
 import '../../../shared/widgets/responsive_shell.dart';
 import '../../schools/data/school_dtos.dart';
 import '../../schools/data/school_repository.dart';
@@ -103,7 +104,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _changePassword() async {
-    final result = await showDialog<({String current, String next})>(
+    final result = await showDialog<({String current, String next, String confirm})>(
       context: context,
       builder: (_) => const _ChangePasswordDialog(),
     );
@@ -234,12 +235,9 @@ Future<void> _handleRegularAccountDeletion() async {
     context: context,
     builder: (context) => AlertDialog(
       title: const Text('Confirm Password'),
-      content: TextField(
+      content: PasswordField(
         controller: passwordController,
-        obscureText: true,
-        decoration: const InputDecoration(
-          hintText: 'Enter your password',
-        ),
+        hintText: 'Enter your password',
       ),
       actions: [
         TextButton(
@@ -404,11 +402,13 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
   final _form = GlobalKey<FormState>();
   final _current = TextEditingController();
   final _next = TextEditingController();
+  final _confirm = TextEditingController();
 
   @override
   void dispose() {
     _current.dispose();
     _next.dispose();
+    _confirm.dispose();
     super.dispose();
   }
 
@@ -421,24 +421,29 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextFormField(
+            PasswordField(
               controller: _current,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: 'Current password'),
+              labelText: 'Current password',
               validator: (v) =>
                   (v ?? '').isNotEmpty ? null : 'Required',
             ),
             const SizedBox(height: 12),
-            TextFormField(
+            PasswordField(
               controller: _next,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'New password',
-                helperText: 'Min 6 chars, must differ',
-              ),
+              labelText: 'New password',
+              helperText: 'Min 6 chars, must differ',
               validator: (v) {
                 if ((v ?? '').length < 6) return 'At least 6 characters';
                 if (v == _current.text) return 'Must differ';
+                return null;
+              },
+            ),
+            const SizedBox(height: 12),
+            PasswordField(
+              controller: _confirm,
+              labelText: 'Confirm new password',
+              validator: (v) {
+                if (v != _next.text) return 'Passwords do not match';
                 return null;
               },
             ),
@@ -455,7 +460,7 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
             if (!_form.currentState!.validate()) return;
             Navigator.pop(
               context,
-              (current: _current.text, next: _next.text),
+              (current: _current.text, next: _next.text, confirm: _confirm.text),
             );
           },
           child: const Text('Save'),

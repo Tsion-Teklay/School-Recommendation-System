@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../shared/utils/error_handler.dart';
 import '../../../shared/utils/message_helper.dart';
 import '../../../shared/widgets/loading_button.dart';
+import '../../../shared/widgets/password_field.dart';
 import '../../../shared/widgets/responsive_shell.dart';
 import '../state/auth_controller.dart';
 import '../data/auth_repository.dart' show ApiException;
@@ -112,15 +113,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               validator: _validateIdentifier,
             ),
             const SizedBox(height: 12),
-            TextFormField(
+            PasswordField(
               controller: _password,
-              obscureText: true,
+              labelText: 'Password',
               autofillHints: const [AutofillHints.password],
-              decoration: const InputDecoration(labelText: 'Password'),
-              validator: (v) {  
-  final t = (v ?? '').trim();  
-  if (t.isEmpty) return null; // Don't show error for empty during interaction  
-   return t.length >= 6 ? null : 'At least 6 characters';  
+              validator: (v) {
+  final t = (v ?? '').trim();
+  if (t.isEmpty) return null; // Don't show error for empty during interaction
+   return t.length >= 6 ? null : 'At least 6 characters';
 },
               onFieldSubmitted: (_) => _submit(),
             ),
@@ -182,10 +182,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               controller: identifierController,
               decoration: const InputDecoration(labelText: 'Email or phone'),
             ),
-            TextField(
+            PasswordField(
               controller: passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: 'Password'),
+              labelText: 'Password',
             ),
           ],
         ),
