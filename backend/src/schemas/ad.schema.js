@@ -2,8 +2,7 @@ import { z } from "zod";
 
 import { paginationQuery } from "./common.schema.js";
 
-const placementEnum = z.enum(["BANNER", "SIDEBAR", "FEATURED"]);
-const paymentMethodEnum = z.enum(["TELEBIRR", "CBE", "BANK_TRANSFER"]);
+const placementEnum = z.enum(["BANNER", "POPUP"]);
 const adStatusEnum = z.enum([
   "PENDING_REVIEW",
   "AWAITING_PAYMENT",
@@ -28,11 +27,6 @@ export const submitAdRequestBodySchema = z.object({
   targetUrl: z.string().trim().url().max(255),
   durationDays: z.coerce.number().int().min(1).max(365),
   placementType: placementEnum.default("BANNER"),
-});
-
-export const submitAdPaymentBodySchema = z.object({
-  method: paymentMethodEnum,
-  transactionId: z.string().trim().min(4).max(100),
 });
 
 export const listActiveAdsQuerySchema = z.object({

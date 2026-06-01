@@ -4,7 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/api_client.dart';
-import '../../auth/data/auth_repository.dart';
+import '../../auth/data/auth_repository.dart' show ApiException;
 import 'ad_dtos.dart';
 
 class AdRepository {
@@ -14,8 +14,8 @@ class AdRepository {
   Future<AdPricingInfo> pricing() async {
     final res = await _dio.get('/api/ads/pricing');
     if (res.statusCode != 200) throw _toApiException(res);
-    final pricing = (res.data as Map<String, dynamic>)['pricing']
-        as Map<String, dynamic>;
+    final pricing =
+        (res.data as Map<String, dynamic>)['pricing'] as Map<String, dynamic>;
     return AdPricingInfo.fromJson(pricing);
   }
 
@@ -113,31 +113,18 @@ class AdRepository {
     );
   }
 
-  Future<Advertisement> submitPayment({
-    required int adId,
-    required PaymentMethod method,
-    required String transactionId,
-  }) async {
-    final res = await _dio.post(
-      '/api/ads/$adId/payment',
-      data: {
-        'method': method.toWire(),
-        'transactionId': transactionId,
-      },
-    );
-    if (res.statusCode != 200) throw _toApiException(res);
-    return Advertisement.fromJson(
-      (res.data as Map<String, dynamic>)['advertisement']
-          as Map<String, dynamic>,
-    );
-  }
-
   Future<void> recordImpression(int adId) async {
     await _dio.post('/api/ads/$adId/impression');
   }
 
   Future<void> recordClick(int adId) async {
     await _dio.post('/api/ads/$adId/click');
+  }
+
+  Future<String> initializePayment(int id) async {
+    final res = await _dio.get('/api/ads/$id/payment/initiate');
+    if (res.statusCode != 200) throw _toApiException(res);
+    return (res.data as Map<String, dynamic>)['paymentUrl'] as String;
   }
 
   Future<({List<Advertisement> items, int total})> adminList({
@@ -190,16 +177,12 @@ class AdRepository {
         return 'PENDING_REVIEW';
       case AdStatus.awaitingPayment:
         return 'AWAITING_PAYMENT';
-      case AdStatus.paymentPendingVerification:
-        return 'PAYMENT_PENDING_VERIFICATION';
       case AdStatus.active:
         return 'ACTIVE';
       case AdStatus.rejected:
         return 'REJECTED';
       case AdStatus.expired:
         return 'EXPIRED';
-      default:
-        return 'PENDING_PAYMENT';
     }
   }
 }

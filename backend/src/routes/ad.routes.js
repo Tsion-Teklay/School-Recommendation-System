@@ -7,7 +7,6 @@ import { validate } from "../middlewares/validate.middleware.js";
 import { idParamsSchema } from "../schemas/common.schema.js";
 import {
   submitAdRequestBodySchema,
-  submitAdPaymentBodySchema,
   listActiveAdsQuerySchema,
   listAdminAdsQuerySchema,
   rejectAdBodySchema,
@@ -17,7 +16,6 @@ import {
   requestAd,
   getRequestStatus,
   getPaymentDetails,
-  payAd,
   getActive,
   trackImpression,
   trackClick,
@@ -26,6 +24,11 @@ import {
   adminApprove,
   adminReject,
   adminAnalytics,
+} from "../controllers/ad.controller.js";
+
+import {  
+  initializePayment,  
+  chappaCallback,  
 } from "../controllers/ad.controller.js";
 
 const router = express.Router();
@@ -92,11 +95,6 @@ router.get(
  *     tags: [Advertisements]
  *     summary: Submit one-time payment details for an ad request
  */
-router.post(
-  "/:id/payment",
-  validate({ params: idParamsSchema, body: submitAdPaymentBodySchema }),
-  payAd
-);
 
 router.post(
   "/:id/impression",
@@ -142,6 +140,17 @@ router.post(
   authorizeRoles("MODERATOR"),
   validate({ params: idParamsSchema, body: rejectAdBodySchema }),
   adminReject
+);
+
+router.get(  
+  "/:id/payment/initiate",  
+  validate({ params: idParamsSchema }),  
+  initializePayment  
+);  
+  
+router.post(  
+  "/chappa/callback",  
+  chappaCallback  
 );
 
 export default router;

@@ -177,7 +177,7 @@ class _ModerationAdQueueScreenState extends ConsumerState<ModerationAdQueueScree
                       if (ad.payment != null)
                         Text(
                           'Payment: ${ad.payment!.amount.toStringAsFixed(0)} ETB · '
-                          '${ad.payment!.method?.label() ?? '—'} · '
+                          '${ad.payment!.status ?? '—'} · '
                           '${ad.payment!.transactionId ?? 'no reference'}',
                         ),
                       if (img.isNotEmpty)

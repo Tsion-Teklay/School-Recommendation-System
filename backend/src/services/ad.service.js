@@ -150,56 +150,6 @@ export async function getAdForPayment(adId) {
   };
 }
 
-export async function submitAdPayment({ adId, method, transactionId }) {
-  const id = toIntId(adId, "adId");
-
-  const ad = await db.advertisement.findUnique({
-    where: { id },
-    include: { payment: true },
-  });
-  if (!ad) throw new NotFoundError("Advertisement request not found");
-  if (ad.status !== "AWAITING_PAYMENT") {
-    throw new ConflictError(
-      "Payment is not open for this advertisement. Wait for moderator approval or check your email.",
-    );
-  }
-  if (!ad.paymentId || !ad.payment) {
-    throw new ValidationError("No payment record linked to this advertisement");
-  }
-
-  const duplicateTxn = await db.payment.findFirst({
-    where: { transactionId, id: { not: ad.paymentId } },
-  });
-  if (duplicateTxn) {
-    throw new ConflictError("Transaction ID is already registered");
-  }
-
-  const now = new Date();
-  const endDate = new Date(now);
-  endDate.setDate(endDate.getDate() + ad.durationDays);
-
-  const [payment, updatedAd] = await db.$transaction([
-    db.payment.update({
-      where: { id: ad.paymentId },
-      data: { method, transactionId, status: "COMPLETED" },
-    }),
-    db.advertisement.update({
-      where: { id },
-      data: {
-        status: "ACTIVE",
-        startDate: now,
-        endDate,
-      },
-      include: { payment: true },
-    }),
-  ]);
-
-  return {
-    advertisement: serializeAd({ ...updatedAd, payment }),
-    message:
-      "Payment recorded. Your advertisement is now live for the selected duration.",
-  };
-}
 
 // -----------------------------------------------------------------------------
 // Public — display + analytics
@@ -211,7 +161,7 @@ export async function listActiveAds({ placement, limit = 5 }) {
   const ads = await db.advertisement.findMany({
     where,
     take: limit,
-    orderBy: { approvedAt: "desc" },
+    orderBy: { createdAt: "desc" },
     select: publicAdSelect,
   });
 
@@ -274,8 +224,7 @@ export async function listAdsForAdmin({ query }) {
       take: Number(limit),
       orderBy: { createdAt: "desc" },
       include: {
-        payment: true,
-        approver: { select: { id: true, fullName: true, email: true } },
+        payment: true
       },
     }),
     db.advertisement.count({ where }),
@@ -293,7 +242,8 @@ export async function listAdsForAdmin({ query }) {
 }
 
 /** Approve ad content → create payment, email pay link (does not go live yet). */
-export async function approveAd({ adId, userId }) {
+export async function approveAd({ adId }) {
+  // Remove userId parameter
   const id = toIntId(adId, "adId");
   const ad = await db.advertisement.findUnique({
     where: { id },
@@ -305,7 +255,6 @@ export async function approveAd({ adId, userId }) {
   }
 
   const pricing = calculateAdAmount(ad.placementType, ad.durationDays);
-  const now = new Date();
 
   const payment = await db.payment.create({
     data: {
@@ -320,33 +269,22 @@ export async function approveAd({ adId, userId }) {
     data: {
       status: "AWAITING_PAYMENT",
       paymentId: payment.id,
-      approvedBy: userId,
-      approvedAt: now,
       rejectReason: null,
     },
-    include: {
-      payment: true,
-      approver: { select: { id: true, fullName: true } },
-    },
+    include: { payment: true },
   });
 
   try {
     await sendAdPaymentInstructionsEmail({
-      to: ad.contactEmail,
-      adId: id,
-      paymentId: payment.id,
-      title: ad.title,
-      amountEtb: pricing.amountEtb,
-      durationDays: ad.durationDays,
-      placementType: ad.placementType,
+      to: updated.contactEmail,
+      adId: updated.id,
+      title: updated.title,
+      amountEtb: Number(payment.amount),
+      durationDays: updated.durationDays,
+      placementType: updated.placementType,
     });
   } catch (err) {
-    // Email failures should not break the approval flow — ad is already
-    // marked AWAITING_PAYMENT and has a payment record. Log and continue.
-    logger.error(
-      { err, adId: id, to: ad.contactEmail },
-      "Failed to send ad payment email",
-    );
+    logger.error({ err, adId: updated.id }, "Failed to send ad payment instructions email, continuing");
   }
 
   return serializeAd(updated);
@@ -374,8 +312,6 @@ export async function rejectAd({ adId, userId, reason }) {
     where: { id },
     data: {
       status: "REJECTED",
-      approvedBy: userId,
-      approvedAt: new Date(),
       rejectReason: reason || null,
     },
     include: { payment: true },
@@ -466,4 +402,91 @@ export function assertModerator(user) {
   if (!user || user.role !== "MODERATOR") {
     throw new ForbiddenError("Moderator access required");
   }
+}
+
+export async function initializeAdPayment({ adId }) {  
+  const id = toIntId(adId, "adId");  
+  const ad = await db.advertisement.findUnique({  
+    where: { id },  
+    include: { payment: true },  
+  });  
+  if (!ad) throw new NotFoundError("Advertisement not found");  
+  if (ad.status !== "AWAITING_PAYMENT") {  
+    throw new ConflictError("This advertisement is not awaiting payment");  
+  }  
+  if (!ad.payment) {  
+    throw new ValidationError("Payment record missing for this advertisement");  
+  }  
+  
+  const { initializeChappaPayment } = await import("./chappa.service.js");  
+  const chappaResult = await initializeChappaPayment({  
+    amount: Number(ad.payment.amount),  
+    email: ad.contactEmail,  
+    phone: ad.contactPhone,  
+    adId: id,  
+    title: ad.title,  
+  });  
+  
+  await db.payment.update({  
+    where: { id: ad.paymentId },  
+    data: {  
+      chappaCheckoutId: chappaResult.checkoutId,  
+      chappaReference: chappaResult.txRef,  
+    },  
+  });  
+  
+  await db.advertisement.update({  
+    where: { id },  
+    data: {  
+      chappaPaymentUrl: chappaResult.checkoutUrl,  
+      chappaTransactionId: chappaResult.txRef,  
+    },  
+  });  
+  
+  if (chappaResult.txRef.startsWith("mock_")) {
+    logger.info({ adId: id, txRef: chappaResult.txRef }, "Auto-processing callback for mock payment in development mode.");
+    await handleChappaCallback({ txRef: chappaResult.txRef });
+  }
+  
+  return {  
+    paymentUrl: chappaResult.checkoutUrl,  
+    checkoutId: chappaResult.checkoutId,  
+  };  
+}
+
+export async function handleChappaCallback({ txRef }) {  
+  const { verifyChappaPayment } = await import("./chappa.service.js");  
+  const verification = await verifyChappaPayment(txRef);  
+  
+  if (verification.status !== 'success') {  
+    throw new Error('Payment not successful');  
+  }  
+  
+  const ad = await db.advertisement.findFirst({  
+    where: { chappaTransactionId: txRef },  
+    include: { payment: true },  
+  });  
+  
+  if (!ad) throw new NotFoundError("Advertisement not found");  
+  
+  const now = new Date();  
+  const endDate = new Date(now);  
+  endDate.setDate(endDate.getDate() + ad.durationDays);  
+  
+  await db.$transaction([  
+    db.payment.update({  
+      where: { id: ad.paymentId },  
+      data: { status: "COMPLETED" },  
+    }),  
+    db.advertisement.update({  
+      where: { id: ad.id },  
+      data: {  
+        status: "ACTIVE",  
+        startDate: now,  
+        endDate,  
+      },  
+    }),  
+  ]);  
+  
+  return { success: true, adId: ad.id };  
 }

@@ -66,7 +66,7 @@ class RecommendationsScreen extends ConsumerWidget {
           ],
           const SizedBox(height: 16),
           const AdBannerSection(
-            placement: AdPlacementType.featured,
+            placement: AdPlacementType.banner,
             limit: 1,
           ),
           const SizedBox(height: 16),

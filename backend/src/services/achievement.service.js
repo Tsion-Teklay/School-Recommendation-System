@@ -74,7 +74,7 @@ export async function getPendingAchievements(user) {
 
   // Get the MOE officer's subcity assignment
   try {
-    const officer = await db.moeOfficer.findUnique({
+    const officer = await db.moEOfficer.findUnique({
       where: { userId: user.id }
     });
 
@@ -101,7 +101,7 @@ export async function getAchievementsByStatus(status, user) {
 
   // Get the MOE officer's subcity assignment
   try {
-    const officer = await db.moeOfficer.findUnique({
+    const officer = await db.moEOfficer.findUnique({
       where: { userId: user.id }
     });
 
@@ -263,13 +263,13 @@ export async function assignAchievementRequest(achievementId) {
   if (!achievement) throw new NotFoundError("Achievement not found");
 
   // Try to find MoE officer for the school's sub-city
-  const assignedOfficer = await db.moeOfficer.findFirst({
+  const assignedOfficer = await db.moEOfficer.findFirst({
     where: { subCity: achievement.school.subCity }
   });
 
   // Fallback to any available MoE officer if no sub-city match
   if (!assignedOfficer) {
-    return db.moeOfficer.findFirst();
+    return db.moEOfficer.findFirst();
   }
 
   return assignedOfficer;

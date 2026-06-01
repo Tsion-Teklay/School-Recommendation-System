@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../ads/presentation/ad_banner_section.dart';
+import '../../ads/presentation/ad_popup_section.dart';
 import '../../ads/data/ad_dtos.dart';
 
 import '../../../core/theme.dart';
@@ -18,75 +19,80 @@ class LandingScreen extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
-      body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: Column(
-            children: [
-              // =========================================================
-              // HERO SECTION
-              // =========================================================
+      body: Stack(
+        children: [
+          SafeArea(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Column(
+                children: [
+                  // =========================================================
+                  // HERO SECTION
+                  // =========================================================
 
-              Material(
-                child: _buildHeroSection(context, theme),
-              ),
+                  Material(
+                    child: _buildHeroSection(context, theme),
+                  ),
 
-              // =========================================================
-              // MAIN CONTENT
-              // =========================================================
+                  // =========================================================
+                  // MAIN CONTENT
+                  // =========================================================
 
-              Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1100),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 60,
-                    ),
-                    child: Column(
-                      children: [
-                        _FadeInSection(
-                          child: _buildFeaturesSection(theme),
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1100),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 60,
                         ),
-                        const SizedBox(height: 48),
-                        const AdBannerSection(
-                          placement: AdPlacementType.banner,
-                          limit: 2,
+                        child: Column(
+                          children: [
+                            _FadeInSection(
+                              child: _buildFeaturesSection(theme),
+                            ),
+                            const SizedBox(height: 48),
+                            const AdBannerSection(
+                              placement: AdPlacementType.banner,
+                              limit: 2,
+                            ),
+                            const SizedBox(height: 100),
+                            _FadeInSection(
+                              child: _buildMissionSection(theme),
+                            ),
+                            const SizedBox(height: 80),
+                            _FadeInSection(
+                              child: _buildStatsSection(theme),
+                            ),
+                            const SizedBox(height: 80),
+                            _FadeInSection(
+                              child: _buildHowItWorksSection(theme),
+                            ),
+                            const SizedBox(height: 100),
+                            _FadeInSection(
+                              child: _buildFAQSection(theme),
+                            ),
+                            const SizedBox(height: 80),
+                            _FadeInSection(
+                              child: _buildTestimonialsSection(theme),
+                            ),
+                            const SizedBox(height: 100),
+                            _FadeInSection(
+                              child: _buildCTASection(context, theme),
+                            ),
+                            const SizedBox(height: 80),
+                            const _AppFooter(),
+                          ],
                         ),
-                        const SizedBox(height: 100),
-                        _FadeInSection(
-                          child: _buildMissionSection(theme),
-                        ),
-                        const SizedBox(height: 80),
-                        _FadeInSection(
-                          child: _buildStatsSection(theme),
-                        ),
-                        const SizedBox(height: 80),
-                        _FadeInSection(
-                          child: _buildHowItWorksSection(theme),
-                        ),
-                        const SizedBox(height: 100),
-                        _FadeInSection(
-                          child: _buildFAQSection(theme),
-                        ),
-                        const SizedBox(height: 80),
-                        _FadeInSection(
-                          child: _buildTestimonialsSection(theme),
-                        ),
-                        const SizedBox(height: 100),
-                        _FadeInSection(
-                          child: _buildCTASection(context, theme),
-                        ),
-                        const SizedBox(height: 80),
-                        const _AppFooter(),
-                      ],
+                      ),
                     ),
                   ),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+          const AdPopupSection(),
+        ],
       ),
     );
   }

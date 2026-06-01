@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../shared/widgets/responsive_shell.dart';
 import '../../auth/data/auth_repository.dart';
 import '../data/ad_dtos.dart';
 import '../data/ad_repository.dart';
 
-/// Opened from the email link after moderator approval: /advertise/pay/:id
 class AdPaymentScreen extends ConsumerStatefulWidget {
   final int adId;
   const AdPaymentScreen({super.key, required this.adId});
@@ -17,23 +17,17 @@ class AdPaymentScreen extends ConsumerStatefulWidget {
 }
 
 class _AdPaymentScreenState extends ConsumerState<AdPaymentScreen> {
-  final _txnCtl = TextEditingController();
-  PaymentMethod _method = PaymentMethod.telebirr;
   bool _loading = true;
+  bool _initiating = false;
   String? _error;
   Advertisement? _ad;
   double _amountDue = 0;
+  String? _paymentUrl;
 
   @override
   void initState() {
     super.initState();
     _load();
-  }
-
-  @override
-  void dispose() {
-    _txnCtl.dispose();
-    super.dispose();
   }
 
   Future<void> _load() async {
@@ -57,44 +51,28 @@ class _AdPaymentScreenState extends ConsumerState<AdPaymentScreen> {
     }
   }
 
-  Future<void> _submitPayment() async {
-    if (_txnCtl.text.trim().length < 4) {
-      setState(() => _error = 'Enter your payment transaction ID');
-      return;
-    }
+  Future<void> _initiatePayment() async {
     setState(() {
-      _loading = true;
+      _initiating = true;
       _error = null;
     });
     try {
-      await ref.read(adRepositoryProvider).submitPayment(
-            adId: widget.adId,
-            method: _method,
-            transactionId: _txnCtl.text.trim(),
-          );
-      if (!mounted) return;
-      await showDialog<void>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Payment complete'),
-          content: const Text(
-            'Your advertisement is now live on the platform for the period you selected.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                context.go('/landing');
-              },
-              child: const Text('Done'),
-            ),
-          ],
-        ),
-      );
+      final url =
+          await ref.read(adRepositoryProvider).initializePayment(widget.adId);
+      setState(() => _paymentUrl = url);
+
+      if (mounted) {
+        final uri = Uri.parse(url);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
+      }
     } on ApiException catch (e) {
       setState(() => _error = e.message);
+    } catch (e) {
+      setState(() => _error = e.toString());
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) setState(() => _initiating = false);
     }
   }
 
@@ -136,7 +114,7 @@ class _AdPaymentScreenState extends ConsumerState<AdPaymentScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Pay using Telebirr, CBE Birr, or bank transfer, then enter your transaction reference below.',
+                        'You will be redirected to Chappa secure payment gateway to complete your payment.',
                         style: theme.textTheme.bodyMedium,
                       ),
                     ],
@@ -147,38 +125,36 @@ class _AdPaymentScreenState extends ConsumerState<AdPaymentScreen> {
                         child: Text(_error!,
                             style: TextStyle(color: theme.colorScheme.error)),
                       ),
-                    DropdownButtonFormField<PaymentMethod>(
-                      value: _method,
-                      decoration:
-                          const InputDecoration(labelText: 'Payment method'),
-                      items: PaymentMethod.values
-                          .map((m) => DropdownMenuItem(
-                                value: m,
-                                child: Text(m.label()),
-                              ))
-                          .toList(),
-                      onChanged: (v) {
-                        if (v != null) setState(() => _method = v);
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _txnCtl,
-                      decoration: const InputDecoration(
-                        labelText: 'Transaction ID / reference',
-                      ),
-                    ),
-                    const SizedBox(height: 24),
                     FilledButton(
-                      onPressed: _loading ? null : _submitPayment,
-                      child: _loading
+                      onPressed: (_initiating || _paymentUrl != null)
+                          ? null
+                          : _initiatePayment,
+                      child: _initiating
                           ? const SizedBox(
                               height: 20,
                               width: 20,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Text('Submit payment & go live'),
+                          : const Text('Pay with Chappa'),
                     ),
+                    if (_paymentUrl != null) ...[
+                      const SizedBox(height: 16),
+                      Text(
+                        'Payment initiated. If you were not redirected, click the link below:',
+                        style: theme.textTheme.bodySmall,
+                      ),
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: () async {
+                          final uri = Uri.parse(_paymentUrl!);
+                          if (await canLaunchUrl(uri)) {
+                            await launchUrl(uri,
+                                mode: LaunchMode.externalApplication);
+                          }
+                        },
+                        child: const Text('Open payment page'),
+                      ),
+                    ],
                   ],
                 ),
     );

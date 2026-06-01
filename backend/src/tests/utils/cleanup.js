@@ -28,8 +28,12 @@ export const cleanDatabase = async () => {
   // Phase 11: facility images FK to School — wipe before schools.
   await db.like.deleteMany();
   await db.facilityImage.deleteMany();
+  await db.schoolDemographics.deleteMany();
+  await db.staffBreakdown.deleteMany();
+  await db.achievement.deleteMany();
+  await db.schoolUpdate.deleteMany();
   await db.school.deleteMany();
   await db.parent.deleteMany();
-  await db.moeOfficer.deleteMany();
+  await db.moEOfficer.deleteMany();
   await db.user.deleteMany();
 };

@@ -1,25 +1,20 @@
 enum AdPlacementType {
   banner,
-  sidebar,
-  featured;
+  popup;
 
   String toWire() {
     switch (this) {
       case AdPlacementType.banner:
         return 'BANNER';
-      case AdPlacementType.sidebar:
-        return 'SIDEBAR';
-      case AdPlacementType.featured:
-        return 'FEATURED';
+      case AdPlacementType.popup:
+        return 'POPUP';
     }
   }
 
   static AdPlacementType fromWire(String? v) {
     switch (v) {
-      case 'SIDEBAR':
-        return AdPlacementType.sidebar;
-      case 'FEATURED':
-        return AdPlacementType.featured;
+      case 'POPUP':
+        return AdPlacementType.popup;
       default:
         return AdPlacementType.banner;
     }
@@ -29,10 +24,8 @@ enum AdPlacementType {
     switch (this) {
       case AdPlacementType.banner:
         return 'Banner';
-      case AdPlacementType.sidebar:
-        return 'Sidebar';
-      case AdPlacementType.featured:
-        return 'Featured';
+      case AdPlacementType.popup:
+        return 'Full-screen Popup';
     }
   }
 }
@@ -40,8 +33,6 @@ enum AdPlacementType {
 enum AdStatus {
   pendingReview,
   awaitingPayment,
-  pendingPayment,
-  paymentPendingVerification,
   active,
   rejected,
   expired;
@@ -50,16 +41,12 @@ enum AdStatus {
     switch (v) {
       case 'AWAITING_PAYMENT':
         return AdStatus.awaitingPayment;
-      case 'PAYMENT_PENDING_VERIFICATION':
-        return AdStatus.paymentPendingVerification;
       case 'ACTIVE':
         return AdStatus.active;
       case 'REJECTED':
         return AdStatus.rejected;
       case 'EXPIRED':
         return AdStatus.expired;
-      case 'PENDING_PAYMENT':
-        return AdStatus.pendingPayment;
       default:
         return AdStatus.pendingReview;
     }
@@ -71,10 +58,6 @@ enum AdStatus {
         return 'Pending review';
       case AdStatus.awaitingPayment:
         return 'Awaiting payment';
-      case AdStatus.pendingPayment:
-        return 'Awaiting payment';
-      case AdStatus.paymentPendingVerification:
-        return 'Pending verification';
       case AdStatus.active:
         return 'Active';
       case AdStatus.rejected:
@@ -85,50 +68,10 @@ enum AdStatus {
   }
 }
 
-enum PaymentMethod {
-  telebirr,
-  cbe,
-  bankTransfer;
-
-  String toWire() {
-    switch (this) {
-      case PaymentMethod.telebirr:
-        return 'TELEBIRR';
-      case PaymentMethod.cbe:
-        return 'CBE';
-      case PaymentMethod.bankTransfer:
-        return 'BANK_TRANSFER';
-    }
-  }
-
-  static PaymentMethod fromWire(String? v) {
-    switch (v) {
-      case 'CBE':
-        return PaymentMethod.cbe;
-      case 'BANK_TRANSFER':
-        return PaymentMethod.bankTransfer;
-      default:
-        return PaymentMethod.telebirr;
-    }
-  }
-
-  String label() {
-    switch (this) {
-      case PaymentMethod.telebirr:
-        return 'Telebirr';
-      case PaymentMethod.cbe:
-        return 'CBE Birr';
-      case PaymentMethod.bankTransfer:
-        return 'Bank transfer';
-    }
-  }
-}
-
 class AdPayment {
   final int id;
   final double amount;
   final String currency;
-  final PaymentMethod? method;
   final String? status;
   final String? transactionId;
 
@@ -136,7 +79,6 @@ class AdPayment {
     required this.id,
     required this.amount,
     required this.currency,
-    this.method,
     this.status,
     this.transactionId,
   });
@@ -152,9 +94,6 @@ class AdPayment {
       id: j['id'] as int,
       amount: parseAmount(j['amount']),
       currency: j['currency'] as String? ?? 'ETB',
-      method: j['method'] != null
-          ? PaymentMethod.fromWire(j['method'] as String?)
-          : null,
       status: j['status'] as String?,
       transactionId: j['transactionId'] as String?,
     );

@@ -45,6 +45,7 @@ import '../features/achievements/presentation/achievements_manage_screen.dart';
 import '../features/achievements/presentation/achievement_detail_screen.dart';  
 import '../features/achievements/presentation/staff_breakdown_screen.dart';  
 import '../features/achievements/presentation/moe_achievement_review_screen.dart';
+import '../features/ads/presentation/ad_payment_success_screen.dart';
 
 /// Lists routes that anyone (logged in or not) is allowed to hit. Email-verify
 /// + reset-password are public because they're entered from email deep links;
@@ -106,6 +107,19 @@ final routerProvider = Provider<GoRouter>((ref) {
           child: const LandingScreen(),
         ),
       ),
+
+      GoRoute(  
+  path: '/advertise/success/:id',  
+  builder: (_, state) {  
+    final id = int.tryParse(state.pathParameters['id'] ?? '');  
+    if (id == null) {  
+      return const Scaffold(  
+        body: Center(child: Text('Invalid advertisement id')),  
+      );  
+    }  
+    return AdPaymentSuccessScreen(adId: id);  
+  },  
+),
       GoRoute(
         path: '/advertise',
         builder: (_, __) => const AdRequestScreen(),

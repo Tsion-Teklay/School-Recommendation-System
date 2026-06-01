@@ -2,6 +2,18 @@ import request from "supertest";
 import app from "../app.js";
 import { db } from "../config/db.js";
 import { registerVerifiedUser } from "./utils/auth.js";
+import axios from "axios";
+import { jest } from "@jest/globals";
+
+// Monkey-patch axios instead of jest.mock to support experimental Jest ESM/VM modules
+const originalPost = axios.post;
+const originalGet = axios.get;
+
+let mockPostFn = jest.fn();
+let mockGetFn = jest.fn();
+
+axios.post = mockPostFn;
+axios.get = mockGetFn;
 
 let moderatorToken;
 let adId;
@@ -23,10 +35,18 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await cleanAdsOnly();
+  // Restore original axios methods
+  axios.post = originalPost;
+  axios.get = originalGet;
   await db.$disconnect();
 });
 
 describe("Advertisement API", () => {
+  beforeEach(() => {
+    mockPostFn.mockReset();
+    mockGetFn.mockReset();
+  });
+
   it("returns public pricing", async () => {
     const res = await request(app).get("/api/ads/pricing");
     expect(res.statusCode).toBe(200);
@@ -53,10 +73,7 @@ describe("Advertisement API", () => {
   });
 
   it("rejects payment before moderator approval", async () => {
-    const res = await request(app).post(`/api/ads/${adId}/payment`).send({
-      method: "TELEBIRR",
-      transactionId: "TB-EARLY-1",
-    });
+    const res = await request(app).get(`/api/ads/${adId}/payment/initiate`);
     expect(res.statusCode).toBe(409);
   });
 
@@ -80,12 +97,48 @@ describe("Advertisement API", () => {
     expect(res.body.advertisement.status).toBe("AWAITING_PAYMENT");
   });
 
-  it("activates ad after payment submission", async () => {
-    const res = await request(app).post(`/api/ads/${adId}/payment`).send({
-      method: "TELEBIRR",
-      transactionId: "TB-TEST-123456",
+  it("initializes payment with Chappa", async () => {
+    const txRef = `mock_tx_ref_${adId}`;
+    mockPostFn.mockResolvedValueOnce({
+      data: {
+        status: "success",
+        data: {
+          checkout_url: "https://mock.chappa.co/checkout",
+          id: "mock_checkout_id",
+        },
+        tx_ref: txRef,
+      },
     });
 
+    const res = await request(app).get(`/api/ads/${adId}/payment/initiate`);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.paymentUrl).toBe("https://mock.chappa.co/checkout");
+    expect(res.body.checkoutId).toBe("mock_checkout_id");
+  });
+
+  it("activates ad after successful callback", async () => {
+    const txRef = `mock_tx_ref_${adId}`;
+    mockGetFn.mockResolvedValueOnce({
+      data: {
+        status: "success",
+        data: {
+          status: "success",
+          reference: "mock_reference",
+          amount: 7000,
+        },
+      },
+    });
+
+    // Send callback to simulate successful payment
+    const callbackRes = await request(app)
+      .post("/api/ads/chappa/callback")
+      .send({ tx_ref: txRef });
+
+    expect(callbackRes.statusCode).toBe(200);
+
+    // Verify advertisement has been activated
+    const res = await request(app).get(`/api/ads/request/${adId}`);
     expect(res.statusCode).toBe(200);
     expect(res.body.advertisement.status).toBe("ACTIVE");
     expect(res.body.advertisement.payment.status).toBe("COMPLETED");

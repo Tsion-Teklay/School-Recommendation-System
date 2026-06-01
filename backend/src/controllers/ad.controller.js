@@ -4,7 +4,6 @@ import {
   createAdRequest,
   getAdRequestStatus,
   getAdForPayment,
-  submitAdPayment,
   listActiveAds,
   recordImpression,
   recordClick,
@@ -13,6 +12,8 @@ import {
   rejectAd,
   getAdPricingInfo,
   getAdRevenueAnalytics,
+  initializeAdPayment,
+  handleChappaCallback,
 } from "../services/ad.service.js";
 
 export const requestAd = asyncHandler(async (req, res) => {
@@ -34,14 +35,6 @@ export const getPaymentDetails = asyncHandler(async (req, res) => {
 export const getRequestStatus = asyncHandler(async (req, res) => {
   const result = await getAdRequestStatus(req.params.id);
   res.json({ message: "Advertisement request fetched", ...result });
-});
-
-export const payAd = asyncHandler(async (req, res) => {
-  const result = await submitAdPayment({
-    adId: req.params.id,
-    ...req.body,
-  });
-  res.json(result);
 });
 
 export const getActive = asyncHandler(async (req, res) => {
@@ -70,7 +63,7 @@ export const adminList = asyncHandler(async (req, res) => {
 });
 
 export const adminApprove = asyncHandler(async (req, res) => {
-  const ad = await approveAd({ adId: req.params.id, userId: req.user.id });
+  const ad = await approveAd({ adId: req.params.id });
   res.json({
     message:
       "Advertisement approved. Payment instructions were emailed to the advertiser.",
@@ -81,7 +74,6 @@ export const adminApprove = asyncHandler(async (req, res) => {
 export const adminReject = asyncHandler(async (req, res) => {
   const ad = await rejectAd({
     adId: req.params.id,
-    userId: req.user.id,
     reason: req.body.reason,
   });
   res.json({ message: "Advertisement rejected", advertisement: ad });
@@ -90,4 +82,14 @@ export const adminReject = asyncHandler(async (req, res) => {
 export const adminAnalytics = asyncHandler(async (req, res) => {
   const result = await getAdRevenueAnalytics({ query: req.query });
   res.json({ message: "Advertisement analytics", ...result });
+});
+
+export const initializePayment = asyncHandler(async (req, res) => {
+  const result = await initializeAdPayment({ adId: req.params.id });
+  res.json({ message: "Payment initialized", ...result });
+});
+
+export const chappaCallback = asyncHandler(async (req, res) => {
+  const result = await handleChappaCallback({ txRef: req.body.tx_ref });
+  res.json({ message: "Payment processed successfully", ...result });
 });

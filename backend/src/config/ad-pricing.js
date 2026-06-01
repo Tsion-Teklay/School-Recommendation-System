@@ -3,10 +3,9 @@
  * Override via env: AD_RATE_BANNER, AD_RATE_SIDEBAR, AD_RATE_FEATURED.
  */
 
-const DEFAULT_RATES = {
-  BANNER: 1000,
-  SIDEBAR: 500,
-  FEATURED: 1500,
+const DEFAULT_RATES = {  
+  BANNER: 1000,  
+  POPUP: 2000,  
 };
 
 function rateFromEnv(key, fallback) {
@@ -16,16 +15,15 @@ function rateFromEnv(key, fallback) {
   return Number.isFinite(n) && n > 0 ? n : fallback;
 }
 
-export const AD_DAILY_RATES_ETB = {
-  BANNER: rateFromEnv("AD_RATE_BANNER", DEFAULT_RATES.BANNER),
-  SIDEBAR: rateFromEnv("AD_RATE_SIDEBAR", DEFAULT_RATES.SIDEBAR),
-  FEATURED: rateFromEnv("AD_RATE_FEATURED", DEFAULT_RATES.FEATURED),
+export const AD_DAILY_RATES_ETB = {  
+  BANNER: rateFromEnv("AD_RATE_BANNER", DEFAULT_RATES.BANNER),  
+  POPUP: rateFromEnv("AD_RATE_POPUP", DEFAULT_RATES.POPUP),  
 };
 
 export const AD_PLACEMENT_TYPES = Object.keys(AD_DAILY_RATES_ETB);
 
 /**
- * @param {"BANNER"|"SIDEBAR"|"FEATURED"} placementType
+ * @param {"BANNER"|"POPUP"} placementType
  * @param {number} durationDays
  * @returns {{ dailyRateEtb: number, durationDays: number, amountEtb: number }}
  */
