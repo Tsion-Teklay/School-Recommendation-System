@@ -94,15 +94,20 @@ class _ForumListScreenState extends ConsumerState<ForumListScreen> {
               child: Center(child: Text('No posts yet. Start the discussion.')),
             )
           else
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: controller.items.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (_, i) {
-                final p = controller.items[i];
-                return _PostTile(post: p);
-              },
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 800),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: controller.items.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (_, i) {
+                    final p = controller.items[i];
+                    return _PostTile(post: p);
+                  },
+                ),
+              ),
             ),
           if (controller.appending)
             const Padding(
@@ -134,6 +139,10 @@ class _PostTile extends ConsumerWidget {
     final theme = Theme.of(context);
 
     return Card(
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.3)),
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: InkWell(
         onTap: () => context.go('/forum/${post.id}'),
         child: Padding(
