@@ -25,6 +25,13 @@ app.use(cors());
 app.use(express.json({ limit: "1mb" }));
 app.use(httpLogger);
 
+//increase timeout
+app.use((req, res, next) => {
+  req.setTimeout(60000); // 60s
+  res.setTimeout(60000);
+  next();
+});
+
 app.use((req, res, next) => {
   const originalJson = res.json;
 
