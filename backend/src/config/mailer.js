@@ -1,80 +1,88 @@
 import nodemailer from "nodemailer";
 import { logger } from "./logger.js";
 
+let transporter = null;
+
 /**
- * Mail delivery.
- *
- * Local dev default: Nodemailer creates an **Ethereal** test inbox on first
- * use. Every sent email gets a preview URL you can open in the browser —
- * no real SMTP account required. Set `SMTP_URL` in `.env` to override with
- * Gmail / SendGrid / etc. when you deploy.
- *
- * In the test environment we skip SMTP entirely and stash the last message
- * on `globalThis.__lastMail` so tests can assert against it without a real
- * mail server.
+ * Initialize mailer once at app startup
  */
+export async function initMailer() {
+  try {
+    // =========================
+    // 1. TEST MODE (NO SMTP)
+    // =========================
+    if (process.env.NODE_ENV === "test") {
+      transporter = {
+        sendMail: async (msg) => {
+          globalThis.__lastMail = msg;
+          return { messageId: "test-" + Date.now() };
+        },
+      };
 
-let transporterPromise = null;
+      logger.info("Mailer running in TEST mode");
+      return;
+    }
 
-function buildTransporter() {
-  if (process.env.SMTP_URL) {
-    return nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT),
-    secure: false,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-    connectionTimeout: 30000,
-    greetingTimeout: 30000,
-    socketTimeout: 30000,
-  });
-  }
+    // =========================
+    // 2. DEV / PROD SMTP MODE
+    // =========================
+    transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT),
+      secure: Number(process.env.SMTP_PORT) === 465,
 
-  if (process.env.NODE_ENV === "test") {
-    // In tests, no real network — capture messages instead.
-    return Promise.resolve({
-      sendMail: async (msg) => {
-        globalThis.__lastMail = msg;
-        return { messageId: "test-" + Date.now() };
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
       },
+
+      connectionTimeout: 30000,
+      greetingTimeout: 30000,
+      socketTimeout: 30000,
     });
+
+    await transporter.verify();
+
+    logger.info("SMTP transporter initialized successfully");
+  } catch (err) {
+    logger.error({ err }, "Failed to initialize mailer");
+    throw err;
   }
-
-  // Dev default: Ethereal. One-shot account per process.
-  return nodemailer.createTestAccount().then((account) => {
-    logger.info(
-      { user: account.user, web: "https://ethereal.email/login" },
-      "Using Ethereal test SMTP — log in with these credentials to see sent mail"
-    );
-    return nodemailer.createTransport({
-      host: account.smtp.host,
-      port: account.smtp.port,
-      secure: account.smtp.secure,
-      auth: { user: account.user, pass: account.pass },
-    });
-  });
-}
-
-function getTransporter() {
-  if (!transporterPromise) transporterPromise = buildTransporter();
-  return transporterPromise;
 }
 
 /**
- * Send an email. Safe to call in any environment — uses Ethereal/capture
- * when SMTP_URL is absent.
+ * Get transporter
+ */
+export function getTransporter() {
+  if (!transporter) {
+    throw new Error("Mailer not initialized. Call initMailer() first.");
+  }
+  return transporter;
+}
+
+/**
+ * Send email safely
  */
 export async function sendMail({ to, subject, text, html }) {
-  const from = process.env.MAIL_FROM || "no-reply@schoolrec.local";
-  const transporter = getTransporter();
-  const info = await transporter.sendMail({ from, to, subject, text, html });
+  try {
+    const t = getTransporter();
 
-  // Ethereal returns a preview URL we surface in the log for convenience.
-  const preview = nodemailer.getTestMessageUrl?.(info);
-  if (preview) {
-    logger.info({ to, subject, preview }, "Email sent (Ethereal preview)");
+    const info = await t.sendMail({
+      from: process.env.MAIL_FROM || "no-reply@schoolrec.local",
+      to,
+      subject,
+      text,
+      html,
+    });
+
+    logger.info(
+      { to, subject, messageId: info.messageId },
+      "Email sent successfully"
+    );
+
+    return info;
+  } catch (err) {
+    logger.error({ err, to }, "Email sending failed");
+    throw err;
   }
-  return info;
 }
