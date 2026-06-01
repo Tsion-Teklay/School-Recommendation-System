@@ -18,7 +18,18 @@ let transporterPromise = null;
 
 function buildTransporter() {
   if (process.env.SMTP_URL) {
-    return Promise.resolve(nodemailer.createTransport(process.env.SMTP_URL));
+    return nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT),
+    secure: false,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+    connectionTimeout: 30000,
+    greetingTimeout: 30000,
+    socketTimeout: 30000,
+  });
   }
 
   if (process.env.NODE_ENV === "test") {
@@ -46,7 +57,7 @@ function buildTransporter() {
   });
 }
 
-async function getTransporter() {
+function getTransporter() {
   if (!transporterPromise) transporterPromise = buildTransporter();
   return transporterPromise;
 }
@@ -57,7 +68,7 @@ async function getTransporter() {
  */
 export async function sendMail({ to, subject, text, html }) {
   const from = process.env.MAIL_FROM || "no-reply@schoolrec.local";
-  const transporter = await getTransporter();
+  const transporter = getTransporter();
   const info = await transporter.sendMail({ from, to, subject, text, html });
 
   // Ethereal returns a preview URL we surface in the log for convenience.

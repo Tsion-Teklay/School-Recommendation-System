@@ -185,25 +185,23 @@ export async function registerUser({ fullName, email, phone, password, role, sub
 });
 
   if (normalizedEmail && emailVerificationToken) {
-    Promise.resolve().then(() => {
-      sendMailSafe(
-        {
-          to: normalizedEmail,
+    await sendMailSafe(
+      {
+        to: normalizedEmail,
 
-            subject: "Verify your School Recommendation account",
+        subject: "Verify your School Recommendation account",
 
-            text:
-              `Hi ${fullName},\n\n` +
-              `Welcome! Please verify your email by visiting:\n\n` +
-              `${appBaseUrl()}/verify-email?token=${emailVerificationToken}\n\n` +
-              `The link expires in 24 hours.`,
-          },
-          {
-            event: "register",
-            userId: user.id,
-          },
-        );
-      });
+        text:
+          `Hi ${fullName},\n\n` +
+          `Welcome! Please verify your email by visiting:\n\n` +
+          `${appBaseUrl()}/verify-email?token=${emailVerificationToken}\n\n` +
+          `The link expires in 24 hours.`,
+      },
+      {
+        event: "register",
+        userId: user.id,
+      },
+    );
   }
 
   if (normalizedPhone && phoneVerificationToken) {
