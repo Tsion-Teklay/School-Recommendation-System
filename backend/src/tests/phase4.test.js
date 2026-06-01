@@ -33,42 +33,42 @@ beforeAll(async () => {
   ({ token: parentAToken, user: { id: parentAId } } = await registerVerifiedUser({
     fullName: "Parent A",
     email: "parent-a@test.com",
-    phone: "0911111101",
+    phone: "+251911111101",
     role: "PARENT",
   }));
 
   ({ token: parentBToken } = await registerVerifiedUser({
     fullName: "Parent B",
     email: "parent-b@test.com",
-    phone: "0911111102",
+    phone: "+251911111102",
     role: "PARENT",
   }));
 
   ({ token: parentCToken } = await registerVerifiedUser({
     fullName: "Parent C",
     email: "parent-c@test.com",
-    phone: "0911111103",
+    phone: "+251911111103",
     role: "PARENT",
   }));
 
   ({ token: adminAToken, user: { id: adminAId } } = await registerVerifiedUser({
     fullName: "Admin A",
     email: "admin-a@test.com",
-    phone: "0911111104",
+    phone: "+251911111104",
     role: "SCHOOL_ADMIN",
   }));
 
   ({ token: adminBToken } = await registerVerifiedUser({
     fullName: "Admin B",
     email: "admin-b@test.com",
-    phone: "0911111105",
+    phone: "+251911111105",
     role: "SCHOOL_ADMIN",
   }));
 
   ({ token: moeToken } = await registerVerifiedUser({
     fullName: "MoE Officer",
     email: "moe@test.com",
-    phone: "0911111106",
+    phone: "+251911111106",
     role: "MOE_OFFICER",
   }));
 
@@ -90,7 +90,7 @@ beforeAll(async () => {
     schoolName: "Phase4 School A1",
     address: "Addis Ababa",
     contactEmail: "a1@test.com",
-    contactPhone: "0911000001",
+    contactPhone: "+251911000001",
     curriculum: "LOCAL",
     tuitionFee: 5000,
     latitude: 9.0,
@@ -101,7 +101,7 @@ beforeAll(async () => {
     schoolName: "Phase4 School A2",
     address: "Addis Ababa",
     contactEmail: "a2@test.com",
-    contactPhone: "0911000002",
+    contactPhone: "+251911000002",
     curriculum: "INTERNATIONAL",
     tuitionFee: 15000,
     latitude: 9.05,
@@ -112,7 +112,7 @@ beforeAll(async () => {
     schoolName: "Phase4 School B1",
     address: "Bahir Dar",
     contactEmail: "b1@test.com",
-    contactPhone: "0911000003",
+    contactPhone: "+251911000003",
     curriculum: "LOCAL",
     tuitionFee: 8000,
     latitude: 11.6,

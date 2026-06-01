@@ -14,7 +14,7 @@ beforeAll(async () => {
   const parent = await registerVerifiedUser({
     fullName: "Parent User",
     email: "parent2@test.com",
-    phone: "0944444444",
+    phone: "+251944444444",
     role: "PARENT",
   });
   parentToken = parent.token;
@@ -23,7 +23,6 @@ beforeAll(async () => {
   await db.parent.create({
     data: {
       userId: parent.user.id,
-      address: "Addis Ababa",
       latitude: 9.0331,
       longitude: 38.7501,
     },

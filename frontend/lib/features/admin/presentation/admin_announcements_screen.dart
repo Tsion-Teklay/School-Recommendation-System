@@ -180,11 +180,17 @@ class _AdminAnnouncementsScreenState
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (_error != null)
-            Card(
-              color: Theme.of(context).colorScheme.errorContainer,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Text(_error!),
+            Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 800),
+                child: Card(
+                  color: Theme.of(context).colorScheme.errorContainer,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Text(_error!),
+                  ),
+                ),
               ),
             ),
           if (_loading && _items.isEmpty)
@@ -200,13 +206,24 @@ class _AdminAnnouncementsScreenState
               ),
             )
           else
-            for (final a in _items)
-              _AnnouncementTile(
-                announcement: a,
-                onDelete: () => _delete(a),
-                onEdit: () => _edit(a),
-                onReturn: _load,
+            Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 800),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (final a in _items)
+                      _AnnouncementTile(
+                        announcement: a,
+                        onDelete: () => _delete(a),
+                        onEdit: () => _edit(a),
+                        onReturn: _load,
+                      ),
+                  ],
+                ),
               ),
+            ),
         ],
       ),
     );

@@ -57,7 +57,7 @@ afterAll(async () => {
 let phoneSeq = 0;
 function nextPhone() {
   phoneSeq += 1;
-  return `091${String(phoneSeq).padStart(7, "0")}`;
+  return `+25191${String(phoneSeq).padStart(7, "0")}`;
 }
 
 async function setupAdminWithSchool({ emailSuffix = "fi", schoolLevel } = {}) {
@@ -72,7 +72,7 @@ async function setupAdminWithSchool({ emailSuffix = "fi", schoolLevel } = {}) {
     schoolName: `Phase11 ${emailSuffix}`,
     address: "Addis",
     contactEmail: `contact.${emailSuffix}@p11.test`,
-    contactPhone: "0911000000",
+    contactPhone: "+251911000000",
     curriculum: "LOCAL",
     tuitionFee: 5000,
     facilities: "library",

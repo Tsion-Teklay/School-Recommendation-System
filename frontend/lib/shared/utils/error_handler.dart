@@ -1,10 +1,15 @@
 import '../../features/auth/data/auth_repository.dart' show ApiException;
+import '../../core/location_helper.dart' show LocationException;
 
 /// Centralized error handler that converts technical errors into user-friendly messages
 class ErrorHandler {
   static String getUserFriendlyMessage(dynamic error) {
     if (error is ApiException) {
       return _getApiErrorMessage(error);
+    }
+    
+    if (error is LocationException) {
+      return error.message; // LocationException already has user-friendly messages
     }
     
     // Handle common error types
@@ -54,7 +59,7 @@ class ErrorHandler {
       case 'INVALID_EMAIL':
         return 'Please enter a valid email address.';
       case 'INVALID_PHONE':
-        return 'Please enter a valid phone number.';
+        return 'Please enter a valid Ethiopian phone number (+2519xxxxxxxx or +2517xxxxxxxx).';
       case 'PHONE_NOT_VERIFIED':
         return 'Please verify your phone number to continue.';
       case 'EMAIL_NOT_VERIFIED':
@@ -79,6 +84,12 @@ class ErrorHandler {
         return 'Invalid file type. Please upload a valid file.';
       case 'FILE_TOO_LARGE':
         return 'File is too large. Please upload a smaller file.';
+      case 'VALIDATION_ERROR':
+        // Handle validation errors that might include phone format issues
+        if (error.message.contains('phone') || error.message.contains('Phone')) {
+          return 'Please enter a valid Ethiopian phone number (+2519xxxxxxxx or +2517xxxxxxxx).';
+        }
+        return error.message;
       default:
         // If the error message from API is already user-friendly, use it
         if (error.message.isNotEmpty && 
@@ -101,6 +112,8 @@ class ErrorHandler {
       switch (error.code) {
         case 'INVALID_CREDENTIALS':
           return '$baseMessage\n\nTip: Check for typos or reset your password if you\'ve forgotten it.';
+        case 'INVALID_PHONE':
+          return '$baseMessage\n\nTip: Ethiopian phone numbers must be in the format +2519xxxxxxxx or +2517xxxxxxxx.';
         case 'PHONE_NOT_VERIFIED':
         case 'EMAIL_NOT_VERIFIED':
           return '$baseMessage\n\nTip: Check your inbox or SMS for the verification code.';
@@ -109,6 +122,11 @@ class ErrorHandler {
         default:
           return baseMessage;
       }
+    }
+    
+    if (error is LocationException) {
+      // Location errors already have helpful guidance in the message
+      return baseMessage;
     }
     
     return baseMessage;

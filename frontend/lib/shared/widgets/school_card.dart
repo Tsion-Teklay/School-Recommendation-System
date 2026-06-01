@@ -54,7 +54,7 @@ class SchoolCard extends StatelessWidget {
                     SpacingHelper.xs,
                     Text(
                       school.subCity != null
-                          ? '${school.subCity} - ${school.woreda ?? 'N/A'}'
+                          ? school.subCity!.label
                           : 'No location info',
                       style: theme.textTheme.bodySmall,
                       maxLines: 2,

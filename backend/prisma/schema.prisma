@@ -165,9 +165,8 @@ model Like {
 
 model Parent {
   userId     Int         @id @map("user_id")
-  address    String      @db.VarChar(255)
-  latitude   Decimal     @db.Decimal(10, 8)
-  longitude  Decimal     @db.Decimal(11, 8)
+  latitude   Decimal?    @db.Decimal(10, 8)
+  longitude  Decimal?    @db.Decimal(11, 8)
   user       User        @relation(fields: [userId], references: [id])
   preference Preference?
 
@@ -366,10 +365,10 @@ model SchoolUpdate {
 model Preference {
   id          Int          @id @default(autoincrement()) @map("preference_id")
   parentId    Int          @unique @map("parent_id")
-  minBudget   Decimal      @map("min_budget") @db.Decimal(10, 2)
-  maxBudget   Decimal      @map("max_budget") @db.Decimal(10, 2)
-  curriculum  Curriculum
-  distance    Int
+  minBudget   Decimal?     @map("min_budget") @db.Decimal(10, 2)
+  maxBudget   Decimal?     @map("max_budget") @db.Decimal(10, 2)
+  curriculum  Curriculum?
+  distance    Int?
   schoolLevel SchoolLevel? @map("school_level")
   schoolType  SchoolType?  @map("school_type")
   parent      Parent       @relation(fields: [parentId], references: [userId])
@@ -491,6 +490,7 @@ enum SubCity {
   KOLFE_KERANIO    @map("kolfe_keranio")
   KIRKOS           @map("kirkos")
   LIDETA           @map("lideta")
+  LEMI_KURA        @map("lemi_kura")
   NIFAS_SILK_LAFTO @map("nifas_silk_lafto")
   YEKKA            @map("yekka")
 }

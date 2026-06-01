@@ -58,7 +58,6 @@ class ParentPreferences {
   final int? distanceKm;
   final SchoolLevel? schoolLevel;    
   final SchoolType? schoolType;     
-  final String? address;
   final double? latitude;
   final double? longitude;
 
@@ -69,7 +68,6 @@ class ParentPreferences {
     this.distanceKm,
     this.schoolLevel,
     this.schoolType,
-    this.address,
     this.latitude,
     this.longitude,
   });
@@ -89,12 +87,11 @@ class ParentPreferences {
       schoolType: json['schoolType'] != null  
           ? SchoolTypeX.fromWire(json['schoolType'])  
           : null,  
-      address: json['address'] as String?,
       latitude: _asDouble(json['latitude']),
       longitude: _asDouble(json['longitude']),
     );
   }
 
   bool get hasHomePin =>
-      address != null && latitude != null && longitude != null;
+      latitude != null && longitude != null;
 }

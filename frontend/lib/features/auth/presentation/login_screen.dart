@@ -108,7 +108,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               decoration: const InputDecoration(
                 labelText: 'Email or phone',
                 hintText: 'enter email or phone you registered with',
-                helperText: 'Use the email or phone you registered with',
+                helperText: 'Use email or phone (+2519xxxxxxxx or +2517xxxxxxxx)',
               ),
               validator: _validateIdentifier,
             ),

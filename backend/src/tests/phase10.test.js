@@ -25,7 +25,7 @@ describe("Phase 10: phone-based register + login", () => {
   it("registers a phone-only user and auto-verifies them", async () => {
     const res = await request(app).post("/api/auth/register").send({
       fullName: "Phone Only",
-      phone: "0911999001",
+      phone: "+251911999001",
       password: "hunter22",
       role: "PARENT",
     });
@@ -34,7 +34,7 @@ describe("Phase 10: phone-based register + login", () => {
     // address so the unique-email index isn't violated. Verify the placeholder
     // is opaque and the account is treated as already-verified.
     expect(res.body.user.email).toMatch(/@placeholder\.invalid$/);
-    expect(res.body.user.phone).toBe("0911999001");
+    expect(res.body.user.phone).toBe("+251911999001");
     expect(res.body.user.emailVerified).toBe(true);
     expect(res.body.token).toBeUndefined();
   });
@@ -42,16 +42,16 @@ describe("Phase 10: phone-based register + login", () => {
   it("logs in by phone using the new identifier field", async () => {
     const res = await request(app)
       .post("/api/auth/login")
-      .send({ identifier: "0911999001", password: "hunter22" });
+      .send({ identifier: "+251911999001", password: "hunter22" });
     expect(res.statusCode).toBe(200);
     expect(res.body.token).toBeTruthy();
-    expect(res.body.user.phone).toBe("0911999001");
+    expect(res.body.user.phone).toBe("+251911999001");
   });
 
   it("returns 401 for unknown phone (no enumeration)", async () => {
     const res = await request(app)
       .post("/api/auth/login")
-      .send({ identifier: "0911000000", password: "hunter22" });
+      .send({ identifier: "+251911000000", password: "hunter22" });
     expect(res.statusCode).toBe(401);
     expect(res.body.code).toBe("UNAUTHORIZED");
   });
@@ -59,7 +59,7 @@ describe("Phase 10: phone-based register + login", () => {
   it("returns 409 on duplicate phone", async () => {
     const res = await request(app).post("/api/auth/register").send({
       fullName: "Phone Dup",
-      phone: "0911999001",
+      phone: "+251911999001",
       password: "hunter22",
       role: "PARENT",
     });
@@ -104,14 +104,14 @@ describe("Phase 10: preferences screen (home pin + criteria)", () => {
     // Phone-only parent — no Parent row yet, must supply home pin to bootstrap.
     const phoneReg = await request(app).post("/api/auth/register").send({
       fullName: "Phone Parent",
-      phone: "0922000010",
+      phone: "+251922000010",
       password: "hunter22",
       role: "PARENT",
     });
     expect(phoneReg.statusCode).toBe(201);
     const phoneLogin = await request(app)
       .post("/api/auth/login")
-      .send({ identifier: "0922000010", password: "hunter22" });
+      .send({ identifier: "+251922000010", password: "hunter22" });
     phoneOnlyToken = phoneLogin.body.token;
 
     // Email parent who already has a Parent row — exercises the update branch.
@@ -129,7 +129,6 @@ describe("Phase 10: preferences screen (home pin + criteria)", () => {
     await db.parent.create({
       data: {
         userId: userRow.id,
-        address: "Addis Ababa",
         latitude: 9.0,
         longitude: 38.7,
       },
@@ -146,7 +145,6 @@ describe("Phase 10: preferences screen (home pin + criteria)", () => {
       .set("Authorization", `Bearer ${phoneOnlyToken}`);
     expect(res.statusCode).toBe(200);
     expect(res.body.preference.minBudget).toBeNull();
-    expect(res.body.preference.address).toBeNull();
     expect(res.body.preference.latitude).toBeNull();
   });
 
@@ -164,7 +162,6 @@ describe("Phase 10: preferences screen (home pin + criteria)", () => {
       .post("/api/preferences")
       .set("Authorization", `Bearer ${phoneOnlyToken}`)
       .send({
-        address: "Somewhere",
         latitude: 9.0,
         // no longitude
         minBudget: 1000,
@@ -182,7 +179,6 @@ describe("Phase 10: preferences screen (home pin + criteria)", () => {
         maxBudget: 6000,
         curriculum: "INTERNATIONAL",
         distance: 12,
-        address: "Bole, Addis Ababa",
         latitude: 9.0,
         longitude: 38.75,
       });
@@ -194,7 +190,6 @@ describe("Phase 10: preferences screen (home pin + criteria)", () => {
       .set("Authorization", `Bearer ${phoneOnlyToken}`);
     expect(got.statusCode).toBe(200);
     expect(got.body.preference.curriculum).toBe("INTERNATIONAL");
-    expect(got.body.preference.address).toBe("Bole, Addis Ababa");
     expect(Number(got.body.preference.latitude)).toBeCloseTo(9.0, 5);
     expect(Number(got.body.preference.longitude)).toBeCloseTo(38.75, 5);
   });
@@ -210,8 +205,6 @@ describe("Phase 10: preferences screen (home pin + criteria)", () => {
       .get("/api/preferences/me")
       .set("Authorization", `Bearer ${existingParentToken}`);
     expect(Number(got.body.preference.maxBudget)).toBe(9000);
-    // Address must NOT have been wiped to null on a partial update.
-    expect(got.body.preference.address).toBe("Addis Ababa");
   });
 
   it("PARENT role required (SCHOOL_ADMIN gets 403)", async () => {

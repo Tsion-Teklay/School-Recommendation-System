@@ -36,12 +36,12 @@ const _allDestinations = <NavDestination>[
   NavDestination(label: 'Home', icon: Icons.home_outlined, path: '/'),
   NavDestination(
       label: 'Browse', icon: Icons.search_outlined, path: '/schools'),
-  NavDestination(  
-    label: 'Announcements',  
-    icon: Icons.campaign_outlined,  
-    path: '/announcements',  
-    visibleTo: {UserRole.parent}, // Restrict to parents as requested  
-  ),  
+  NavDestination(
+    label: 'Announcements',
+    icon: Icons.campaign_outlined,
+    path: '/announcements',
+    visibleTo: {UserRole.parent}, // Restrict to parents as requested
+  ),
   NavDestination(
     label: 'Compare',
     icon: Icons.compare_arrows_outlined,
@@ -58,12 +58,6 @@ const _allDestinations = <NavDestination>[
     icon: Icons.notifications_outlined,
     path: '/notifications',
   ),
-  NavDestination(
-    label: 'Reports',
-    icon: Icons.report_gmailerrorred,
-    path: '/moderation',
-    visibleTo: {UserRole.moderator},
-  ),
 ];
 
 /// Wraps a screen body in a Scaffold whose chrome adapts to the viewport:
@@ -73,7 +67,7 @@ const _allDestinations = <NavDestination>[
 ///
 /// When the user isn't authenticated (or [showNav] is false) we skip the nav
 /// chrome entirely so the auth screens stay clean.
-class ResponsiveShell extends ConsumerWidget {
+class ResponsiveShell extends ConsumerStatefulWidget {
   final String title;
   final Widget child;
   final List<Widget>? actions;
@@ -97,6 +91,19 @@ class ResponsiveShell extends ConsumerWidget {
     this.showNav = true,
     this.onScrollNotification,
   });
+
+  @override
+  ConsumerState<ResponsiveShell> createState() => _ResponsiveShellState();
+}
+
+class _ResponsiveShellState extends ConsumerState<ResponsiveShell> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(notificationsControllerProvider).refreshUnreadCount();
+    });
+  }
 
   List<NavDestination> _visibleDestinations(UserRole? role) {
     return _allDestinations.where((d) {
@@ -124,10 +131,10 @@ class ResponsiveShell extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final auth = ref.watch(authControllerProvider);
     final role = auth.user?.role;
-    final dests = showNav && auth.isAuthenticated
+    final dests = widget.showNav && auth.isAuthenticated
         ? _visibleDestinations(role)
         : const <NavDestination>[];
     final location = GoRouterState.of(context).uri.path;
@@ -145,7 +152,7 @@ class ResponsiveShell extends ConsumerWidget {
         ];
 
         final scrollable = SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Center(
             child: ConstrainedBox(
               constraints: BoxConstraints(
@@ -156,15 +163,15 @@ class ResponsiveShell extends ConsumerWidget {
               child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          child,
+          widget.child,
         ],
       ),  
             ),
           ),
         );
-        final body = onScrollNotification != null
+        final body = widget.onScrollNotification != null
             ? NotificationListener<ScrollNotification>(
-                onNotification: onScrollNotification,
+                onNotification: widget.onScrollNotification,
                 child: scrollable,
               )
             : scrollable;
@@ -179,11 +186,17 @@ class ResponsiveShell extends ConsumerWidget {
 
         return Scaffold(
           appBar: AppNavigationBar(
-            title: title,
-            actions: [...?actions, ...defaultActions],
-            leading: leading,
+            title: widget.title,
+            actions: [...?widget.actions, ...defaultActions],
+            leading: widget.leading ??
+                (context.canPop()
+                    ? IconButton(
+                        icon: const Icon(Icons.arrow_back),
+                        onPressed: () => context.pop(),
+                      )
+                    : null),
           ),
-          floatingActionButton: floatingActionButton,
+          floatingActionButton: widget.floatingActionButton,
           body: Stack(
             children: [
               dests.isEmpty || isCompact

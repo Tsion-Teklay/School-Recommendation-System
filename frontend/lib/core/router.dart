@@ -150,7 +150,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Main app routes with unique transitions
       GoRoute(
         path: '/',
-        pageBuilder: (context, state) => AppAnimations.navySweep(
+        pageBuilder: (context, state) => AppAnimations.slideInFromRight(
           key: state.pageKey,
           child: const HomeScreen(),
         ),
@@ -235,7 +235,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/compare',
-        pageBuilder: (context, state) => AppAnimations.rotateIn(
+        pageBuilder: (context, state) => AppAnimations.slideInFromRight(
           key: state.pageKey,
           child: const ComparisonsListScreen(),
         ),

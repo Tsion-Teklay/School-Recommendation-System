@@ -9,11 +9,13 @@ import '../../auth/data/auth_repository.dart';
 import '../../auth/state/auth_controller.dart';
 import '../data/announcement_dtos.dart';
 import '../data/announcement_repository.dart';
+import '../data/comment_dtos.dart';
 
 import '../../../shared/widgets/like_action.dart';
 import '../../../shared/widgets/report_dialog.dart';
 import '../../../shared/widgets/share_action.dart';
 import '../../../shared/widgets/comment_tile.dart';
+import '../../../shared/widgets/custom_components.dart';
 import '../../../features/reports/data/report_dtos.dart';
 import '../../../features/likes/data/like_dtos.dart';
 
@@ -118,6 +120,7 @@ class _BodyState extends ConsumerState<_Body> {
   bool _posting = false;
   int _commentRefreshKey = 0;
   bool _isOwner = false;
+  bool _showCommentInput = false;
 
   @override
   void initState() {
@@ -208,6 +211,23 @@ class _BodyState extends ConsumerState<_Body> {
     }
   }
 
+  void _toggleCommentInput() {
+    setState(() {
+      _showCommentInput = !_showCommentInput;
+    });
+  }
+
+  List<Widget> _buildCommentList(List<Comment> comments) {
+    final List<Widget> widgets = [];
+    for (int i = 0; i < comments.length; i++) {
+      widgets.add(CommentTile(comment: comments[i], showCard: false));
+      if (i < comments.length - 1) {
+        widgets.add(const Divider());
+      }
+    }
+    return widgets;
+  }
+
   Future<void> _postComment() async {
     final text = _commentCtrl.text.trim();
     if (text.isEmpty) return;
@@ -235,170 +255,332 @@ class _BodyState extends ConsumerState<_Body> {
     final a = widget.announcement;
     final image = a.imgUrl;
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (image != null && image.isNotEmpty)
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: Image.network(
-                _absoluteImage(image),
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  color: theme.colorScheme.surfaceContainerHighest,
-                  child: const Center(
-                      child: Icon(Icons.image_not_supported_outlined)),
-                ),
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(a.title, style: theme.textTheme.headlineSmall),
-                // ... (Chips and Content section remains the same)
-                const SizedBox(height: 16),
-                SelectableText(
-                  a.content,
-                  style: theme.textTheme.bodyLarge,
-                ),
-                if (a.school != null) ...[
-                  const SizedBox(height: 24),
-                  OutlinedButton.icon(
-                    onPressed: () =>
-                        GoRouter.of(context).go('/schools/${a.school!.id}'),
-                    icon: const Icon(Icons.open_in_new),
-                    label: Text('View ${a.school!.schoolName}'),
-                  ),
-                ],
-
-                // --- ACTION BAR ---
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    if (_isOwner)
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.edit_outlined),
-                            onPressed: _showEditDialog,
-                            tooltip: 'Edit',
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.delete_outlined),
-                            onPressed: _deleteAnnouncement,
-                            tooltip: 'Delete',
-                          ),
-                        ],
-                      ),
-                    Row(
-                      children: [
-                        LikeAction(
-                            targetType: LikeTargetType.announcement,
-                            targetId: a.id),
-                        ShareAction(
-                          title: a.title,
-                          content: a.content,
-                          url: 'https://yourapp.com/announcements/${a.id}',
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.flag_outlined),
-                          onPressed: () => showDialog(
-                            context: context,
-                            builder: (_) => ReportDialog(
-                              targetType: ReportTargetType.announcement,
-                              targetId: a.id,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // --- ANNOUNCEMENT CARD ---
+        Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 800),
+            child: Card(
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (image != null && image.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: AspectRatio(
+                          aspectRatio: 16 / 9,
+                          child: Image.network(
+                            _absoluteImage(image),
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              color: theme.colorScheme.surfaceContainerHighest,
+                              child: const Center(
+                                  child: Icon(Icons.image_not_supported_outlined)),
                             ),
                           ),
-                          tooltip: 'Report',
+                        ),
+                      ),
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            AppBadge(
+                              label: a.category.label(),
+                            ),
+                            if (a.urgencyLevel != UrgencyLevel.normal)
+                              AppBadge(
+                                label: a.urgencyLevel.label(),
+                              ),
+                            AppBadge(
+                              icon: a.publisherType == PublisherType.moe
+                                  ? Icons.account_balance_outlined
+                                  : Icons.school_outlined,
+                              label: a.school?.schoolName ?? a.publisherType.label(),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(a.title, style: theme.textTheme.headlineSmall),
+                        const SizedBox(height: 16),
+                        SelectableText(
+                          a.content,
+                          style: theme.textTheme.bodyLarge,
+                        ),
+                        if (a.school != null) ...[
+                          const SizedBox(height: 24),
+                          OutlinedButton.icon(
+                            onPressed: () =>
+                                GoRouter.of(context).go('/schools/${a.school!.id}'),
+                            icon: const Icon(Icons.open_in_new),
+                            label: Text('View ${a.school!.schoolName}'),
+                          ),
+                        ],
+
+                        // --- ACTION BAR ---
+                        const SizedBox(height: 24),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            if (_isOwner)
+                              Row(
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit_outlined),
+                                    onPressed: _showEditDialog,
+                                    tooltip: 'Edit',
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_outlined),
+                                    onPressed: _deleteAnnouncement,
+                                    tooltip: 'Delete',
+                                  ),
+                                ],
+                              ),
+                            Row(
+                              children: [
+                                LikeAction(
+                                    targetType: LikeTargetType.announcement,
+                                    targetId: a.id),
+                                ShareAction(
+                                  title: a.title,
+                                  content: a.content,
+                                  url: 'https://yourapp.com/announcements/${a.id}',
+                                ),
+                                _CommentToggleButton(
+                                  showInput: _showCommentInput,
+                                  onPressed: _toggleCommentInput,
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.flag_outlined),
+                                  onPressed: () => showDialog(
+                                    context: context,
+                                    builder: (_) => ReportDialog(
+                                      targetType: ReportTargetType.announcement,
+                                      targetId: a.id,
+                                    ),
+                                  ),
+                                  tooltip: 'Report',
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                       ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          ),
+
+          // --- COMMENT SECTION (separate card) ---
+        const SizedBox(height: 16),
+        Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 800),
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Comments', style: theme.textTheme.titleMedium),
+                    const SizedBox(height: 12),
+
+                    // Comment input (toggled by button)
+                    if (_showCommentInput) ...[
+                      TextField(
+                        controller: _commentCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Add a comment',
+                          hintText: 'Share your thoughts...',
+                        ),
+                        minLines: 2,
+                        maxLines: 5,
+                      ),
+                      const SizedBox(height: 8),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: FilledButton.icon(
+                          onPressed: _posting ? null : _postComment,
+                          icon: _posting
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.send),
+                          label: const Text('Comment'),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // Comments list (always visible, separated by horizontal lines)
+                    FutureBuilder(
+                      key: ValueKey(_commentRefreshKey),
+                      future: ref
+                          .read(announcementRepositoryProvider)
+                          .getAnnouncementComments(a.id),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+                        if (snapshot.hasError) {
+                          return Text('Error loading comments: ${snapshot.error}');
+                        }
+
+                        final comments = snapshot.data ?? [];
+                        if (comments.isEmpty) {
+                          return const Text('No comments yet. Be the first to comment!');
+                        }
+
+                        return Column(
+                          children: _buildCommentList(comments),
+                        );
+                      },
                     ),
                   ],
                 ),
+              ),
+            ),
+          ),
+          ),
+        ],
+      );
+  }
+}
 
-                // --- COMMENT SECTION ---
-                const SizedBox(height: 32),
-                Text('Comments', style: theme.textTheme.titleMedium),
-                const SizedBox(height: 12),
+// Comment toggle button - StatefulWidget to avoid Flutter web bug
+class _CommentToggleButton extends StatefulWidget {
+  final bool showInput;
+  final VoidCallback onPressed;
+  const _CommentToggleButton({required this.showInput, required this.onPressed});
 
-                // Comment input
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        TextField(
-                          controller: _commentCtrl,
-                          decoration: const InputDecoration(
-                            labelText: 'Add a comment',
-                            hintText: 'Share your thoughts...',
-                          ),
-                          minLines: 2,
-                          maxLines: 5,
-                        ),
-                        const SizedBox(height: 8),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: FilledButton.icon(
-                            onPressed: _posting ? null : _postComment,
-                            icon: _posting
-                                ? const SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(
-                                        strokeWidth: 2),
-                                  )
-                                : const Icon(Icons.send),
-                            label: const Text('Comment'),
-                          ),
-                        ),
-                      ],
-                    ),
+  @override
+  State<_CommentToggleButton> createState() => _CommentToggleButtonState();
+}
+
+class _CommentToggleButtonState extends State<_CommentToggleButton> {
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: Icon(widget.showInput ? Icons.comment : Icons.comment_outlined),
+      onPressed: widget.onPressed,
+      tooltip: 'Comments',
+    );
+  }
+}
+
+// Comment section widget (no longer used, kept for reference)
+class _CommentSection extends ConsumerWidget {
+  final int announcementId;
+  final TextEditingController commentCtrl;
+  final bool posting;
+  final VoidCallback onPostComment;
+  final int refreshKey;
+
+  const _CommentSection({
+    super.key,
+    required this.announcementId,
+    required this.commentCtrl,
+    required this.posting,
+    required this.onPostComment,
+    required this.refreshKey,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 32),
+        Text('Comments', style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 12),
+
+        // Comment input
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextField(
+                  controller: commentCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Add a comment',
+                    hintText: 'Share your thoughts...',
                   ),
+                  minLines: 2,
+                  maxLines: 5,
                 ),
-
-                const SizedBox(height: 16),
-
-                // Comments list
-                FutureBuilder(
-                  key: ValueKey(_commentRefreshKey),
-                  future: ref
-                      .read(announcementRepositoryProvider)
-                      .getAnnouncementComments(a.id),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState ==
-                        ConnectionState.waiting) {
-                      return const Center(
-                          child: CircularProgressIndicator());
-                    }
-                    if (snapshot.hasError) {
-                      return Text(
-                          'Error loading comments: ${snapshot.error}');
-                    }
-
-                    final comments = snapshot.data ?? [];
-                    if (comments.isEmpty) {
-                      return const Text('No comments yet. Be the first to comment!');
-                    }
-
-                    return Column(
-                      children: comments
-                          .map((c) => CommentTile(comment: c))
-                          .toList(),
-                    );
-                  },
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: FilledButton.icon(
+                    onPressed: posting ? null : onPostComment,
+                    icon: posting
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2),
+                          )
+                        : const Icon(Icons.send),
+                    label: const Text('Comment'),
+                  ),
                 ),
               ],
             ),
           ),
-        ],
-      ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Comments list
+        FutureBuilder(
+          key: ValueKey(refreshKey),
+          future: ref
+              .read(announcementRepositoryProvider)
+              .getAnnouncementComments(announcementId),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState ==
+                ConnectionState.waiting) {
+              return const Center(
+                  child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return Text(
+                  'Error loading comments: ${snapshot.error}');
+            }
+
+            final comments = snapshot.data ?? [];
+            if (comments.isEmpty) {
+              return const Text('No comments yet. Be the first to comment!');
+            }
+
+            return Column(
+              children: comments
+                  .map((c) => CommentTile(comment: c))
+                  .toList(),
+            );
+          },
+        ),
+      ],
     );
   }
 }

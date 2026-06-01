@@ -15,7 +15,7 @@ beforeAll(async () => {
   const parent = await registerVerifiedUser({
     fullName: "Parent User",
     email: "fav@test.com",
-    phone: "0955555555",
+    phone: "+251955555555",
     role: "PARENT",
   });
   parentToken = parent.token;
@@ -24,7 +24,6 @@ beforeAll(async () => {
   await db.parent.create({
     data: {
       userId: parent.user.id,
-      address: "Addis",
       latitude: 9.0,
       longitude: 38.0,
     },
@@ -34,7 +33,7 @@ beforeAll(async () => {
   const admin = await registerVerifiedUser({
     fullName: "Admin",
     email: "adminfav@test.com",
-    phone: "0966666666",
+    phone: "+251966666666",
     role: "SCHOOL_ADMIN",
   });
 
@@ -45,7 +44,7 @@ beforeAll(async () => {
       schoolName: "Fav School",
       address: "Addis",
       contactEmail: "fav@school.com",
-      contactPhone: "0910000000",
+      contactPhone: "+251910000000",
       curriculum: "LOCAL",
       tuitionFee: 3000,
       latitude: 9.0,

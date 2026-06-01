@@ -16,21 +16,21 @@ beforeAll(async () => {
   ({ token: adminToken } = await registerVerifiedUser({
     fullName: "Admin One",
     email: "admin1@test.com",
-    phone: "0911111111",
+    phone: "+251911111111",
     role: "SCHOOL_ADMIN",
   }));
 
   ({ token: otherAdminToken } = await registerVerifiedUser({
     fullName: "Admin Two",
     email: "admin2@test.com",
-    phone: "0922222222",
+    phone: "+251922222222",
     role: "SCHOOL_ADMIN",
   }));
 
   ({ token: parentToken } = await registerVerifiedUser({
     fullName: "Parent User",
     email: "parent@test.com",
-    phone: "0933333333",
+    phone: "+251933333333",
     role: "PARENT",
   }));
 });
@@ -49,7 +49,7 @@ describe("School CRUD", () => {
         schoolName: "Test School",
         address: "Addis Ababa",
         contactEmail: "school@test.com",
-        contactPhone: "0912345678",
+        contactPhone: "+251912345678",
         curriculum: "LOCAL", 
         tuitionFee: 5000,
         latitude: 9.0331,
@@ -75,7 +75,7 @@ describe("School CRUD", () => {
         schoolName: "Fail School",
         address: "Addis",
         contactEmail: "fail@test.com",
-        contactPhone: "0988888888",
+        contactPhone: "+251988888888",
         curriculum: "LOCAL",
         tuitionFee: 3000,
         latitude: 9.0,

@@ -31,7 +31,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   void _seedFromUser(AppUser user) {
     if (_initialized) return;
     _name.text = user.fullName;
-    _phone.text = user.phone ?? '';
+    // Remove +251 prefix if present for display
+    final phone = user.phone;
+    if (phone != null && phone.startsWith('+251')) {
+      _phone.text = phone.substring(4);
+    } else {
+      _phone.text = phone ?? '';
+    }
     _initialized = true;
     
     // Load school count if user is a school admin
@@ -81,13 +87,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       _saveMessage = null;
     });
     try {
-      // Backend Zod treats phone as optional `min(5).max(15)` — an empty
-      // string fails validation. Convert empty to null so the field is dropped
-      // from the request body, matching the register-screen behavior.
+      // Backend Zod validates phone as Ethiopian format: +251[79] followed by 8 digits
+      // Add +251 prefix if user provided digits
       final trimmedPhone = _phone.text.trim();
+      final phoneValue = trimmedPhone.isEmpty ? null : '+251$trimmedPhone';
       await ref.read(authControllerProvider).updateProfile(
             fullName: _name.text.trim(),
-            phone: trimmedPhone.isEmpty ? null : trimmedPhone,
+            phone: phoneValue,
           );
       if (mounted) {
         setState(() => _saveMessage = 'Profile updated.');
@@ -150,7 +156,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     if (user.email.startsWith('phone-')) {
       // Extract phone number from "phone-number@placeholder.invalid"
       final phoneNumber = user.email.split('-')[1].split('@')[0];
-      return '$phoneNumber · ${user.role.label()}';
+      return '+251$phoneNumber · ${user.role.label()}';
     }
     // Normal email display
     return '${user.email} · ${user.role.label()}${user.emailVerified ? '' : ' · Email NOT verified'}';
@@ -342,12 +348,14 @@ Future<void> _handleRegularAccountDeletion() async {
               keyboardType: TextInputType.phone,
               decoration: const InputDecoration(
                 labelText: 'Phone',
-                helperText: '5–15 characters, or empty',
+                prefixText: '+251',
+                helperText: 'Enter 9 or 7 followed by 8 digits, or leave empty',
               ),
               validator: (v) {
                 final t = (v ?? '').trim();
                 if (t.isEmpty) return null;
-                if (t.length < 5 || t.length > 15) return '5–15 characters';
+                if (t.length != 9) return 'Enter 9 digits after +251';
+                if (!t.startsWith('9') && !t.startsWith('7')) return 'Must start with 9 or 7';
                 return null;
               },
             ),
@@ -362,48 +370,38 @@ Future<void> _handleRegularAccountDeletion() async {
               child: const Text('Save changes'),
             ),
             const SizedBox(height: 32),
-            if (user.role == UserRole.parent)
-              OutlinedButton.icon(
-                onPressed: () => context.go('/preferences'),
-                icon: const Icon(Icons.tune),
-                label: const Text('Recommendation preferences'),
-              ),
             if (user.role == UserRole.parent)  
-              OutlinedButton.icon(  
+              OutlinedButton(  
                 onPressed: () => context.go('/followed-schools'),  
-                icon: const Icon(Icons.school),  
-                label: const Text('Manage followed schools'),  
+                child: const Text('Followed schools'),  
               ),  
             if (user.role == UserRole.parent) const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: _changePassword,
-              icon: const Icon(Icons.lock_reset),
-              label: const Text('Change password'),
-            ),
-            const SizedBox(height: 12),
-            TextButton.icon(
-              style: TextButton.styleFrom(
-                foregroundColor: Theme.of(context).colorScheme.error,
-              ),
-              onPressed: _confirmDeactivate,
-              icon: const Icon(Icons.delete_outline),
-              label: const Text('Deactivate account'),
-            ),
-            const SizedBox(height: 12),
-            TextButton.icon(
-              style: TextButton.styleFrom(
-                foregroundColor: Theme.of(context).colorScheme.error,
-              ),
-              onPressed: () async {
-                // For school admins, check if they have schools first
-                if (user.role == UserRole.schoolAdmin) {
-                  await _handleSchoolAdminAccountDeletion();
-                } else {
-                  await _handleRegularAccountDeletion();
-                }
-              },
-              icon: const Icon(Icons.warning),
-              label: const Text('Delete Account Permanently'),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                IconButton(
+                  tooltip: 'Change password',
+                  onPressed: _changePassword,
+                  icon: const Icon(Icons.lock_reset),
+                ),
+                IconButton(
+                  tooltip: 'Deactivate account',
+                  onPressed: _confirmDeactivate,
+                  icon: const Icon(Icons.warning),
+                ),
+                IconButton(
+                  tooltip: 'Delete account permanently',
+                  onPressed: () async {
+                    // For school admins, check if they have schools first
+                    if (user.role == UserRole.schoolAdmin) {
+                      await _handleSchoolAdminAccountDeletion();
+                    } else {
+                      await _handleRegularAccountDeletion();
+                    }
+                  },
+                  icon: const Icon(Icons.delete_outline),
+                ),
+              ],
             ),
           ],
         ),

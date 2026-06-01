@@ -35,11 +35,11 @@ beforeAll(async () => {
   ({ token: parentToken, user: { id: parentId } } = await registerVerifiedUser({
     fullName: "Parent",
     email: "p6-parent@test.com",
-    phone: "0911600001",
+    phone: "+251911600001",
     role: "PARENT",
   }));
   await db.parent.create({
-    data: { userId: parentId, address: "AA", latitude: 9.0, longitude: 38.0 },
+    data: { userId: parentId, latitude: 9.0, longitude: 38.0 },
   });
   await db.preference.create({
     data: {
@@ -55,21 +55,21 @@ beforeAll(async () => {
   ({ token: parentBToken, user: { id: parentBId } } = await registerVerifiedUser({
     fullName: "Parent B",
     email: "p6-parentB@test.com",
-    phone: "0911600002",
+    phone: "+251911600002",
     role: "PARENT",
   }));
 
   ({ token: moeToken } = await registerVerifiedUser({
     fullName: "MoE",
     email: "p6-moe@test.com",
-    phone: "0911600003",
+    phone: "+251911600003",
     role: "MOE_OFFICER",
   }));
 
   ({ token: adminToken, user: { id: adminId } } = await registerVerifiedUser({
     fullName: "Admin",
     email: "p6-admin@test.com",
-    phone: "0911600004",
+    phone: "+251911600004",
     role: "SCHOOL_ADMIN",
   }));
 
@@ -81,7 +81,7 @@ beforeAll(async () => {
       schoolName: "Perfect Academy",
       address: "1km away",
       contactEmail: "p@p6.test",
-      contactPhone: "0911600100",
+      contactPhone: "+251911600100",
       curriculum: "INTERNATIONAL",
       tuitionFee: "3000.00",
       facilities: "Library, Lab, Gym, Pool, Music Room",
@@ -100,7 +100,7 @@ beforeAll(async () => {
       schoolName: "OK School",
       address: "5km away",
       contactEmail: "o@p6.test",
-      contactPhone: "0911600101",
+      contactPhone: "+251911600101",
       curriculum: "INTERNATIONAL",
       tuitionFee: "4500.00",
       facilities: "Library, Lab",
@@ -119,7 +119,7 @@ beforeAll(async () => {
       schoolName: "Bad School",
       address: "very far + over budget",
       contactEmail: "b@p6.test",
-      contactPhone: "0911600102",
+      contactPhone: "+251911600102",
       curriculum: "LOCAL",
       tuitionFee: "20000.00",
       facilities: null,
@@ -250,7 +250,7 @@ describe("Phase 6 — MoE dashboard", () => {
     // something non-zero to compute against.
     await db.parent.upsert({
       where: { userId: parentId },
-      create: { userId: parentId, address: "AA", latitude: 9, longitude: 38 },
+      create: { userId: parentId, latitude: 9, longitude: 38 },
       update: {},
     });
     await db.review.create({

@@ -1,23 +1,31 @@
 import 'package:geolocator/geolocator.dart';  
 import 'package:geocoding/geocoding.dart';  
-  
+
+class LocationException implements Exception {
+  final String message;
+  LocationException(this.message);
+
+  @override
+  String toString() => message;
+}
+
 class LocationHelper {  
   static Future<Position> getCurrentPosition() async {  
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();  
     if (!serviceEnabled) {  
-      throw Exception('Location services are disabled.');  
+      throw LocationException('Please enable location services in your device settings to use this feature.');  
     }  
   
     LocationPermission permission = await Geolocator.checkPermission();  
     if (permission == LocationPermission.denied) {  
       permission = await Geolocator.requestPermission();  
       if (permission == LocationPermission.denied) {  
-        throw Exception('Location permissions are denied.');  
+        throw LocationException('Location permission is required to use this feature. Please grant permission in your device settings.');  
       }  
     }  
   
     if (permission == LocationPermission.deniedForever) {  
-      throw Exception('Location permissions are permanently denied.');  
+      throw LocationException('Location permission is permanently denied. Please enable it in your device settings to use this feature.');  
     }  
   
     return await Geolocator.getCurrentPosition(  

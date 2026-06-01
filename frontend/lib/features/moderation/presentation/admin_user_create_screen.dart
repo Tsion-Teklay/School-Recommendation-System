@@ -20,12 +20,57 @@ class AdminUserCreateScreen extends ConsumerStatefulWidget {
       _AdminUserCreateScreenState();
 }
 
+// Simple password field with visibility toggle
+class _PasswordFieldWithToggle extends StatefulWidget {
+  final TextEditingController controller;
+  final String labelText;
+  final String? helperText;
+  final String? Function(String?)? validator;
+
+  const _PasswordFieldWithToggle({
+    super.key,
+    required this.controller,
+    required this.labelText,
+    this.helperText,
+    this.validator,
+  });
+
+  @override
+  State<_PasswordFieldWithToggle> createState() => _PasswordFieldWithToggleState();
+}
+
+class _PasswordFieldWithToggleState extends State<_PasswordFieldWithToggle> {
+  bool _obscureText = true;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: widget.controller,
+      obscureText: _obscureText,
+      decoration: InputDecoration(
+        labelText: widget.labelText,
+        helperText: widget.helperText,
+        suffixIcon: IconButton(
+          icon: Icon(_obscureText ? Icons.visibility_off : Icons.visibility),
+          onPressed: () {
+            setState(() {
+              _obscureText = !_obscureText;
+            });
+          },
+        ),
+      ),
+      validator: widget.validator,
+    );
+  }
+}
+
 class _AdminUserCreateScreenState extends ConsumerState<AdminUserCreateScreen> {
   final _form = GlobalKey<FormState>();
   final _name = TextEditingController();
   final _email = TextEditingController();
   final _phone = TextEditingController();
   final _password = TextEditingController();
+  final _confirmPassword = TextEditingController();
   final _officerRole = TextEditingController();
   UserRole _role = UserRole.moeOfficer;
   SubCity? _subCity;
@@ -40,12 +85,19 @@ class _AdminUserCreateScreenState extends ConsumerState<AdminUserCreateScreen> {
     _email.dispose();
     _phone.dispose();
     _password.dispose();
+    _confirmPassword.dispose();
     _officerRole.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
     if (!_form.currentState!.validate()) return;
+
+    // Validate passwords match
+    if (_password.text != _confirmPassword.text) {
+      setState(() => _error = 'Passwords do not match');
+      return;
+    }
 
     // Validate MOE officer specific fields
     if (_role == UserRole.moeOfficer && _subCity == null) {
@@ -64,10 +116,13 @@ class _AdminUserCreateScreenState extends ConsumerState<AdminUserCreateScreen> {
     try {
       // Only send the credential that matches the current toggle
       final isEmail = _identifierKind == _IdentifierKind.email;
+      final phoneValue = !isEmail && _phone.text.trim().isNotEmpty
+          ? '+251${_phone.text.trim()}'
+          : null;
       await ref.read(authControllerProvider).register(
             fullName: _name.text.trim(),
             email: isEmail ? _email.text.trim() : null,
-            phone: !isEmail ? _phone.text.trim() : null,
+            phone: phoneValue,
             password: _password.text,
             role: _role,
             subCity: _subCity?.toWire(),
@@ -111,7 +166,7 @@ class _AdminUserCreateScreenState extends ConsumerState<AdminUserCreateScreen> {
     }
 
     return ResponsiveShell(
-      title: 'Create admin user',
+      title: 'Create MoE officer/ moderator',
       leading: IconButton(
         icon: const Icon(Icons.arrow_back),
         onPressed: () => context.go('/moderation'),
@@ -174,27 +229,39 @@ class _AdminUserCreateScreenState extends ConsumerState<AdminUserCreateScreen> {
                 keyboardType: TextInputType.phone,
                 decoration: const InputDecoration(
                   labelText: 'Phone',
-                  helperText: '5–15 characters. No verification step — usable right away.',
+                  prefixText: '+251',
+                  helperText: 'Enter 9 or 7 followed by 8 digits',
                 ),
                 validator: (v) {
                   final t = (v ?? '').trim();
                   if (t.isEmpty) return 'Required';
-                  if (t.length < 5 || t.length > 15) {
-                    return '5–15 characters';
+                  if (t.length != 9) {
+                    return 'Enter 9 digits after +251';
+                  }
+                  if (!t.startsWith('9') && !t.startsWith('7')) {
+                    return 'Must start with 9 or 7';
                   }
                   return null;
                 },
               ),
             const SizedBox(height: 12),
-            TextFormField(
+            _PasswordFieldWithToggle(
               controller: _password,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Password',
-                helperText: 'Minimum 6 characters',
-              ),
+              labelText: 'Password',
+              helperText: 'Minimum 6 characters',
               validator: (v) =>
                   (v ?? '').length >= 6 ? null : 'At least 6 characters',
+            ),
+            const SizedBox(height: 12),
+            _PasswordFieldWithToggle(
+              controller: _confirmPassword,
+              labelText: 'Confirm Password',
+              helperText: 'Re-enter password to confirm',
+              validator: (v) {
+                if ((v ?? '').isEmpty) return 'Required';
+                if (v != _password.text) return 'Passwords do not match';
+                return null;
+              },
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<UserRole>(

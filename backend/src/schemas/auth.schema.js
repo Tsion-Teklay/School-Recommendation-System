@@ -13,10 +13,10 @@ export const registerBodySchema = z
   .object({
     fullName: z.string().trim().min(1).max(100),
     email: z.string().trim().toLowerCase().email().max(100).optional(),
-    phone: z.string().trim().min(5).max(15).optional(),
+    phone: z.string().trim().regex(/^\+251[79]\d{8}$/, "Phone must be in format +2519xxxxxxxx or +2517xxxxxxxx").optional(),
     password: z.string().min(6).max(255),
     role: roleEnum,
-    subCity: subCityEnum.optional(),  
+    subCity: subCityEnum.optional(),
     officerRole: z.string().trim().min(1).max(255).optional(),
   })
   .refine((v) => v.email || v.phone, {
@@ -61,7 +61,7 @@ export const resendVerificationBodySchema = z.object({
 });
 
 export const resendPhoneBodySchema = z.object({
-  phone: z.string().trim().min(5).max(15),
+  phone: z.string().trim().regex(/^\+251[79]\d{8}$/, "Phone must be in format +2519xxxxxxxx or +2517xxxxxxxx"),
 });
 
 export const forgotPasswordBodySchema = z.object({

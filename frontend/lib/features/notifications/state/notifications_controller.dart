@@ -108,6 +108,10 @@ class NotificationsController extends ChangeNotifier {
       final i = _items.indexWhere((n) => n.id == id);
       if (i >= 0) {
         _items[i] = _items[i].markedRead();
+        // If in unread-only mode, remove the item from the list since it's now read
+        if (_unreadOnly) {
+          _items.removeAt(i);
+        }
       }
       if (_unreadTotal > 0) _unreadTotal--;
       notifyListeners();
