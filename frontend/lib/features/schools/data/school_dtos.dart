@@ -17,16 +17,17 @@ extension CurriculumX on Curriculum {
   }
 }
 
-enum SubCity {  
-  addisKetema('Addis Ketema'),  
-  akaliKalti('Akali Kalti'),  
-  arada('Arada'),  
-  bole('Bole'),  
-  gulele('Gulele'),  
-  kolfeKeranio('Kolfe Keranio'),  
-  kirkos('Kirkos'),  
-  lideta('Lideta'),  
-  nifasSilkLafto('Nifas Silk Lafto'),  
+enum SubCity {
+  addisKetema('Addis Ketema'),
+  akaliKalti('Akali Kalti'),
+  arada('Arada'),
+  bole('Bole'),
+  gulele('Gulele'),
+  kolfeKeranio('Kolfe Keranio'),
+  kirkos('Kirkos'),
+  lideta('Lideta'),
+  lemiKura('Lemi Kura'),
+  nifasSilkLafto('Nifas Silk Lafto'),
   yekka('Yekka');  
   
   final String label;  
@@ -50,6 +51,8 @@ enum SubCity {
         return 'KIRKOS';
       case SubCity.lideta:
         return 'LIDETA';
+      case SubCity.lemiKura:
+        return 'LEMI_KURA';
       case SubCity.nifasSilkLafto:
         return 'NIFAS_SILK_LAFTO';
       case SubCity.yekka:
@@ -75,6 +78,8 @@ enum SubCity {
         return SubCity.kirkos;
       case 'LIDETA':
         return SubCity.lideta;
+      case 'LEMI_KURA':
+        return SubCity.lemiKura;
       case 'NIFAS_SILK_LAFTO':
         return SubCity.nifasSilkLafto;
       case 'YEKKA':

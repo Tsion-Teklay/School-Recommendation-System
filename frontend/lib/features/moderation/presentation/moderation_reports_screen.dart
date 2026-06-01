@@ -108,6 +108,17 @@ class _ModerationReportsScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: FilledButton.icon(
+                onPressed: () => context.go('/moderation/create-user'),
+                icon: const Icon(Icons.person_add),
+                label: const Text('Create MoE officer/ moderator'),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
           Row(
             children: [
               Expanded(

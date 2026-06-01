@@ -14,7 +14,7 @@ beforeAll(async () => {
   const admin = await registerVerifiedUser({
     fullName: "Admin",
     email: "admin@test.com",
-    phone: "0911223344",
+    phone: "+251911223344",
     role: "SCHOOL_ADMIN",
   });
 
@@ -26,7 +26,7 @@ beforeAll(async () => {
       schoolName: "Data School",
       address: "Addis",
       contactEmail: "data@school.com",
-      contactPhone: "0910000000",
+      contactPhone: "+251910000000",
       curriculum: "LOCAL",
       tuitionFee: 5000,
       latitude: 9.0,
@@ -39,7 +39,7 @@ beforeAll(async () => {
   ({ token } = await registerVerifiedUser({
     fullName: "MOE",
     email: "moe2@test.com",
-    phone: "0910000001",
+    phone: "+251910000001",
     role: "MOE_OFFICER",
   }));
 });

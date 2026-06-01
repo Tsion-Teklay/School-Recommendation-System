@@ -12,7 +12,7 @@ beforeAll(async () => {
   const result = await registerVerifiedUser({
     fullName: "Me Myself",
     email: "me@test.com",
-    phone: "0911000100",
+    phone: "+251911000100",
     role: "PARENT",
   });
   token = result.token;
@@ -54,10 +54,10 @@ describe("PUT /api/users/me", () => {
     const res = await request(app)
       .put("/api/users/me")
       .set("Authorization", `Bearer ${token}`)
-      .send({ fullName: "Me Renamed", phone: "0911000199" });
+      .send({ fullName: "Me Renamed", phone: "+251911000199" });
     expect(res.statusCode).toBe(200);
     expect(res.body.user.fullName).toBe("Me Renamed");
-    expect(res.body.user.phone).toBe("0911000199");
+    expect(res.body.user.phone).toBe("+251911000199");
   });
 
   it("ignores fields outside the whitelist", async () => {

@@ -29,7 +29,7 @@ beforeAll(async () => {
   const admin = await registerVerifiedUser({
     fullName: "Phase2 Admin",
     email: "phase2.admin@test.com",
-    phone: "0950000001",
+    phone: "+251950000001",
     role: "SCHOOL_ADMIN",
   });
   adminToken = admin.token;
@@ -38,25 +38,25 @@ beforeAll(async () => {
   const p1 = await registerVerifiedUser({
     fullName: "Phase2 P1",
     email: "phase2.p1@test.com",
-    phone: "0950000002",
+    phone: "+251950000002",
     role: "PARENT",
   });
   parent1Token = p1.token;
   parent1Id = p1.user.id;
   await db.parent.create({
-    data: { userId: p1.user.id, address: "Addis", latitude: 9.0, longitude: 38.0 },
+    data: { userId: p1.user.id, latitude: 9.0, longitude: 38.0 },
   });
 
   const p2 = await registerVerifiedUser({
     fullName: "Phase2 P2",
     email: "phase2.p2@test.com",
-    phone: "0950000003",
+    phone: "+251950000003",
     role: "PARENT",
   });
   parent2Token = p2.token;
   parent2Id = p2.user.id;
   await db.parent.create({
-    data: { userId: p2.user.id, address: "Addis", latitude: 9.0, longitude: 38.0 },
+    data: { userId: p2.user.id, latitude: 9.0, longitude: 38.0 },
   });
 
   const schoolRes = await request(app)
@@ -66,7 +66,7 @@ beforeAll(async () => {
       schoolName: "Phase2 School",
       address: "Addis",
       contactEmail: "phase2@school.com",
-      contactPhone: "0950000099",
+      contactPhone: "+251950000+25199",
       curriculum: "LOCAL",
       tuitionFee: 4000,
       latitude: 9.0,
@@ -225,7 +225,7 @@ describe("VerificationRequest model — schema only (endpoints are Phase 3)", ()
     const moe = await registerVerifiedUser({
       fullName: "MoE Officer",
       email: "phase2.moe@test.com",
-      phone: "0950000050",
+      phone: "+251950000050",
       role: "MOE_OFFICER",
     });
 

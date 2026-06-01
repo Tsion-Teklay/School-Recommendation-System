@@ -175,7 +175,7 @@ async function main() {
             adminId: admin.id,
             schoolName: schoolData.schoolName,
             contactEmail: faker.internet.email(),
-            contactPhone: "0911000000",
+            contactPhone: "+251911000000",
             curriculum: schoolData.curriculum,
             tuitionFee: schoolData.tuitionFee,
             facilities: "Library, Science Lab, Football Field, ICT Lab",

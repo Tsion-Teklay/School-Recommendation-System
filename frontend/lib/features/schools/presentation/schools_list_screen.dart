@@ -30,9 +30,9 @@ class _SchoolsListScreenState extends ConsumerState<SchoolsListScreen> {
   Curriculum? _curriculum;
   SchoolLevel? _schoolLevel;
   SchoolType? _schoolType;
-  SubCity? _subCity;
+  Set<SubCity> _selectedSubCities = {};
   // Min rating, 1-5 scale. 0 means "no minimum".
-  double _minRating = 0;
+  int _minRating = 0;
 
   @override
   void dispose() {
@@ -64,10 +64,10 @@ class _SchoolsListScreenState extends ConsumerState<SchoolsListScreen> {
       curriculum: _curriculum,
       minFee: num.tryParse(_minFeeCtl.text.trim()),
       maxFee: num.tryParse(_maxFeeCtl.text.trim()),
-      minRating: _minRating > 0 ? _minRating : null,
+      minRating: _minRating > 0 ? _minRating.toDouble() : null,
       schoolLevel: _schoolLevel,
       schoolType: _schoolType,
-      subCity: _subCity,
+      subCity: _selectedSubCities.isEmpty ? null : _selectedSubCities.first,
       // We deliberately don't carry `near` here — proximity search needs a
       // browser geolocation prompt which we'll wire as a separate IconButton
       // in a future iteration.
@@ -82,7 +82,7 @@ class _SchoolsListScreenState extends ConsumerState<SchoolsListScreen> {
       _curriculum = null;
       _schoolLevel = null;
       _schoolType = null;
-      _subCity = null;
+      _selectedSubCities.clear();
       _minRating = 0;
     });
     ref
@@ -93,69 +93,142 @@ class _SchoolsListScreenState extends ConsumerState<SchoolsListScreen> {
   void _showFilterDialog() {
     showDialog(
       context: context,
+      barrierDismissible: true,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Advanced Filters'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('School Level'),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  children: SchoolLevel.values.map((level) => 
-                    ChoiceChip(
-                      label: Text(level.label()),
-                      selected: _schoolLevel == level,
-                      onSelected: (selected) {
-                        setState(() {
-                          _schoolLevel = selected ? level : null;
-                        });
-                        setDialogState(() {});
-                      },
+          title: const Text('Filters'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Curriculum'),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    children: Curriculum.values.map((curriculum) => 
+                      ChoiceChip(
+                        label: Text(curriculum.label()),
+                        selected: _curriculum == curriculum,
+                        onSelected: (selected) {
+                          setState(() {
+                            _curriculum = selected ? curriculum : null;
+                          });
+                          setDialogState(() {});
+                        },
+                      ),
+                    ).toList(),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('Fee Range'),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _minFeeCtl,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Min',
+                            border: OutlineInputBorder(),
+                            isDense: true,
+                          ),
+                          onChanged: (_) => setDialogState(() {}),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: _maxFeeCtl,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Max',
+                            border: OutlineInputBorder(),
+                            isDense: true,
+                          ),
+                          onChanged: (_) => setDialogState(() {}),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('School Level'),
+                  const SizedBox(height: 8),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: SchoolLevel.values.map((level) => 
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: ChoiceChip(
+                            label: Text(level.label()),
+                            selected: _schoolLevel == level,
+                            onSelected: (selected) {
+                              setState(() {
+                                _schoolLevel = selected ? level : null;
+                              });
+                              setDialogState(() {});
+                            },
+                          ),
+                        ),
+                      ).toList(),
                     ),
-                  ).toList(),
-                ),
-                const SizedBox(height: 16),
-                const Text('School Type'),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  children: SchoolType.values.map((type) => 
-                    ChoiceChip(
-                      label: Text(type.label()),
-                      selected: _schoolType == type,
-                      onSelected: (selected) {
-                        setState(() {
-                          _schoolType = selected ? type : null;
-                        });
-                        setDialogState(() {});
-                      },
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('School Type'),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    children: SchoolType.values.map((type) => 
+                      ChoiceChip(
+                        label: Text(type.label()),
+                        selected: _schoolType == type,
+                        onSelected: (selected) {
+                          setState(() {
+                            _schoolType = selected ? type : null;
+                          });
+                          setDialogState(() {});
+                        },
+                      ),
+                    ).toList(),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text('Subcity'),
+                  const SizedBox(height: 8),
+                  Container(
+                    height: 200,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey),
+                      borderRadius: BorderRadius.circular(4),
                     ),
-                  ).toList(),
-                ),
-                const SizedBox(height: 16),
-                const Text('Subcity'),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: SubCity.values.map((subcity) => 
-                    ChoiceChip(
-                      label: Text(subcity.label),
-                      selected: _subCity == subcity,
-                      onSelected: (selected) {
-                        setState(() {
-                          _subCity = selected ? subcity : null;
-                        });
-                        setDialogState(() {});
-                      },
+                    child: Scrollbar(
+                      child: ListView(
+                        padding: EdgeInsets.zero,
+                        children: SubCity.values.map((subcity) => 
+                          CheckboxListTile(
+                            title: Text(subcity.label),
+                            value: _selectedSubCities.contains(subcity),
+                            onChanged: (checked) {
+                              setState(() {
+                                if (checked == true) {
+                                  _selectedSubCities.add(subcity);
+                                } else {
+                                  _selectedSubCities.remove(subcity);
+                                }
+                              });
+                              setDialogState(() {});
+                            },
+                            controlAffinity: ListTileControlAffinity.leading,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          ),
+                        ).toList(),
+                      ),
                     ),
-                  ).toList(),
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           ),
           actions: [
@@ -198,14 +271,11 @@ class _SchoolsListScreenState extends ConsumerState<SchoolsListScreen> {
         children: [
           _Filters(
             searchCtl: _searchCtl,
-            minFeeCtl: _minFeeCtl,
-            maxFeeCtl: _maxFeeCtl,
-            curriculum: _curriculum,
             minRating: _minRating,
-            onCurriculumChanged: (c) => setState(() => _curriculum = c),
             onMinRatingChanged: (r) => setState(() => _minRating = r),
             onApply: _applyFilters,
             onClear: _clearFilters,
+            onShowFilterDialog: _showFilterDialog,
           ),
           const SizedBox(height: 16),
           const AdBannerSection(
@@ -245,25 +315,19 @@ class _SchoolsListScreenState extends ConsumerState<SchoolsListScreen> {
 
 class _Filters extends StatelessWidget {
   final TextEditingController searchCtl;
-  final TextEditingController minFeeCtl;
-  final TextEditingController maxFeeCtl;
-  final Curriculum? curriculum;
-  final double minRating;
-  final ValueChanged<Curriculum?> onCurriculumChanged;
-  final ValueChanged<double> onMinRatingChanged;
+  final int minRating;
+  final ValueChanged<int> onMinRatingChanged;
   final VoidCallback onApply;
   final VoidCallback onClear;
+  final VoidCallback onShowFilterDialog;
 
   const _Filters({
     required this.searchCtl,
-    required this.minFeeCtl,
-    required this.maxFeeCtl,
-    required this.curriculum,
     required this.minRating,
-    required this.onCurriculumChanged,
     required this.onMinRatingChanged,
     required this.onApply,
     required this.onClear,
+    required this.onShowFilterDialog,
   });
 
   @override
@@ -274,73 +338,27 @@ class _Filters extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextField(
-              controller: searchCtl,
-              decoration: const InputDecoration(
-                labelText: 'Search by name',
-                prefixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(),
-                isDense: true,
-              ),
-              textInputAction: TextInputAction.search,
-              onSubmitted: (_) => onApply(),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center,
+            Row(
               children: [
-                ChoiceChip(
-                  label: const Text('Local'),
-                  selected: curriculum == Curriculum.local,
-                  onSelected: (_) => onCurriculumChanged(
-                      curriculum == Curriculum.local
-                          ? null
-                          : Curriculum.local),
-                ),
-                ChoiceChip(
-                  label: const Text('International'),
-                  selected: curriculum == Curriculum.international,
-                  onSelected: (_) => onCurriculumChanged(
-                      curriculum == Curriculum.international
-                          ? null
-                          : Curriculum.international),
-                ),
-                SizedBox(
-                  width: 80,
+                Expanded(
                   child: TextField(
-                    controller: minFeeCtl,
-                    keyboardType: TextInputType.number,
+                    controller: searchCtl,
                     decoration: const InputDecoration(
-                      labelText: 'Min',
+                      labelText: 'Search by name',
+                      prefixIcon: Icon(Icons.search),
                       border: OutlineInputBorder(),
                       isDense: true,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     ),
+                    textInputAction: TextInputAction.search,
+                    onSubmitted: (_) => onApply(),
                   ),
                 ),
-                SizedBox(
-                  width: 80,
-                  child: TextField(
-                    controller: maxFeeCtl,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Max',
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                      contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                    ),
-                  ),
-                ),
+                const SizedBox(width: 8),
                 IconButton(
-                  onPressed: () {
-                    // Find the parent widget to call _showFilterDialog
-                    final parentState = context.findAncestorStateOfType<_SchoolsListScreenState>();
-                    parentState?._showFilterDialog();
-                  },
+                  onPressed: onShowFilterDialog,
                   icon: const Icon(Icons.tune),
-                  tooltip: 'More filters',
+                  tooltip: 'Filters',
                 ),
               ],
             ),
@@ -348,26 +366,23 @@ class _Filters extends StatelessWidget {
             Row(
               children: [
                 const Text('Min rating'),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Slider(
-                    value: minRating,
-                    min: 0,
-                    max: 5,
-                    divisions: 10,
-                    label: minRating == 0
-                        ? 'Any'
-                        : minRating.toStringAsFixed(1),
-                    onChanged: onMinRatingChanged,
-                  ),
+                const SizedBox(width: 16),
+                Row(
+                  children: List.generate(5, (index) {
+                    final starValue = index + 1;
+                    return IconButton(
+                      icon: Icon(
+                        minRating >= starValue ? Icons.star : Icons.star_border,
+                        color: minRating >= starValue ? Colors.amber : Colors.grey,
+                      ),
+                      onPressed: () => onMinRatingChanged(minRating == starValue ? 0 : starValue),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    );
+                  }),
                 ),
-                SizedBox(
-                  width: 56,
-                  child: Text(
-                    minRating == 0 ? 'Any' : minRating.toStringAsFixed(1),
-                    textAlign: TextAlign.end,
-                  ),
-                ),
+                if (minRating == 0)
+                  const Text('Any', style: TextStyle(color: Colors.grey)),
               ],
             ),
             const SizedBox(height: 4),

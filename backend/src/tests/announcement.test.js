@@ -15,14 +15,14 @@ beforeAll(async () => {
   ({ token: moeToken } = await registerVerifiedUser({
     fullName: "MOE User",
     email: "moe@test.com",
-    phone: "0910000000",
+    phone: "+251910000000",
     role: "MOE_OFFICER",
   }));
 
   ({ token: adminToken } = await registerVerifiedUser({
     fullName: "Admin User",
     email: "admin@test.com",
-    phone: "0920000000",
+    phone: "+251920000000",
     role: "SCHOOL_ADMIN",
   }));
 });

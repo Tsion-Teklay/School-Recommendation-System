@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../shared/utils/error_handler.dart';
 import '../../../shared/utils/message_helper.dart';
 import '../../../shared/widgets/loading_button.dart';
+import '../../../shared/widgets/password_field.dart';
 import '../../../shared/widgets/responsive_shell.dart';
 import '../../schools/data/school_dtos.dart';
 import '../../schools/data/school_repository.dart';
@@ -30,7 +31,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   void _seedFromUser(AppUser user) {
     if (_initialized) return;
     _name.text = user.fullName;
-    _phone.text = user.phone ?? '';
+    // Remove +251 prefix if present for display
+    final phone = user.phone;
+    if (phone != null && phone.startsWith('+251')) {
+      _phone.text = phone.substring(4);
+    } else {
+      _phone.text = phone ?? '';
+    }
     _initialized = true;
     
     // Load school count if user is a school admin
@@ -80,13 +87,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       _saveMessage = null;
     });
     try {
-      // Backend Zod treats phone as optional `min(5).max(15)` — an empty
-      // string fails validation. Convert empty to null so the field is dropped
-      // from the request body, matching the register-screen behavior.
+      // Backend Zod validates phone as Ethiopian format: +251[79] followed by 8 digits
+      // Add +251 prefix if user provided digits
       final trimmedPhone = _phone.text.trim();
+      final phoneValue = trimmedPhone.isEmpty ? null : '+251$trimmedPhone';
       await ref.read(authControllerProvider).updateProfile(
             fullName: _name.text.trim(),
-            phone: trimmedPhone.isEmpty ? null : trimmedPhone,
+            phone: phoneValue,
           );
       if (mounted) {
         setState(() => _saveMessage = 'Profile updated.');
@@ -103,7 +110,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _changePassword() async {
-    final result = await showDialog<({String current, String next})>(
+    final result = await showDialog<({String current, String next, String confirm})>(
       context: context,
       builder: (_) => const _ChangePasswordDialog(),
     );
@@ -142,6 +149,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Future<void> _logout() async {
     await ref.read(authControllerProvider).logout();
+  }
+
+  String _getDisplayText(AppUser user) {
+    // Check if user signed up with phone number
+    if (user.email.startsWith('phone-')) {
+      // Extract phone number from "phone-number@placeholder.invalid"
+      final phoneNumber = user.email.split('-')[1].split('@')[0];
+      return '+251$phoneNumber · ${user.role.label()}';
+    }
+    // Normal email display
+    return '${user.email} · ${user.role.label()}${user.emailVerified ? '' : ' · Email NOT verified'}';
   }
 
   Future<void> _deleteAllSchools() async {
@@ -234,12 +252,9 @@ Future<void> _handleRegularAccountDeletion() async {
     context: context,
     builder: (context) => AlertDialog(
       title: const Text('Confirm Password'),
-      content: TextField(
+      content: PasswordField(
         controller: passwordController,
-        obscureText: true,
-        decoration: const InputDecoration(
-          hintText: 'Enter your password',
-        ),
+        hintText: 'Enter your password',
       ),
       actions: [
         TextButton(
@@ -285,13 +300,6 @@ Future<void> _handleRegularAccountDeletion() async {
 
     return ResponsiveShell(
       title: 'Profile',
-      actions: [
-        IconButton(
-          tooltip: 'Sign out',
-          onPressed: _logout,
-          icon: const Icon(Icons.logout),
-        ),
-      ],
       leading: IconButton(
         icon: const Icon(Icons.arrow_back),
         onPressed: () => context.go('/'),
@@ -302,14 +310,30 @@ Future<void> _handleRegularAccountDeletion() async {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const CircleAvatar(child: Icon(Icons.person)),
-              title: Text(user.fullName,
-                  style: Theme.of(context).textTheme.titleLarge),
-              subtitle: Text(
-                  '${user.email} · ${user.role.label()}'
-                  '${user.emailVerified ? '' : ' · Email NOT verified'}'),
+            // User info with signout button
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const CircleAvatar(child: Icon(Icons.person)),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user.fullName,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      Text(_getDisplayText(user)),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Sign out',
+                  onPressed: _logout,
+                  icon: const Icon(Icons.logout),
+                ),
+              ],
             ),
             const Divider(height: 32),
             TextFormField(
@@ -324,12 +348,14 @@ Future<void> _handleRegularAccountDeletion() async {
               keyboardType: TextInputType.phone,
               decoration: const InputDecoration(
                 labelText: 'Phone',
-                helperText: '5–15 characters, or empty',
+                prefixText: '+251',
+                helperText: 'Enter 9 or 7 followed by 8 digits, or leave empty',
               ),
               validator: (v) {
                 final t = (v ?? '').trim();
                 if (t.isEmpty) return null;
-                if (t.length < 5 || t.length > 15) return '5–15 characters';
+                if (t.length != 9) return 'Enter 9 digits after +251';
+                if (!t.startsWith('9') && !t.startsWith('7')) return 'Must start with 9 or 7';
                 return null;
               },
             ),
@@ -344,48 +370,38 @@ Future<void> _handleRegularAccountDeletion() async {
               child: const Text('Save changes'),
             ),
             const SizedBox(height: 32),
-            if (user.role == UserRole.parent)
-              OutlinedButton.icon(
-                onPressed: () => context.go('/preferences'),
-                icon: const Icon(Icons.tune),
-                label: const Text('Recommendation preferences'),
-              ),
             if (user.role == UserRole.parent)  
-              OutlinedButton.icon(  
+              OutlinedButton(  
                 onPressed: () => context.go('/followed-schools'),  
-                icon: const Icon(Icons.school),  
-                label: const Text('Manage followed schools'),  
+                child: const Text('Followed schools'),  
               ),  
             if (user.role == UserRole.parent) const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: _changePassword,
-              icon: const Icon(Icons.lock_reset),
-              label: const Text('Change password'),
-            ),
-            const SizedBox(height: 12),
-            TextButton.icon(
-              style: TextButton.styleFrom(
-                foregroundColor: Theme.of(context).colorScheme.error,
-              ),
-              onPressed: _confirmDeactivate,
-              icon: const Icon(Icons.delete_outline),
-              label: const Text('Deactivate account'),
-            ),
-            const SizedBox(height: 12),
-            TextButton.icon(
-              style: TextButton.styleFrom(
-                foregroundColor: Theme.of(context).colorScheme.error,
-              ),
-              onPressed: () async {
-                // For school admins, check if they have schools first
-                if (user.role == UserRole.schoolAdmin) {
-                  await _handleSchoolAdminAccountDeletion();
-                } else {
-                  await _handleRegularAccountDeletion();
-                }
-              },
-              icon: const Icon(Icons.warning),
-              label: const Text('Delete Account Permanently'),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                IconButton(
+                  tooltip: 'Change password',
+                  onPressed: _changePassword,
+                  icon: const Icon(Icons.lock_reset),
+                ),
+                IconButton(
+                  tooltip: 'Deactivate account',
+                  onPressed: _confirmDeactivate,
+                  icon: const Icon(Icons.warning),
+                ),
+                IconButton(
+                  tooltip: 'Delete account permanently',
+                  onPressed: () async {
+                    // For school admins, check if they have schools first
+                    if (user.role == UserRole.schoolAdmin) {
+                      await _handleSchoolAdminAccountDeletion();
+                    } else {
+                      await _handleRegularAccountDeletion();
+                    }
+                  },
+                  icon: const Icon(Icons.delete_outline),
+                ),
+              ],
             ),
           ],
         ),
@@ -404,11 +420,13 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
   final _form = GlobalKey<FormState>();
   final _current = TextEditingController();
   final _next = TextEditingController();
+  final _confirm = TextEditingController();
 
   @override
   void dispose() {
     _current.dispose();
     _next.dispose();
+    _confirm.dispose();
     super.dispose();
   }
 
@@ -421,24 +439,29 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextFormField(
+            PasswordField(
               controller: _current,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: 'Current password'),
+              labelText: 'Current password',
               validator: (v) =>
                   (v ?? '').isNotEmpty ? null : 'Required',
             ),
             const SizedBox(height: 12),
-            TextFormField(
+            PasswordField(
               controller: _next,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'New password',
-                helperText: 'Min 6 chars, must differ',
-              ),
+              labelText: 'New password',
+              helperText: 'Min 6 chars, must differ',
               validator: (v) {
                 if ((v ?? '').length < 6) return 'At least 6 characters';
                 if (v == _current.text) return 'Must differ';
+                return null;
+              },
+            ),
+            const SizedBox(height: 12),
+            PasswordField(
+              controller: _confirm,
+              labelText: 'Confirm new password',
+              validator: (v) {
+                if (v != _next.text) return 'Passwords do not match';
                 return null;
               },
             ),
@@ -455,7 +478,7 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
             if (!_form.currentState!.validate()) return;
             Navigator.pop(
               context,
-              (current: _current.text, next: _next.text),
+              (current: _current.text, next: _next.text, confirm: _confirm.text),
             );
           },
           child: const Text('Save'),

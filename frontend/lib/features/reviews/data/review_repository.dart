@@ -9,8 +9,15 @@ class ReviewRepository {
   final Dio _dio;
   ReviewRepository(this._dio);
 
-  Future<List<Review>> listForSchool(int schoolId) async {
-    final res = await _dio.get('/api/reviews/school/$schoolId');
+  Future<List<Review>> listForSchool(int schoolId, {int? offset, int? limit}) async {
+    final queryParams = <String, dynamic>{};
+    if (offset != null) queryParams['offset'] = offset;
+    if (limit != null) queryParams['limit'] = limit;
+    
+    final res = await _dio.get(
+      '/api/reviews/school/$schoolId',
+      queryParameters: queryParams.isNotEmpty ? queryParams : null,
+    );
     if (res.statusCode != 200) throw _toApiException(res);
     final body = res.data as Map<String, dynamic>;
     return (body['data'] as List)

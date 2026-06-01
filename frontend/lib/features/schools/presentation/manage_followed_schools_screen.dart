@@ -123,15 +123,19 @@ class _ManageFollowedSchoolsScreenState
               children: [  
                 for (final school in _schools)  
                   Card(  
-                    child: ListTile(  
-                      title: Text(school.schoolName),  
-                      subtitle: Text(school.subCity != null ? '${school.subCity} - ${school.woreda ?? 'N/A'}' : 'No location info'),  
-                      trailing: IconButton(  
-                        tooltip: 'Unfollow',  
-                        onPressed: () => _unfollow(school),  
-                        icon: const Icon(Icons.person_remove),  
-                      ),  
-                    ),  
+                    child: InkWell(
+                      onTap: () => context.go('/schools/${school.id}'),
+                      borderRadius: BorderRadius.circular(12),
+                      child: ListTile(
+                        title: Text(school.schoolName),
+                        subtitle: Text(school.subCity?.label ?? 'No location info'),
+                        trailing: IconButton(  
+                          tooltip: 'Unfollow',  
+                          onPressed: () => _unfollow(school),  
+                          icon: const Icon(Icons.person_remove),  
+                        ),  
+                      ),
+                    ),
                   ),  
               ],  
             ),  

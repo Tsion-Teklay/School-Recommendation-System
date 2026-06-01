@@ -13,7 +13,7 @@ beforeAll(async () => {
   ({ token } = await registerVerifiedUser({
     fullName: "User",
     email: "notif@test.com",
-    phone: "0910000000",
+    phone: "+251910000000",
     role: "PARENT",
   }));
 });

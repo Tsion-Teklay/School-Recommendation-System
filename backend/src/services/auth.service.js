@@ -60,15 +60,6 @@ function appBaseUrl() {
 
 export function normalizePhone(phone) {
   const cleaned = phone.replace(/\s+/g, "");
-
-  if (cleaned.startsWith("+251")) {
-    return "0" + cleaned.substring(4);
-  }
-
-  if (cleaned.startsWith("251")) {
-    return "0" + cleaned.substring(3);
-  }
-
   return cleaned;
 }
 

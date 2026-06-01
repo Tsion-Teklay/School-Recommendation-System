@@ -30,14 +30,12 @@ class _PreferencesScreenState extends ConsumerState<PreferencesScreen> {
   final _minBudget = TextEditingController();
   final _maxBudget = TextEditingController();
   final _distance = TextEditingController();
-  final _address = TextEditingController();
 
   PreferredCurriculum? _curriculum;
   SchoolLevel? _schoolLevel;
   SchoolType? _schoolType;
-  // The recommender treats home pin as a triple (address + lat + lng). The
-  // map below lets the user drop a pin; we keep the lat/lng here. Address is
-  // a free-text field (the parent types a label like "Bole, Addis Ababa").
+  // The recommender treats home pin as lat + lng coordinates.
+  // The map below lets the user drop a pin; we keep the lat/lng here.
   LatLng? _pin;
 
   // Default initial map centre: Addis Ababa city centre. We only use this
@@ -48,10 +46,6 @@ class _PreferencesScreenState extends ConsumerState<PreferencesScreen> {
   bool _saving = false;
   String? _message;
   String? _error;
-  // True only on first ever save (no Parent row yet) — used to force the
-  // home pin to be filled in before submit, since the backend rejects
-  // first-time POSTs without it.
-  bool _firstTimeSetup = true;
 
   @override
   void initState() {
@@ -64,7 +58,6 @@ class _PreferencesScreenState extends ConsumerState<PreferencesScreen> {
     _minBudget.dispose();
     _maxBudget.dispose();
     _distance.dispose();
-    _address.dispose();
     super.dispose();
   }
 
@@ -76,7 +69,6 @@ class _PreferencesScreenState extends ConsumerState<PreferencesScreen> {
       _hydrate(prefs);
       setState(() {
         _loading = false;
-        _firstTimeSetup = !prefs.hasHomePin;
       });
     } catch (e) {
       if (!mounted) return;
@@ -91,7 +83,6 @@ class _PreferencesScreenState extends ConsumerState<PreferencesScreen> {
     if (p.minBudget != null) _minBudget.text = _money(p.minBudget!);
     if (p.maxBudget != null) _maxBudget.text = _money(p.maxBudget!);
     if (p.distanceKm != null) _distance.text = p.distanceKm.toString();
-    if (p.address != null) _address.text = p.address!;
     if (p.latitude != null && p.longitude != null) {
       _pin = LatLng(p.latitude!, p.longitude!);
     }
@@ -133,28 +124,20 @@ class _PreferencesScreenState extends ConsumerState<PreferencesScreen> {
     return null;
   }
 
-Future<void> _useCurrentLocation() async {  
-  try {  
-    setState(() => _loading = true);  
-    final position = await LocationHelper.getCurrentPosition();  
-    final address = await LocationHelper.getAddressFromCoordinates(  
-      position.latitude,  
-      position.longitude,  
-    );  
+Future<void> _useCurrentLocation() async {
+  try {
+    final position = await LocationHelper.getCurrentPosition();
       
-    if (!mounted) return;  
-    setState(() {  
-      _pin = LatLng(position.latitude, position.longitude);  
-      _address.text = address;  
-      _loading = false;  
-    });  
-  } catch (e) {  
-    if (!mounted) return;  
-    setState(() {  
-      _loading = false;  
-      _error = e.toString();  
-    });  
-  }  
+    if (!mounted) return;
+    setState(() {
+      _pin = LatLng(position.latitude, position.longitude);
+    });
+  } catch (e) {
+    if (!mounted) return;
+    setState(() {
+      _error = e.toString();
+    });
+  }
 }  
 
   Future<void> _save() async {
@@ -163,15 +146,6 @@ Future<void> _useCurrentLocation() async {
     if (rangeError != null) {
       setState(() => _error = rangeError);
       return;
-    }
-    if (_firstTimeSetup) {
-      // First-time save: the backend will 400 without a home pin, so we
-      // surface it up-front rather than letting the server reject the call.
-      if (_address.text.trim().isEmpty || _pin == null) {
-        setState(() => _error =
-            'First-time setup: please enter your home address and drop a pin on the map.');
-        return;
-      }
     }
     setState(() {
       _saving = true;
@@ -185,10 +159,9 @@ Future<void> _useCurrentLocation() async {
         maxBudget: _parseDouble(_maxBudget.text),
         curriculum: _curriculum,
         distanceKm: _parseInt(_distance.text),
-        schoolLevel: _schoolLevel,    
-        schoolType: _schoolType,       
-        
-        address: _address.text.trim().isEmpty ? null : _address.text.trim(),
+        schoolLevel: _schoolLevel,
+        schoolType: _schoolType,
+
         latitude: _pin?.latitude,
         longitude: _pin?.longitude,
       );
@@ -196,9 +169,10 @@ Future<void> _useCurrentLocation() async {
       _hydrate(updated);
       setState(() {
         _saving = false;
-        _firstTimeSetup = !updated.hasHomePin;
         _message = 'Preferences saved.';
       });
+      // Navigate back to home after saving
+      if (mounted) context.go('/');
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -235,26 +209,31 @@ Future<void> _useCurrentLocation() async {
         icon: const Icon(Icons.arrow_back),
         onPressed: () => context.go('/'),
       ),
-      child: Form(
-        key: _form,
-         autovalidateMode: AutovalidateMode.onUserInteraction,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Tell us what matters to you',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'These settings are used by the recommender to rank schools. '
-              'All fields are optional — but the more you tell us, the better '
-              'the ranking.',
-            ),
-            const SizedBox(height: 24),
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: Form(
+            key: _form,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Your preferences',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Used to rank schools. All fields are optional.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 20),
 
             Text('Budget (per year, ETB)',
-                style: Theme.of(context).textTheme.titleMedium),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 16)),
             const SizedBox(height: 8),
             // Two short numeric inputs side-by-side on roomy screens; the
             // outer ResponsiveShell handles narrow widths so we don't need a
@@ -273,6 +252,7 @@ Future<void> _useCurrentLocation() async {
                     decoration: const InputDecoration(
                       labelText: 'Min',
                       prefixText: 'ETB ',
+                      isDense: true,
                     ),
                     validator: _validateMoney,
                   ),
@@ -290,6 +270,7 @@ Future<void> _useCurrentLocation() async {
                     decoration: const InputDecoration(
                       labelText: 'Max',
                       prefixText: 'ETB ',
+                      isDense: true,
                     ),
                     validator: _validateMoney,
                   ),
@@ -297,15 +278,16 @@ Future<void> _useCurrentLocation() async {
               ],
             ),
 
-            const SizedBox(height: 24),
-            Text('Preferred curriculum',
-                style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 16),
+            Text('Curriculum',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 16)),
             const SizedBox(height: 8),
             DropdownButtonFormField<PreferredCurriculum?>(
               value: _curriculum,
               decoration: const InputDecoration(
                 labelText: 'Curriculum',
                 helperText: 'Leave blank for no preference',
+                isDense: true,
               ),
               items: const [
                 DropdownMenuItem(value: null, child: Text('No preference')),
@@ -321,14 +303,15 @@ Future<void> _useCurrentLocation() async {
               onChanged: (v) => setState(() => _curriculum = v),
             ),
 
-            const SizedBox(height: 24),  
-Text('Preferred school level',  
-    style: Theme.of(context).textTheme.titleMedium),  
-const SizedBox(height: 8),  
+            const SizedBox(height: 16),
+Text('School level',
+    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 16)),
+const SizedBox(height: 8),
 DropdownButtonFormField<SchoolLevel?>(  
   value: _schoolLevel,  
   decoration: const InputDecoration(  
-    hintText: 'Any level',  
+    hintText: 'Any level',
+    isDense: true,
   ),  
   items: SchoolLevel.values.map((level) {  
     return DropdownMenuItem(  
@@ -337,16 +320,17 @@ DropdownButtonFormField<SchoolLevel?>(
     );  
   }).toList(),  
   onChanged: (value) => setState(() => _schoolLevel = value),  
-),  
-  
-const SizedBox(height: 24),  
-Text('Preferred school type',  
-    style: Theme.of(context).textTheme.titleMedium),  
+),
+
+const SizedBox(height: 16),
+Text('School type',
+    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 16)),  
 const SizedBox(height: 8),  
 DropdownButtonFormField<SchoolType?>(  
   value: _schoolType,  
   decoration: const InputDecoration(  
-    hintText: 'Any type',  
+    hintText: 'Any type',
+    isDense: true,
   ),  
   items: SchoolType.values.map((type) {  
     return DropdownMenuItem(  
@@ -357,9 +341,9 @@ DropdownButtonFormField<SchoolType?>(
   onChanged: (value) => setState(() => _schoolType = value),  
 ),
 
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             Text('Distance radius',
-                style: Theme.of(context).textTheme.titleMedium),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 16)),
             const SizedBox(height: 8),
             TextFormField(
               controller: _distance,
@@ -369,94 +353,72 @@ DropdownButtonFormField<SchoolType?>(
               ],
               decoration: const InputDecoration(
                 labelText: 'Max distance (km)',
-                helperText:
-                    'Schools beyond this distance from your home are penalised.',
+                helperText: 'Schools beyond this distance are penalised.',
                 suffixText: 'km',
+                isDense: true,
               ),
               validator: _validateDistance,
             ),
 
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: Text('Home location',
-                      style: Theme.of(context).textTheme.titleMedium),
-                ),
-                if (_firstTimeSetup)
-                  const Chip(
-                    label: Text('Required'),
-                    visualDensity: VisualDensity.compact,
-                  ),
-              ],
-            ),
+            const SizedBox(height: 16),
+            Text('Home location',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 16)),
             const SizedBox(height: 4),
-            const Text(
-              "Drop a pin where you live. We'll use it to score schools by "
-              'how close they are to home.',
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _address,
-              decoration: const InputDecoration(
-                labelText: 'Home address (label)',
-                helperText: 'e.g. "Bole, Addis Ababa"',
+            Text(
+              "Drop a pin where you live. We'll use it to score schools by proximity. (Optional)",
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
-              validator: (v) {
-                if (!_firstTimeSetup) return null;
-                return (v ?? '').trim().isNotEmpty
-                    ? null
-                    : 'Required on first save';
-              },
             ),
-            Row(  
-  children: [  
-    Expanded(  
-      child: OutlinedButton.icon(  
-        onPressed: _useCurrentLocation,  
-        icon: const Icon(Icons.my_location),  
-        label: const Text('Use my current location'),  
-      ),  
-    ),  
-  ],  
-),  
-const SizedBox(height: 12),  
-_MapPicker(  
-  pin: _pin ?? _defaultCentre,  
-  hasPin: _pin != null,  
-  onTap: (latLng) => setState(() => _pin = latLng),  
-),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: _useCurrentLocation,
+              icon: const Icon(Icons.my_location, size: 18),
+              label: const Text('Use my current location'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              ),
+            ),
+            const SizedBox(height: 8),
+            _MapPicker(
+              pin: _pin ?? _defaultCentre,
+              hasPin: _pin != null,
+              onTap: (latLng) => setState(() => _pin = latLng),
+            ),
             if (_pin != null) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
               Text(
                 'Pin: ${_pin!.latitude.toStringAsFixed(5)}, '
                 '${_pin!.longitude.toStringAsFixed(5)}',
-                style: Theme.of(context).textTheme.bodySmall,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
 
             if (_error != null) ...[
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               Text(_error!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                  style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 13)),
             ],
             if (_message != null) ...[
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               Text(_message!,
                   style: TextStyle(
-                      color: Theme.of(context).colorScheme.primary)),
+                      color: Theme.of(context).colorScheme.primary, fontSize: 13)),
             ],
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             LoadingButton(
               loading: _saving,
               onPressed: _save,
               child: const Text('Save preferences'),
             ),
-            const SizedBox(height: 32),
           ],
         ),
       ),
-    );
+    ),
+    ),
+  );
   }
 }
 
@@ -479,7 +441,7 @@ class _MapPicker extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
       child: SizedBox(
-        height: 280,
+        height: 200,
         child: FlutterMap(
           options: MapOptions(
             initialCenter: pin,

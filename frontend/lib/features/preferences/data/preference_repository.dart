@@ -35,7 +35,6 @@ class PreferenceRepository {
     int? distanceKm,
     SchoolLevel? schoolLevel,
     SchoolType? schoolType,
-    String? address,
     double? latitude,
     double? longitude,
   }) async {
@@ -46,7 +45,6 @@ class PreferenceRepository {
       if (distanceKm != null) 'distance': distanceKm,
       if (schoolLevel != null) 'schoolLevel': schoolLevel.toWire(),
       if (schoolType != null) 'schoolType': schoolType.toWire(),
-      if (address != null && address.isNotEmpty) 'address': address,
       if (latitude != null) 'latitude': latitude,
       if (longitude != null) 'longitude': longitude,
     };

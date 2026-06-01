@@ -105,7 +105,7 @@ class AuthRepository {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('Verification failed');
+      throw _toApiException(response);
     }
   }
 

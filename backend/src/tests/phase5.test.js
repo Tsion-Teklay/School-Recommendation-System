@@ -28,35 +28,35 @@ beforeAll(async () => {
   ({ token: parentAToken, user: { id: parentAId } } = await registerVerifiedUser({
     fullName: "Parent A",
     email: "p5-parentA@test.com",
-    phone: "0911222001",
+    phone: "+251911222001",
     role: "PARENT",
   }));
   // Parents need a Parent profile to write reviews (see review.service).
   await db.parent.create({
-    data: { userId: parentAId, address: "AA", latitude: 9, longitude: 38 },
+    data: { userId: parentAId, latitude: 9, longitude: 38 },
   });
 
   ({ token: parentBToken, user: { id: parentBId } } = await registerVerifiedUser({
     fullName: "Parent B",
     email: "p5-parentB@test.com",
-    phone: "0911222002",
+    phone: "+251911222002",
     role: "PARENT",
   }));
   await db.parent.create({
-    data: { userId: parentBId, address: "BB", latitude: 9, longitude: 38 },
+    data: { userId: parentBId, latitude: 9, longitude: 38 },
   });
 
   ({ token: modToken } = await registerVerifiedUser({
     fullName: "Mod",
     email: "p5-mod@test.com",
-    phone: "0911222003",
+    phone: "+251911222003",
     role: "MODERATOR",
   }));
 
   ({ token: adminToken, user: { id: adminId } } = await registerVerifiedUser({
     fullName: "Admin",
     email: "p5-admin@test.com",
-    phone: "0911222004",
+    phone: "+251911222004",
     role: "SCHOOL_ADMIN",
   }));
 
@@ -67,7 +67,7 @@ beforeAll(async () => {
       schoolName: "P5 School",
       address: "addr",
       contactEmail: "s@p5.test",
-      contactPhone: "0911000000",
+      contactPhone: "+251911000000",
       curriculum: "LOCAL",
       tuitionFee: "1000.00",
       latitude: 9,
@@ -391,11 +391,11 @@ describe("Phase 5 — Moderator actions with side effects", () => {
     const banned = await registerVerifiedUser({
       fullName: "Banee",
       email: "p5-banee@test.com",
-      phone: "0911222099",
+      phone: "+251911222+25199",
       role: "PARENT",
     });
     await db.parent.create({
-      data: { userId: banned.user.id, address: "B", latitude: 9, longitude: 38 },
+      data: { userId: banned.user.id, latitude: 9, longitude: 38 },
     });
     const review = await db.review.create({
       data: {

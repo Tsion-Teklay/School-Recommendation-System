@@ -29,7 +29,7 @@ describe("Auth: register + email verification", () => {
     const res = await request(app).post("/api/auth/register").send({
       fullName: "Verify Me",
       email,
-      phone: "0911000001",
+      phone: "+251911000001",
       password: "hunter22",
       role: "PARENT",
     });
@@ -49,7 +49,7 @@ describe("Auth: register + email verification", () => {
     const res = await request(app).post("/api/auth/register").send({
       fullName: "Dup",
       email,
-      phone: "0911000099",
+      phone: "+251911000+25199",
       password: "hunter22",
       role: "PARENT",
     });
@@ -109,7 +109,7 @@ describe("Auth: forgot + reset password", () => {
     await request(app).post("/api/auth/register").send({
       fullName: "Reset User",
       email,
-      phone: "0911000002",
+      phone: "+251911000002",
       password: "oldpass1",
       role: "PARENT",
     });
@@ -175,7 +175,7 @@ describe("Auth: change password (authenticated)", () => {
     await request(app).post("/api/auth/register").send({
       fullName: "Change PW",
       email,
-      phone: "0911000003",
+      phone: "+251911000003",
       password: "origpass1",
       role: "PARENT",
     });

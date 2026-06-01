@@ -1,30 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
+import '../../../shared/widgets/responsive_shell.dart';
 import '../../auth/data/auth_dtos.dart';
 import '../../auth/state/auth_controller.dart';
 import '../data/review_dtos.dart';
 import '../state/reviews_controller.dart';
 
-/// Read-by-everyone, write-by-PARENT reviews block. Embedded under the
-/// school detail body so it inherits the outer ResponsiveShell scroll.
-class ReviewsSection extends ConsumerStatefulWidget {
+/// `/schools/:schoolId/reviews` — dedicated page showing all reviews for a specific school
+/// with pagination support.
+class SchoolReviewsScreen extends ConsumerStatefulWidget {
   final int schoolId;
-  final VoidCallback? onReviewSubmitted;
-  final int totalReviewCount;
-  const ReviewsSection({
-    super.key,
-    required this.schoolId,
-    this.onReviewSubmitted,
-    required this.totalReviewCount,
-  });
+  const SchoolReviewsScreen({super.key, required this.schoolId});
 
   @override
-  ConsumerState<ReviewsSection> createState() => _ReviewsSectionState();
+  ConsumerState<SchoolReviewsScreen> createState() =>
+      _SchoolReviewsScreenState();
 }
 
-class _ReviewsSectionState extends ConsumerState<ReviewsSection> {
+class _SchoolReviewsScreenState extends ConsumerState<SchoolReviewsScreen> {
   bool _showForm = false;
   int _rating = 5;
   ReviewCategoryTag _tag = ReviewCategoryTag.teachingQuality;
@@ -47,96 +41,106 @@ class _ReviewsSectionState extends ConsumerState<ReviewsSection> {
     super.dispose();
   }
 
+  bool _onScroll(ScrollNotification n) {
+    final m = n.metrics;
+    if (m.maxScrollExtent > 0 && m.pixels >= m.maxScrollExtent - 200) {
+      ref.read(reviewsControllerProvider(widget.schoolId).notifier).loadMore();
+    }
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final controller =
         ref.watch(reviewsControllerProvider(widget.schoolId));
+    final theme = Theme.of(context);
     final auth = ref.watch(authControllerProvider);
     final isParent = auth.user?.role == UserRole.parent;
-    final myReview = isParent
-        ? controller.items.where((r) => r.parentId == auth.user?.id).cast<Review?>().firstOrNull
-        : null;
-    
-    // Show only first 3 reviews in the preview
-    final previewReviews = controller.items.take(3).toList();
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Text('Reviews', style: theme.textTheme.titleLarge),
-                const Spacer(),
-                if (controller.initialized)
-                  Text('${widget.totalReviewCount}',
-                      style: theme.textTheme.titleMedium),
-                if (widget.totalReviewCount > 3) ...[
-                  const SizedBox(width: 8),
-                  TextButton(
-                    onPressed: () => context.go('/schools/${widget.schoolId}/reviews'),
-                    child: const Text('See all'),
-                  ),
-                ],
-              ],
-            ),
-            const SizedBox(height: 8),
-            if (isParent && !_showForm)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: FilledButton.icon(
-                  onPressed: controller.saving
-                      ? null
-                      : () => _toggleForm(myReview),
-                  icon: Icon(myReview == null ? Icons.add : Icons.edit),
-                  label: Text(
-                    myReview == null ? 'Write a review' : 'Edit my review',
-                  ),
-                ),
-              ),
-            if (_showForm && _editingReview == null)
-              _ReviewForm(
-                rating: _rating,
-                tag: _tag,
-                commentCtrl: _commentCtrl,
-                onRatingChanged: (v) => setState(() => _rating = v),
-                onTagChanged: (v) => setState(() => _tag = v),
-                onSave: _saveReview,
-                onCancel: () => setState(() {
-                  _showForm = false;
-                  _commentCtrl.clear();
-                  _rating = 5;
-                  _tag = ReviewCategoryTag.teachingQuality;
-                  _editingReview = null;
-                }),
-                saving: controller.saving,
-              ),
-            const SizedBox(height: 12),
-            if (controller.loading && controller.items.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
-                child: Center(child: CircularProgressIndicator()),
-              )
-            else if (controller.error != null)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Text(
-                  controller.error!,
-                  style: TextStyle(color: theme.colorScheme.error),
-                ),
-              )
-            else if (controller.items.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                child: Text('No reviews yet.'),
-              )
-            else
-              Column(
+    return ResponsiveShell(
+      title: 'All Reviews',
+      onScrollNotification: _onScroll,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (isParent)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  for (final r in previewReviews)
+                  if (!_showForm)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: FilledButton.icon(
+                        onPressed: controller.saving
+                            ? null
+                            : () => _toggleForm(null),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Write a review'),
+                      ),
+                    ),
+                  if (_showForm && _editingReview == null)
+                    _ReviewForm(
+                      rating: _rating,
+                      tag: _tag,
+                      commentCtrl: _commentCtrl,
+                      onRatingChanged: (v) => setState(() => _rating = v),
+                      onTagChanged: (v) => setState(() => _tag = v),
+                      onSave: _saveReview,
+                      onCancel: () => setState(() {
+                        _showForm = false;
+                        _commentCtrl.clear();
+                        _rating = 5;
+                        _tag = ReviewCategoryTag.teachingQuality;
+                        _editingReview = null;
+                      }),
+                      saving: controller.saving,
+                    ),
+                ],
+              ),
+            ),
+          if (controller.error != null)
+            Card(
+              color: theme.colorScheme.errorContainer,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    Icon(Icons.error_outline,
+                        color: theme.colorScheme.onErrorContainer),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        controller.error!,
+                        style: TextStyle(
+                            color: theme.colorScheme.onErrorContainer),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: controller.refresh,
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          if (controller.loading && controller.items.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 48),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (controller.items.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 48),
+              child: Center(child: Text('No reviews yet.')),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  for (final r in controller.items)
                     if (_editingReview?.id == r.id && _showForm)
                       _ReviewForm(
                         rating: _rating,
@@ -163,8 +167,26 @@ class _ReviewsSectionState extends ConsumerState<ReviewsSection> {
                       ),
                 ],
               ),
-          ],
-        ),
+            ),
+          if (controller.appending)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+          if (!controller.loading &&
+              !controller.appending &&
+              controller.hasMore)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Center(
+                child: TextButton(
+                  onPressed: () =>
+                      ref.read(reviewsControllerProvider(widget.schoolId).notifier).loadMore(),
+                  child: const Text('Load more'),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -230,7 +252,6 @@ class _ReviewsSectionState extends ConsumerState<ReviewsSection> {
         _tag = ReviewCategoryTag.teachingQuality;
         _editingReview = null;
       });
-      widget.onReviewSubmitted?.call();
     }
   }
 
@@ -272,68 +293,69 @@ class _ReviewTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                child: Text(
-                  (review.parentFullName ?? '?')
-                      .characters
-                      .firstOrNull
-                      ?.toUpperCase() ??
-                      '?',
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  child: Text(
+                    (review.parentFullName ?? '?')
+                        .characters
+                        .firstOrNull
+                        ?.toUpperCase() ??
+                        '?',
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(review.parentFullName ?? 'Parent',
-                        style: theme.textTheme.titleSmall),
-                    Row(
-                      children: [
-                        for (var i = 0; i < 5; i++)
-                          Icon(
-                            i < review.rating
-                                ? Icons.star
-                                : Icons.star_border,
-                            color: theme.colorScheme.tertiary,
-                            size: 16,
-                          ),
-                        const SizedBox(width: 8),
-                        Text(review.categoryTag.label(),
-                            style: theme.textTheme.bodySmall),
-                      ],
-                    ),
-                  ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(review.parentFullName ?? 'Parent',
+                          style: theme.textTheme.titleSmall),
+                      Row(
+                        children: [
+                          for (var i = 0; i < 5; i++)
+                            Icon(
+                              i < review.rating
+                                  ? Icons.star
+                                  : Icons.star_border,
+                              color: theme.colorScheme.tertiary,
+                              size: 16,
+                            ),
+                          const SizedBox(width: 8),
+                          Text(review.categoryTag.label(),
+                              style: theme.textTheme.bodySmall),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              if (mine) ...[
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined),
-                  onPressed: onEdit,
-                  tooltip: 'Edit',
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outlined),
-                  onPressed: onDelete,
-                  tooltip: 'Delete',
-                ),
+                if (mine) ...[
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined),
+                    onPressed: onEdit,
+                    tooltip: 'Edit',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outlined),
+                    onPressed: onDelete,
+                    tooltip: 'Delete',
+                  ),
+                ],
               ],
-            ],
-          ),
-          if (review.comment?.isNotEmpty ?? false)
-            Padding(
-              padding: const EdgeInsets.only(top: 6, left: 52),
-              child: Text(review.comment!),
             ),
-          const Divider(height: 24),
-        ],
+            if (review.comment?.isNotEmpty ?? false)
+              Padding(
+                padding: const EdgeInsets.only(top: 12, left: 52),
+                child: Text(review.comment!),
+              ),
+          ],
+        ),
       ),
     );
   }

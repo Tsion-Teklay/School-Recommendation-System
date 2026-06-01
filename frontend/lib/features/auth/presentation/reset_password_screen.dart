@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../shared/widgets/loading_button.dart';
+import '../../../shared/widgets/password_field.dart';
 import '../../../shared/widgets/responsive_shell.dart';
 import '../data/auth_repository.dart';
 
@@ -97,21 +98,17 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            TextFormField(
+            PasswordField(
               controller: _password,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'New password',
-                helperText: 'Minimum 6 characters',
-              ),
+              labelText: 'New password',
+              helperText: 'Minimum 6 characters',
               validator: (v) =>
                   (v ?? '').length >= 6 ? null : 'At least 6 characters',
             ),
             const SizedBox(height: 12),
-            TextFormField(
+            PasswordField(
               controller: _confirm,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: 'Confirm password'),
+              labelText: 'Confirm password',
               validator: (v) =>
                   v == _password.text ? null : 'Passwords do not match',
             ),

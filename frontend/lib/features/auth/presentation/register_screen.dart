@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../shared/utils/error_handler.dart';
 import '../../../shared/utils/message_helper.dart';
 import '../../../shared/widgets/loading_button.dart';
+import '../../../shared/widgets/password_field.dart';
 import '../../../shared/widgets/responsive_shell.dart';
 import '../data/auth_dtos.dart';
 import '../state/auth_controller.dart';
@@ -27,6 +28,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _email = TextEditingController();
   final _phone = TextEditingController();
   final _password = TextEditingController();
+  final _confirmPassword = TextEditingController();
   // MoE / Moderator accounts are admin-created per the spec, so the public
   // self-registration form only exposes the two consumer roles.
   UserRole _role = UserRole.parent;
@@ -41,6 +43,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     _email.dispose();
     _phone.dispose();
     _password.dispose();
+    _confirmPassword.dispose();
     super.dispose();
   }
 
@@ -55,10 +58,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       // field is hidden from the form, so sending it would be lying to the
       // backend's uniqueness checks.
       final isEmail = _identifierKind == _IdentifierKind.email;
+      final phoneValue = !isEmail && _phone.text.trim().isNotEmpty
+          ? '+251${_phone.text.trim()}'
+          : null;
       await ref.read(authControllerProvider).register(
             fullName: _name.text.trim(),
             email: isEmail ? _email.text.trim() : null,
-            phone: !isEmail ? _phone.text.trim() : null,
+            phone: phoneValue,
             password: _password.text,
             role: _role,
           );
@@ -91,7 +97,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             Text(
               isEmail
                   ? "We sent a verification link to ${_email.text.trim()}."
-                  : "We sent a verification code to ${_phone.text.trim()}.",
+                  : "We sent a verification code to +251${_phone.text.trim()}.",
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleMedium,
             ),
@@ -176,31 +182,41 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 keyboardType: TextInputType.phone,
                 decoration: const InputDecoration(
                   labelText: 'Phone',
+                  prefixText: '+251',
                   helperText:
-                      '5–15 characters. No verification step — usable right away.',
+                      'Enter 9 or 7 followed by 8 digits (e.g., 911234567)',
                 ),
-                validator: (v) {  
-  final t = (v ?? '').trim();  
-  if (t.isEmpty) return null; // Don't show error for empty  
-  if (t.length < 5 || t.length > 15) {  
-    return '5–15 characters';  
-  }  
-  return null;  
+                validator: (v) {
+  final t = (v ?? '').trim();
+  if (t.isEmpty) return null; // Don't show error for empty
+  if (t.length != 9) {
+    return 'Enter 9 digits after +251';
+  }
+  if (!t.startsWith('9') && !t.startsWith('7')) {
+    return 'Must start with 9 or 7';
+  }
+  return null;
 },
-                
+
               ),
             const SizedBox(height: 12),
-            TextFormField(
+            PasswordField(
               controller: _password,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Password',
-                helperText: 'Minimum 6 characters',
-              ),
-              validator: (v) {  
-  final t = (v ?? '').trim();  
-  if (t.isEmpty) return null; // Don't show error for empty  
-  return t.length >= 6 ? null : 'At least 6 characters';  
+              labelText: 'Password',
+              helperText: 'Minimum 6 characters',
+              validator: (v) {
+  final t = (v ?? '').trim();
+  if (t.isEmpty) return null; // Don't show error for empty
+  return t.length >= 6 ? null : 'At least 6 characters';
+},
+            ),
+            const SizedBox(height: 12),
+            PasswordField(
+              controller: _confirmPassword,
+              labelText: 'Confirm password',
+              validator: (v) {
+  if (v != _password.text) return 'Passwords do not match';
+  return null;
 },
             ),
             const SizedBox(height: 12),

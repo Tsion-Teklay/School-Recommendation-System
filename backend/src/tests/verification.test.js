@@ -50,7 +50,7 @@ async function setupAdminWithSchool({ emailSuffix = "v" } = {}) {
   const { token, user } = await registerVerifiedUser({
     fullName: `Admin ${emailSuffix}`,
     email: `admin.${emailSuffix}@school.test`,
-    phone: `09800${emailSuffix.padStart(5, "0").slice(-5)}`,
+    phone: `+2519800${emailSuffix.padStart(5, "0").slice(-5)}`,
     role: "SCHOOL_ADMIN",
   });
 
@@ -61,7 +61,7 @@ async function setupAdminWithSchool({ emailSuffix = "v" } = {}) {
       schoolName: `School ${emailSuffix}`,
       address: "123 Main St",
       contactEmail: `contact.${emailSuffix}@school.test`,
-      contactPhone: "0911000000",
+      contactPhone: "+251911000000",
       curriculum: "LOCAL",
       tuitionFee: 12000,
       facilities: "library, lab",
@@ -77,7 +77,7 @@ async function setupMoeOfficer({ emailSuffix = "moe" } = {}) {
   return registerVerifiedUser({
     fullName: `MoE Officer ${emailSuffix}`,
     email: `officer.${emailSuffix}@moe.test`,
-    phone: `09700${emailSuffix.padStart(5, "0").slice(-5)}`,
+    phone: `+2519700${emailSuffix.padStart(5, "0").slice(-5)}`,
     role: "MOE_OFFICER",
   });
 }
@@ -133,7 +133,7 @@ describe("POST /api/schools/:schoolId/verification-requests", () => {
     const { token: intruderToken } = await registerVerifiedUser({
       fullName: "Intruder Admin",
       email: "intruder@school.test",
-      phone: "0980111222",
+      phone: "+251980111222",
       role: "SCHOOL_ADMIN",
     });
 
@@ -151,7 +151,7 @@ describe("POST /api/schools/:schoolId/verification-requests", () => {
     const { token: parentToken } = await registerVerifiedUser({
       fullName: "P. Arent",
       email: "parent@verify.test",
-      phone: "0980222333",
+      phone: "+251980222333",
       role: "PARENT",
     });
 
@@ -277,7 +277,7 @@ describe("GET /api/verification-requests/:id", () => {
     const { token: outsiderToken } = await registerVerifiedUser({
       fullName: "Other Admin",
       email: "other.admin@school.test",
-      phone: "0980333444",
+      phone: "+251980333444",
       role: "SCHOOL_ADMIN",
     });
     const outsiderRes = await request(app)

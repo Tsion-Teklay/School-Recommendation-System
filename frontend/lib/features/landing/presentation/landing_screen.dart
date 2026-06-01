@@ -38,19 +38,37 @@ class LandingScreen extends ConsumerWidget {
                   // MAIN CONTENT
                   // =========================================================
 
-                  Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 1100),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 60,
-                        ),
+                  LayoutBuilder(
+                builder: (context, constraints) {
+                  final isMobile = constraints.maxWidth < 600;
+                  final horizontalPadding = isMobile ? 16.0 : 20.0;
+                  final verticalPadding = isMobile ? 40.0 : 60.0;
+                  
+                  return Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 1100),
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: horizontalPadding,
+                              vertical: verticalPadding,
+                            ),
                         child: Column(
                           children: [
                             _FadeInSection(
                               child: _buildFeaturesSection(theme),
                             ),
+
+                        const SizedBox(height: 100),
+
+                        _FadeInSection(
+                          child: _buildAboutSection(theme),
+                        ),
+
+                        const SizedBox(height: 100),
+
+                        _FadeInSection(
+                          child: _buildWhoBenefitsSection(theme),
+                        ),
                             const SizedBox(height: 48),
                             const AdBannerSection(
                               placement: AdPlacementType.banner,
@@ -68,6 +86,12 @@ class LandingScreen extends ConsumerWidget {
                             _FadeInSection(
                               child: _buildHowItWorksSection(theme),
                             ),
+
+                        const SizedBox(height: 100),
+
+                        _FadeInSection(
+                          child: _buildEducationalGuideSection(theme),
+                        ),
                             const SizedBox(height: 100),
                             _FadeInSection(
                               child: _buildFAQSection(theme),
@@ -86,6 +110,8 @@ class LandingScreen extends ConsumerWidget {
                         ),
                       ),
                     ),
+                  );
+                },
                   ),
                 ],
               ),
@@ -105,12 +131,19 @@ class LandingScreen extends ConsumerWidget {
     BuildContext context,
     ThemeData theme,
   ) {
-    return SizedBox(
-      width: double.infinity,
-      height: MediaQuery.of(context).size.height * 0.92,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 600;
+        final heroHeight = isMobile
+            ? MediaQuery.of(context).size.height * 1.05
+            : MediaQuery.of(context).size.height * 0.92;
+        
+        return SizedBox(
+          width: double.infinity,
+          height: heroHeight,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
           // Background Image
           Image.asset(
             'assets/hero.png',
@@ -139,20 +172,20 @@ class LandingScreen extends ConsumerWidget {
           // Main Content
           Center(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 24),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(32),
+                borderRadius: BorderRadius.circular(isMobile ? 20 : 32),
                 child: BackdropFilter(
                   filter: ImageFilter.blur(
                     sigmaX: 16,
                     sigmaY: 16,
                   ),
                   child: Container(
-                    width: 760,
-                    padding: const EdgeInsets.all(42),
+                    width: isMobile ? double.infinity : 760,
+                    padding: EdgeInsets.all(isMobile ? 12 : 42),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(32),
+                      borderRadius: BorderRadius.circular(isMobile ? 20 : 32),
                       border: Border.all(
                         color: Colors.white.withOpacity(0.2),
                         width: 1.5,
@@ -163,36 +196,36 @@ class LandingScreen extends ConsumerWidget {
                       children: [
                         // Location Chip
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 8,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isMobile ? 10 : 14,
+                            vertical: isMobile ? 6 : 8,
                           ),
                           decoration: BoxDecoration(
                             color: Colors.black.withOpacity(0.3),
                             borderRadius: BorderRadius.circular(40),
                           ),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
                                 Icons.location_on_outlined,
                                 color: Colors.white,
-                                size: 16,
+                                size: isMobile ? 14 : 16,
                               ),
-                              SizedBox(width: 6),
+                              SizedBox(width: isMobile ? 4 : 6),
                               Text(
                                 'Addis Ababa, Ethiopia',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w500,
-                                  fontSize: 13,
+                                  fontSize: isMobile ? 11 : 13,
                                 ),
                               ),
                             ],
                           ),
                         ),
 
-                        const SizedBox(height: 28),
+                        SizedBox(height: isMobile ? 12 : 28),
 
                         // Brand Name with Unique Font
                         Text(
@@ -200,14 +233,14 @@ class LandingScreen extends ConsumerWidget {
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 16,
+                            fontSize: isMobile ? 12 : 16,
                             fontWeight: FontWeight.w700,
-                            letterSpacing: 4,
+                            letterSpacing: isMobile ? 3 : 4,
                             height: 1.2,
                           ),
                         ),
 
-                        const SizedBox(height: 24),
+                        SizedBox(height: isMobile ? 12 : 24),
 
                         // Main Heading
                         Text(
@@ -217,10 +250,11 @@ class LandingScreen extends ConsumerWidget {
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                             height: 1.1,
+                            fontSize: isMobile ? 24 : null,
                           ),
                         ),
 
-                        const SizedBox(height: 18),
+                        SizedBox(height: isMobile ? 8 : 18),
 
                         // Amharic Subtitle
                         Text(
@@ -229,25 +263,27 @@ class LandingScreen extends ConsumerWidget {
                           style: theme.textTheme.headlineSmall?.copyWith(
                             color: Colors.white.withOpacity(0.92),
                             fontWeight: FontWeight.w500,
+                            fontSize: isMobile ? 14 : null,
                           ),
                         ),
 
-                        SpacingHelper.xxl,
+                        SizedBox(height: isMobile ? 16 : 24),
 
                         // Description
                         ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 580),
                           child: Text(
-                            'A modern platform helping Ethiopian families discover, compare, and choose schools that truly fit their child’s needs, aspirations, and future.',
+                            "A modern platform helping Ethiopian families discover, compare, and choose schools that truly fit their child's needs, aspirations, and future.",
                             textAlign: TextAlign.center,
                             style: theme.textTheme.bodyLarge?.copyWith(
                               color: Colors.white.withOpacity(0.85),
                               height: 1.7,
+                              fontSize: isMobile ? 13 : null,
                             ),
                           ),
                         ),
 
-                        const SizedBox(height: 40),
+                        SizedBox(height: isMobile ? 24 : 40),
 
                         // Buttons
                         Wrap(
@@ -260,18 +296,20 @@ class LandingScreen extends ConsumerWidget {
                               style: FilledButton.styleFrom(
                                 backgroundColor: Colors.white,
                                 foregroundColor: Colors.black,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 30,
-                                  vertical: 20,
+                                padding:
+                                    EdgeInsets.symmetric(
+                                  horizontal: isMobile ? 20 : 30,
+                                  vertical: isMobile ? 14 : 20,
                                 ),
                                 shape: const StadiumBorder(),
                               ),
-                              icon: const Text(
+                              icon: Text(
                                 'Start Exploring',
+                                style: TextStyle(fontSize: isMobile ? 13 : null),
                               ),
-                              label: const Icon(
+                              label: Icon(
                                 Icons.arrow_forward,
-                                size: 18,
+                                size: isMobile ? 16 : 18,
                               ),
                             ),
                             OutlinedButton(
@@ -281,29 +319,14 @@ class LandingScreen extends ConsumerWidget {
                                 side: const BorderSide(
                                   color: Colors.white,
                                 ),
-                                padding: const EdgeInsets.symmetric(
+                                padding:
+                                    const EdgeInsets.symmetric(
                                   horizontal: 30,
                                   vertical: 20,
                                 ),
                                 shape: const StadiumBorder(),
                               ),
                               child: const Text('Sign In'),
-                            ),
-                            OutlinedButton.icon(
-                              onPressed: () => context.go('/advertise'),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.white,
-                                side: BorderSide(
-                                  color: Colors.white.withOpacity(0.8),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 24,
-                                  vertical: 20,
-                                ),
-                                shape: const StadiumBorder(),
-                              ),
-                              icon: const Icon(Icons.campaign_outlined),
-                              label: const Text('Advertise with us'),
                             ),
                           ],
                         ),
@@ -316,6 +339,8 @@ class LandingScreen extends ConsumerWidget {
           ),
         ],
       ),
+        );
+      },
     );
   }
 
@@ -343,58 +368,55 @@ class LandingScreen extends ConsumerWidget {
         const SizedBox(height: 40),
         LayoutBuilder(
           builder: (context, constraints) {
-            // Determine number of columns based on screen width
-            int crossAxisCount;
-            double mainAxisExtent;
+            final isMobile = constraints.maxWidth < 600;
+            final features = [
+              {'icon': Icons.auto_awesome_outlined, 'title': 'School Recommendations', 'description': "Tailored school suggestions based on your child's academic and personal needs."},
+              {'icon': Icons.location_searching_outlined, 'title': 'Smart Discovery', 'description': 'Compare schools by curriculum, facilities, tuition, and location.'},
+              {'icon': Icons.groups_outlined, 'title': 'Parent Engagement', 'description': 'Strengthening communication between schools and families.'},
+              {'icon': Icons.trending_up_outlined, 'title': 'Educational Insights', 'description': 'Helping schools and parents make more informed decisions.'},
+            ];
 
-            if (constraints.maxWidth > 1000) {
-              crossAxisCount = 4;
-              mainAxisExtent = 180;
-            } else if (constraints.maxWidth > 700) {
-              crossAxisCount = 2;
-              mainAxisExtent = 180;
+            if (isMobile) {
+              // Vertical list for mobile
+              return Column(
+                children: features.map((feature) => _FeatureListItem(
+                  theme: theme,
+                  icon: feature['icon'] as IconData,
+                  title: feature['title'] as String,
+                  description: feature['description'] as String,
+                )).toList(),
+              );
             } else {
-              crossAxisCount = 1;
-              mainAxisExtent = 160;
+              // Two-column grid for desktop
+              return Column(
+                children: [
+                  for (int i = 0; i < features.length; i += 2)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _FeatureListItem(
+                            theme: theme,
+                            icon: features[i]['icon'] as IconData,
+                            title: features[i]['title'] as String,
+                            description: features[i]['description'] as String,
+                          ),
+                        ),
+                        if (i + 1 < features.length) ...[
+                          const SizedBox(width: 24),
+                          Expanded(
+                            child: _FeatureListItem(
+                              theme: theme,
+                              icon: features[i + 1]['icon'] as IconData,
+                              title: features[i + 1]['title'] as String,
+                              description: features[i + 1]['description'] as String,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                ],
+              );
             }
-
-            return GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: 4, // Number of features
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: crossAxisCount,
-                mainAxisSpacing: 16,
-                crossAxisSpacing: 16,
-                mainAxisExtent: mainAxisExtent,
-              ),
-              itemBuilder: (context, index) {
-                // Put your list of card data here and map it
-                final features = [
-                  _featureCard(
-                      theme,
-                      Icons.auto_awesome_outlined,
-                      'School Recommendations',
-                      'Tailored school suggestions based on your child’s academic and personal needs.'),
-                  _featureCard(
-                      theme,
-                      Icons.location_searching_outlined,
-                      'Smart Discovery',
-                      'Compare schools by curriculum, facilities, tuition, and location.'),
-                  _featureCard(
-                      theme,
-                      Icons.groups_outlined,
-                      'Parent Engagement',
-                      'Strengthening communication between schools and families.'),
-                  _featureCard(
-                      theme,
-                      Icons.trending_up_outlined,
-                      'Educational Insights',
-                      'Helping schools and parents make more informed decisions.'),
-                ];
-                return features[index];
-              },
-            );
           },
         ),
       ],
@@ -415,124 +437,498 @@ class LandingScreen extends ConsumerWidget {
     );
   }
 
+  Widget _FeatureListItem({
+    required ThemeData theme,
+    required IconData icon,
+    required String title,
+    required String description,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withOpacity(0.3),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              size: 32,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  description,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    height: 1.5,
+                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // =========================================================
+  // ABOUT SECTION
+  // =========================================================
+
+  Widget _buildAboutSection(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'OUR STORY',
+          style: theme.textTheme.labelLarge?.copyWith(letterSpacing: 2),
+        ),
+
+        SpacingHelper.lg,
+
+        Text(
+          'Why We Built Fidel Guide',
+          style: theme.textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+
+        SpacingHelper.xxxl,
+
+        Text(
+          'Education is the foundation of every child\'s future, yet finding the right school in Ethiopia has never been easy. We spoke with hundreds of parents across Addis Ababa who shared similar frustrations: spending countless hours visiting schools, relying on word-of-mouth recommendations that often proved unreliable, and struggling to find accurate information about curriculum, facilities, and fees. Many families felt overwhelmed by the lack of centralized, trustworthy information, often making one of the most important decisions for their children based on incomplete or outdated data.',
+          style: theme.textTheme.bodyLarge?.copyWith(
+            height: 1.8,
+            color: theme.colorScheme.onSurface.withOpacity(0.85),
+          ),
+        ),
+
+        SpacingHelper.xl,
+
+        Text(
+          'We realized that technology could bridge this gap - creating a platform that not only aggregates information but makes it accessible, understandable, and actionable for every Ethiopian family. Our vision extends beyond simply connecting families with schools. We aim to transform how educational decisions are made in Ethiopia by fostering transparency, empowering parents with data-driven insights, and creating a community where knowledge is shared freely.',
+          style: theme.textTheme.bodyLarge?.copyWith(
+            height: 1.8,
+            color: theme.colorScheme.onSurface.withOpacity(0.85),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // =========================================================
+  // WHO BENEFITS SECTION
+  // =========================================================
+
+  Widget _buildWhoBenefitsSection(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'WHO WE SERVE',
+          style: theme.textTheme.labelLarge?.copyWith(letterSpacing: 2),
+        ),
+
+        SpacingHelper.lg,
+
+        Text(
+          'Empowering the entire education ecosystem',
+          style: theme.textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+
+        SpacingHelper.xxxl,
+
+        // For Parents
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(40),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primaryContainer.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: theme.colorScheme.outlineVariant.withOpacity(0.3),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.family_restroom,
+                      size: 28,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Text(
+                    'For Parents',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'We understand that choosing a school is one of the most important decisions you\'ll make as a parent. Our platform saves you countless hours of research by providing comprehensive, verified information all in one place. You can compare schools side-by-side based on curriculum type, facilities, extracurricular activities, location, and tuition fees - factors that matter most to your family\'s unique situation. Beyond basic information, we offer personalized recommendations that consider your child\'s academic strengths, learning style, and your family\'s preferences, while connecting you with other parents who have firsthand experience with the schools you\'re considering.',
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  height: 1.8,
+                  color: theme.colorScheme.onSurface.withOpacity(0.85),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 40),
+
+        // For Schools
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(40),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.tertiaryContainer.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: theme.colorScheme.outlineVariant.withOpacity(0.3),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.tertiary.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.school,
+                      size: 28,
+                      color: theme.colorScheme.tertiary,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Text(
+                    'For Schools',
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Schools are the heart of our education system, and we\'re committed to helping you connect with families who are the right fit for your institution. By creating a comprehensive profile on our platform, you can showcase what makes your school unique - your curriculum approach, teaching philosophy, facilities, achievements, and the values that define your community. Our platform streamlines the admissions process by providing tools to manage inquiries, schedule tours, and communicate with prospective families efficiently, while offering analytics that help you understand what families are looking for and connect with a network of schools across Ethiopia.',
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  height: 1.8,
+                  color: theme.colorScheme.onSurface.withOpacity(0.85),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // =========================================================
+  // EDUCATIONAL GUIDE SECTION
+  // =========================================================
+
+  Widget _buildEducationalGuideSection(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'EDUCATIONAL GUIDE',
+          style: theme.textTheme.labelLarge?.copyWith(letterSpacing: 2),
+        ),
+
+        SpacingHelper.lg,
+
+        Text(
+          '5 Things to Consider When Choosing a School',
+          style: theme.textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+
+        SpacingHelper.xxxl,
+
+        _guideItem(
+          theme,
+          '1. Curriculum and Educational Philosophy',
+          'Understanding a school\'s curriculum approach is fundamental to ensuring it aligns with your child\'s learning style and your family\'s educational values. Some schools follow traditional Ethiopian curriculum, while others offer international programs like Cambridge or International Baccalaureate. Consider whether the school emphasizes rote learning or critical thinking, and don\'t hesitate to ask about class sizes, teacher qualifications, and support for students who need extra help.',
+        ),
+
+        SpacingHelper.xl,
+
+        _guideItem(
+          theme,
+          '2. Location and Logistics',
+          'The practical aspects of school attendance can significantly impact your daily life and your child\'s overall experience. Consider commute time and transportation options - long journeys can leave children exhausted and reduce time for homework and family activities. Think about traffic patterns during peak hours, whether the school offers transportation services, and evaluate the safety of the route and surrounding neighborhood.',
+        ),
+
+        SpacingHelper.xl,
+
+        _guideItem(
+          theme,
+          '3. Facilities and Learning Environment',
+          'The physical environment plays a crucial role in your child\'s daily experience and learning outcomes. Visit the school to observe classrooms, libraries, science labs, computer facilities, and sports infrastructure. Consider whether the spaces are well-maintained, safe, and conducive to learning, and look for age-appropriate facilities that support your child\'s developmental needs.',
+        ),
+
+        SpacingHelper.xl,
+
+        _guideItem(
+          theme,
+          '4. School Culture and Community',
+          'The intangible aspects of school life often determine whether a child truly thrives. Observe interactions between students and teachers during your visit - are they respectful and warm? Does the school foster a sense of community and belonging? Consider the school\'s values and whether they align with your family\'s principles, and look into extracurricular activities that contribute to school spirit and student engagement.',
+        ),
+
+        SpacingHelper.xl,
+
+        _guideItem(
+          theme,
+          '5. Cost and Financial Considerations',
+          'Education is an investment, and it\'s important to have a clear understanding of all costs involved. Beyond tuition, consider registration fees, textbook costs, uniforms, meal programs, extracurricular fees, and transportation expenses. Ask about payment schedules and whether the school offers financial aid or scholarships. Consider whether the cost aligns with the value provided and fits within your family\'s budget long-term.',
+        ),
+      ],
+    );
+  }
+
+  Widget _guideItem(
+    ThemeData theme,
+    String title,
+    String content,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.primary,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          content,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            height: 1.8,
+            color: theme.colorScheme.onSurface.withOpacity(0.85),
+          ),
+        ),
+      ],
+    );
+  }
+
   // =========================================================
   // MISSION SECTION
   // =========================================================
 
   Widget _buildMissionSection(ThemeData theme) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 40,
-        vertical: 80,
-      ),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            theme.colorScheme.primaryContainer.withOpacity(0.3),
-            theme.colorScheme.tertiaryContainer.withOpacity(0.2),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 600;
+        final sectionHeight = isMobile ? 650.0 : 500.0;
+        final horizontalPadding = isMobile ? 16.0 : 40.0;
+        final verticalPadding = isMobile ? 32.0 : 80.0;
+        
+        return Container(
+          width: double.infinity,
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(32),
+          ),
+          child: SizedBox(
+            width: double.infinity,
+            height: sectionHeight,
+            child: Stack(
+              children: [
+                // Background Image
+                Image.asset(
+                  'assets/hero.png',
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: sectionHeight,
+                ),
+
+                // Dark Overlay
+                Container(
+                  width: double.infinity,
+                  height: sectionHeight,
+                  color: Colors.black.withOpacity(0.5),
+                ),
+
+                // Decorative Gradient
+                Container(
+                  width: double.infinity,
+                  height: sectionHeight,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withOpacity(0.3),
+                        Colors.black.withOpacity(0.6),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Main Content
+                Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: horizontalPadding,
+                    vertical: verticalPadding,
+                  ),
+              child: Column(
+                children: [
+                  Text(
+                    'MISSION',
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      letterSpacing: 2,
+                      color: Colors.white,
+                    ),
+                  ),
+
+                  const SizedBox(height: 40),
+
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      if (constraints.maxWidth > 600) {
+                        // Two-column layout for larger screens
+                        return Row(
+                          children: [
+                            Expanded(
+                              child: Center(
+                                child: Container(
+                                  padding: const EdgeInsets.all(32),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.15),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.school_outlined,
+                                    size: 120,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 40),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Empowering Every Child\'s Future',
+                                    style: theme.textTheme.headlineMedium?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                      height: 1.3,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 20),
+                                  Text(
+                                    'Our mission is to democratize access to quality education information across Ethiopia. Every child deserves a school that nurtures their potential, and every family deserves the tools to find it.',
+                                    style: theme.textTheme.bodyLarge?.copyWith(
+                                      height: 1.7,
+                                      color: Colors.white.withOpacity(0.9),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        );
+                      } else {
+                        // Single column layout for smaller screens
+                        return Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(24),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.15),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.school_outlined,
+                                size: 80,
+                                color: Colors.white,
+                              ),
+                            ),
+                            SpacingHelper.xxxl,
+                            Text(
+                              'Empowering Every Child\'s Future',
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                height: 1.3,
+                                color: Colors.white,
+                              ),
+                            ),
+                            SpacingHelper.lg,
+                            Text(
+                              'Our mission is to democratize access to quality education information across Ethiopia. Every child deserves a school that nurtures their potential, and every family deserves the tools to find it.',
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                height: 1.7,
+                                color: Colors.white.withOpacity(0.9),
+                              ),
+                            ),
+                          ],
+                        );
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
-        borderRadius: BorderRadius.circular(32),
       ),
-      child: Column(
-        children: [
-          Text(
-            'MISSION',
-            style: theme.textTheme.labelLarge?.copyWith(letterSpacing: 2),
-          ),
-          const SizedBox(height: 40),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              if (constraints.maxWidth > 600) {
-                // Two-column layout for larger screens
-                return Row(
-                  children: [
-                    Expanded(
-                      child: Center(
-                        child: Container(
-                          padding: const EdgeInsets.all(32),
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primary.withOpacity(0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.school_outlined,
-                            size: 120,
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 40),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Empowering Every Child\'s Future',
-                            style: theme.textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              height: 1.3,
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          Text(
-                            'Our mission is to democratize access to quality education information across Ethiopia. Every child deserves a school that nurtures their potential, and every family deserves the tools to find it.',
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              height: 1.7,
-                              color:
-                                  theme.colorScheme.onSurface.withOpacity(0.85),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                );
-              } else {
-                // Single column layout for smaller screens
-                return Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.school_outlined,
-                        size: 80,
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                    SpacingHelper.xxxl,
-                    Text(
-                      'Empowering Every Child\'s Future',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        height: 1.3,
-                      ),
-                    ),
-                    SpacingHelper.lg,
-                    Text(
-                      'Our mission is to democratize access to quality education information across Ethiopia. Every child deserves a school that nurtures their potential, and every family deserves the tools to find it.',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        height: 1.7,
-                        color: theme.colorScheme.onSurface.withOpacity(0.85),
-                      ),
-                    ),
-                  ],
-                );
-              }
-            },
-          ),
-        ],
-      ),
+    );
+      },
     );
   }
 
@@ -550,13 +946,6 @@ class LandingScreen extends ConsumerWidget {
 
         SpacingHelper.lg,
 
-        Text(
-          'Making a difference in education.',
-          style: theme.textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-
         SizedBox(height: AppSpacing.massive),
 
         // Feature illustrations section
@@ -573,9 +962,9 @@ class LandingScreen extends ConsumerWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               crossAxisCount: crossAxisCount,
-              mainAxisSpacing: 24,
-              crossAxisSpacing: 24,
-              childAspectRatio: isMobile ? 1.2 : 1.0,
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
+              childAspectRatio: isMobile ? 0.9 : 0.85,
               children: [
                 _StatCard(
                   theme: theme,
@@ -685,35 +1074,79 @@ class LandingScreen extends ConsumerWidget {
             } else {
               // Horizontal layout for desktop
               return Row(
-                children: steps.asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final step = entry.value;
-                  return Expanded(
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: _StepCard(
-                            theme: theme,
-                            stepNumber: index + 1,
-                            icon: step['icon'] as IconData,
-                            title: step['title'] as String,
-                            description: step['description'] as String,
-                            isLast: index == steps.length - 1,
-                          ),
-                        ),
-                        if (index < steps.length - 1)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Icon(
-                              Icons.arrow_forward,
-                              color: theme.colorScheme.primary.withOpacity(0.5),
-                              size: 32,
-                            ),
-                          ),
-                      ],
+                children: [
+                  // Card 1
+                  Expanded(
+                    child: _StepCard(
+                      theme: theme,
+                      stepNumber: 1,
+                      icon: steps[0]['icon'] as IconData,
+                      title: steps[0]['title'] as String,
+                      description: steps[0]['description'] as String,
+                      isLast: false,
                     ),
-                  );
-                }).toList(),
+                  ),
+                  // Arrow
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Icon(
+                      Icons.arrow_forward,
+                      color: theme.colorScheme.primary.withOpacity(0.5),
+                      size: 32,
+                    ),
+                  ),
+                  // Card 2
+                  Expanded(
+                    child: _StepCard(
+                      theme: theme,
+                      stepNumber: 2,
+                      icon: steps[1]['icon'] as IconData,
+                      title: steps[1]['title'] as String,
+                      description: steps[1]['description'] as String,
+                      isLast: false,
+                    ),
+                  ),
+                  // Arrow
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Icon(
+                      Icons.arrow_forward,
+                      color: theme.colorScheme.primary.withOpacity(0.5),
+                      size: 32,
+                    ),
+                  ),
+                  // Card 3
+                  Expanded(
+                    child: _StepCard(
+                      theme: theme,
+                      stepNumber: 3,
+                      icon: steps[2]['icon'] as IconData,
+                      title: steps[2]['title'] as String,
+                      description: steps[2]['description'] as String,
+                      isLast: false,
+                    ),
+                  ),
+                  // Arrow
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Icon(
+                      Icons.arrow_forward,
+                      color: theme.colorScheme.primary.withOpacity(0.5),
+                      size: 32,
+                    ),
+                  ),
+                  // Card 4
+                  Expanded(
+                    child: _StepCard(
+                      theme: theme,
+                      stepNumber: 4,
+                      icon: steps[3]['icon'] as IconData,
+                      title: steps[3]['title'] as String,
+                      description: steps[3]['description'] as String,
+                      isLast: true,
+                    ),
+                  ),
+                ],
               );
             }
           },
@@ -880,24 +1313,27 @@ class LandingScreen extends ConsumerWidget {
     BuildContext context,
     ThemeData theme,
   ) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(60),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(32),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            theme.colorScheme.primary.withOpacity(0.1),
-            theme.colorScheme.tertiary.withOpacity(0.1),
-            theme.colorScheme.tertiary.withOpacity(0.1),
-          ],
-        ),
-        border: Border.all(
-          color: theme.colorScheme.outlineVariant.withOpacity(0.3),
-        ),
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isMobile = constraints.maxWidth < 600;
+        return Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(isMobile ? 32 : 60),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(32),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                theme.colorScheme.primary.withOpacity(0.1),
+                theme.colorScheme.tertiary.withOpacity(0.1),
+                theme.colorScheme.tertiary.withOpacity(0.1),
+              ],
+            ),
+            border: Border.all(
+              color: theme.colorScheme.outlineVariant.withOpacity(0.3),
+            ),
+          ),
       child: Stack(
         children: [
           // Decorative circles
@@ -939,65 +1375,73 @@ class LandingScreen extends ConsumerWidget {
           ),
 
           // Main content
-          Center(
-            child: Column(
-              children: [
-                Text(
-                  'Ready to find the right school?',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  'Create your account and begin exploring schools tailored to your child.',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.8),
-                  ),
-                ),
-
-                const SizedBox(height: 32),
-
-                FilledButton(
-                  onPressed: () => context.go('/register'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: theme.colorScheme.primary,
-                    foregroundColor: theme.colorScheme.onPrimary,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 40,
-                      vertical: 24,
-                    ),
-                    shape: const StadiumBorder(),
-                    elevation: 2,
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 24),
+            child: Center(
+                  child: Column(
                     children: [
-                      Text('Create Your Account',
-                          style: TextStyle(fontSize: 16)),
-                      SizedBox(width: 8),
-                      Icon(Icons.arrow_forward, size: 20),
+                      Text(
+                        'Ready to find the right school?',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontSize: isMobile ? 16 : null,
+                        ),
+                      ),
+
+                      SizedBox(height: isMobile ? 12 : 20),
+
+                      Text(
+                        'Create your account and begin exploring schools tailored to your child.',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.8),
+                          fontSize: isMobile ? 12 : null,
+                        ),
+                      ),
+
+                      SpacingHelper.xxxl,
+
+                      FilledButton(
+                        onPressed: () => context.go('/register'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: theme.colorScheme.primary,
+                          foregroundColor: theme.colorScheme.onPrimary,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isMobile ? 16.0 : 40.0,
+                            vertical: isMobile ? 12.0 : 24.0,
+                          ),
+                          shape: const StadiumBorder(),
+                          elevation: 2,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text('Create Your Account', style: TextStyle(fontSize: isMobile ? 12 : 16)),
+                            SizedBox(width: isMobile ? 4 : 8),
+                            Icon(Icons.arrow_forward, size: isMobile ? 16 : 20),
+                          ],
+                        ),
+                      ),
+
+                      SpacingHelper.xxl,
+
+                      Text(
+                        'Join 10,000+ parents already using our platform',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.6),
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
                     ],
                   ),
                 ),
-
-                SpacingHelper.xxl,
-
-                Text(
-                  'Join 10,000+ parents already using our platform',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.6),
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ],
-            ),
-          ),
+              ),
         ],
       ),
+        );
+      },
     );
   }
 }
@@ -1060,66 +1504,73 @@ class _FeatureCardState extends State<_FeatureCard>
       },
       child: ScaleTransition(
         scale: _scaleAnimation,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                widget.theme.colorScheme.surface,
-                widget.theme.colorScheme.surface.withOpacity(0.95),
-              ],
-            ),
-            border: Border.all(
-              color: widget.theme.colorScheme.outlineVariant.withOpacity(0.5),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: widget.theme.colorScheme.shadow
-                    .withOpacity(_isHovered ? 0.15 : 0.05),
-                blurRadius: _isHovered ? 20 : 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: widget.theme.colorScheme.primaryContainer
-                      .withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(10),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isMobile = constraints.maxWidth < 600;
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: EdgeInsets.all(isMobile ? 12 : 24),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    widget.theme.colorScheme.surface,
+                    widget.theme.colorScheme.surface.withOpacity(0.95),
+                  ],
                 ),
-                child: Icon(
-                  widget.icon,
-                  size: 20,
-                  color: widget.theme.colorScheme.primary,
+                border: Border.all(
+                  color: widget.theme.colorScheme.outlineVariant.withOpacity(0.5),
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: widget.theme.colorScheme.shadow.withOpacity(_isHovered ? 0.15 : 0.05),
+                    blurRadius: _isHovered ? 20 : 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-              const SizedBox(height: 14),
-              Text(
-                widget.title,
-                style: widget.theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(isMobile ? 5 : 20),
+                    decoration: BoxDecoration(
+                      color: widget.theme.colorScheme.primaryContainer.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      widget.icon,
+                      size: isMobile ? 16 : 48,
+                      color: widget.theme.colorScheme.primary,
+                    ),
+                  ),
+
+                  SizedBox(height: isMobile ? 8 : 28),
+
+                  Text(
+                    widget.title,
+                    style: widget.theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: isMobile ? 13 : 32,
+                    ),
+                  ),
+
+                  SizedBox(height: isMobile ? 4 : 18),
+
+                  Text(
+                    widget.description,
+                    style: widget.theme.textTheme.bodySmall?.copyWith(
+                      height: 1.5,
+                      fontSize: isMobile ? 11 : 20,
+                      color: widget.theme.colorScheme.onSurface.withOpacity(0.8),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                widget.description,
-                style: widget.theme.textTheme.bodySmall?.copyWith(
-                  height: 1.4,
-                  fontSize: 13,
-                  color: widget.theme.colorScheme.onSurface.withOpacity(0.8),
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
@@ -1175,10 +1626,12 @@ class _StatCardState extends State<_StatCard>
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
+    
     return FadeTransition(
       opacity: _fadeInAnimation,
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(isMobile ? 16 : 24),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
@@ -1204,30 +1657,32 @@ class _StatCardState extends State<_StatCard>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(isMobile ? 8 : 12),
               decoration: BoxDecoration(
                 color: widget.color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 widget.icon,
-                size: 32,
+                size: isMobile ? 24 : 32,
                 color: widget.color,
               ),
             ),
-            SpacingHelper.lg,
+            SizedBox(height: isMobile ? 8 : 16),
             Text(
               widget.value,
               style: widget.theme.textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: widget.color,
+                fontSize: isMobile ? 20 : null,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: isMobile ? 4 : 8),
             Text(
               widget.label,
               style: widget.theme.textTheme.bodyMedium?.copyWith(
                 color: widget.theme.colorScheme.onSurface.withOpacity(0.7),
+                fontSize: isMobile ? 12 : null,
               ),
             ),
           ],
@@ -1365,8 +1820,9 @@ class _StepCardState extends State<_StepCard>
               ),
               Text(
                 widget.title,
-                style: widget.theme.textTheme.titleLarge?.copyWith(
+                style: widget.theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
+                  fontSize: 18,
                 ),
               ),
               Text(
@@ -1583,8 +2039,12 @@ class _TestimonialCardState extends State<_TestimonialCard>
       },
       child: ScaleTransition(
         scale: _scaleAnimation,
-        child: Container(
-          padding: const EdgeInsets.all(28),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isMobile = constraints.maxWidth < 800;
+            return Container(
+              height: isMobile ? 340 : 320,
+              padding: EdgeInsets.all(isMobile ? 20 : 28),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
@@ -1609,6 +2069,7 @@ class _TestimonialCardState extends State<_TestimonialCard>
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
@@ -1670,6 +2131,8 @@ class _TestimonialCardState extends State<_TestimonialCard>
               ),
             ],
           ),
+            );
+          },
         ),
       ),
     );
@@ -1843,18 +2306,6 @@ class _AppFooter extends StatelessWidget {
                 );
               }
             },
-          ),
-          const SizedBox(height: 24),
-          Divider(
-            color: theme.colorScheme.outline.withOpacity(0.2),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            '© ${DateTime.now().year} Fidel Guide. All rights reserved.',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.5),
-            ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),

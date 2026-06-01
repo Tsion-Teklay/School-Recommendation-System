@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme.dart';
 import '../../features/auth/data/auth_dtos.dart';
 import '../../features/auth/state/auth_controller.dart';
-import '../../features/notifications/presentation/notification_bell.dart';
+import '../../features/notifications/state/notifications_controller.dart';
 import 'custom_navigation.dart';
 
 /// Breakpoints we use everywhere. Mirrors Material 3 window-size classes.
@@ -36,12 +36,12 @@ const _allDestinations = <NavDestination>[
   NavDestination(label: 'Home', icon: Icons.home_outlined, path: '/'),
   NavDestination(
       label: 'Browse', icon: Icons.search_outlined, path: '/schools'),
-  NavDestination(  
-    label: 'Announcements',  
-    icon: Icons.campaign_outlined,  
-    path: '/announcements',  
-    visibleTo: {UserRole.parent}, // Restrict to parents as requested  
-  ),  
+  NavDestination(
+    label: 'Announcements',
+    icon: Icons.campaign_outlined,
+    path: '/announcements',
+    visibleTo: {UserRole.parent}, // Restrict to parents as requested
+  ),
   NavDestination(
     label: 'Compare',
     icon: Icons.compare_arrows_outlined,
@@ -58,12 +58,6 @@ const _allDestinations = <NavDestination>[
     icon: Icons.notifications_outlined,
     path: '/notifications',
   ),
-  NavDestination(
-    label: 'Reports',
-    icon: Icons.report_gmailerrorred,
-    path: '/moderation',
-    visibleTo: {UserRole.moderator},
-  ),
 ];
 
 /// Wraps a screen body in a Scaffold whose chrome adapts to the viewport:
@@ -73,7 +67,7 @@ const _allDestinations = <NavDestination>[
 ///
 /// When the user isn't authenticated (or [showNav] is false) we skip the nav
 /// chrome entirely so the auth screens stay clean.
-class ResponsiveShell extends ConsumerWidget {
+class ResponsiveShell extends ConsumerStatefulWidget {
   final String title;
   final Widget child;
   final List<Widget>? actions;
@@ -97,6 +91,19 @@ class ResponsiveShell extends ConsumerWidget {
     this.showNav = true,
     this.onScrollNotification,
   });
+
+  @override
+  ConsumerState<ResponsiveShell> createState() => _ResponsiveShellState();
+}
+
+class _ResponsiveShellState extends ConsumerState<ResponsiveShell> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(notificationsControllerProvider).refreshUnreadCount();
+    });
+  }
 
   List<NavDestination> _visibleDestinations(UserRole? role) {
     return _allDestinations.where((d) {
@@ -124,24 +131,14 @@ class ResponsiveShell extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final auth = ref.watch(authControllerProvider);
     final role = auth.user?.role;
-    final dests = showNav && auth.isAuthenticated
+    final dests = widget.showNav && auth.isAuthenticated
         ? _visibleDestinations(role)
         : const <NavDestination>[];
     final location = GoRouterState.of(context).uri.path;
     final selected = _selectedIndex(location, dests);
-
-    final defaultActions = <Widget>[
-      if (auth.isAuthenticated) const NotificationBell(),
-      if (auth.isAuthenticated)
-        IconButton(
-          tooltip: 'Profile',
-          onPressed: () => context.go('/profile'),
-          icon: const Icon(Icons.person_outline),
-        ),
-    ];
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -150,8 +147,12 @@ class ResponsiveShell extends ConsumerWidget {
         final isExpanded = constraints.maxWidth >= Breakpoints.medium;
         final isCompact = constraints.maxWidth < Breakpoints.compact;
 
+        final defaultActions = <Widget>[
+          // No actions in navbar - profile and notifications are floating buttons
+        ];
+
         final scrollable = SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Center(
             child: ConstrainedBox(
               constraints: BoxConstraints(
@@ -162,17 +163,15 @@ class ResponsiveShell extends ConsumerWidget {
               child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          child,
-          const Divider(height: 64),
-          const _AppFooter(),
+          widget.child,
         ],
       ),  
             ),
           ),
         );
-        final body = onScrollNotification != null
+        final body = widget.onScrollNotification != null
             ? NotificationListener<ScrollNotification>(
-                onNotification: onScrollNotification,
+                onNotification: widget.onScrollNotification,
                 child: scrollable,
               )
             : scrollable;
@@ -187,30 +186,52 @@ class ResponsiveShell extends ConsumerWidget {
 
         return Scaffold(
           appBar: AppNavigationBar(
-            title: title,
-            actions: [...?actions, ...defaultActions],
-            leading: leading,
+            title: widget.title,
+            actions: [...?widget.actions, ...defaultActions],
+            leading: widget.leading ??
+                (context.canPop()
+                    ? IconButton(
+                        icon: const Icon(Icons.arrow_back),
+                        onPressed: () => context.pop(),
+                      )
+                    : null),
           ),
-          floatingActionButton: floatingActionButton,
-          body: dests.isEmpty || isCompact
-              ? body
-              : Row(
-                  children: [
-                    AppNavigationRail(
-                      selectedIndex: selected >= 0 ? selected : 0,
-                      items: dests
-                          .map((d) => NavigationItem(
-                                label: d.label,
-                                icon: d.icon,
-                              ))
-                          .toList(),
-                      onDestinationSelected: (i) => context.go(dests[i].path),
-                      extended: isExpanded,
+          floatingActionButton: widget.floatingActionButton,
+          body: Stack(
+            children: [
+              dests.isEmpty || isCompact
+                  ? body
+                  : Row(
+                      children: [
+                        AppNavigationRail(
+                          selectedIndex: selected >= 0 ? selected : 0,
+                          items: dests
+                              .map((d) => NavigationItem(
+                                    label: d.label,
+                                    icon: d.icon,
+                                  ))
+                              .toList(),
+                          onDestinationSelected: (i) => context.go(dests[i].path),
+                          extended: isExpanded,
+                        ),
+                        const VerticalDivider(width: 1),
+                        Expanded(child: body),
+                      ],
                     ),
-                    const VerticalDivider(width: 1),
-                    Expanded(child: body),
-                  ],
+              // Floating notification button
+              if (auth.isAuthenticated)
+                FloatingNotificationButton(
+                  unreadCount: ref.watch(notificationsControllerProvider).unreadTotal,
+                  onTap: () => context.go('/notifications'),
                 ),
+              // Floating profile button (consistent - at very top corner)
+              // Only show when not on profile page
+              if (auth.isAuthenticated && !location.startsWith('/profile'))
+                FloatingProfileButton(
+                  onTap: () => context.go('/profile'),
+                ),
+            ],
+          ),
           bottomNavigationBar: bottomDests.isNotEmpty && isCompact
               ? AppBottomNavigation(
                   selectedIndex: bottomSelected >= 0 ? bottomSelected : 0,
@@ -227,54 +248,4 @@ class ResponsiveShell extends ConsumerWidget {
       },
     );
   }
-}
-
-class _AppFooter extends StatelessWidget {  
-  const _AppFooter();  
-  
-  @override  
-  Widget build(BuildContext context) {  
-    final theme = Theme.of(context);  
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
-      decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(
-            color: theme.colorScheme.outline.withOpacity(0.2),
-            width: 1,
-          ),
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.email_outlined,
-                size: 14,
-                color: theme.colorScheme.onSurface.withOpacity(0.5),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                'info@fidelguide.com',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.6),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            '© ${DateTime.now().year} Fidel Guide. All rights reserved.',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurface.withOpacity(0.5),
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );  
-  }  
 }

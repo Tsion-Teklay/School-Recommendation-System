@@ -16,14 +16,14 @@ beforeAll(async () => {
   ({ token: userToken } = await registerVerifiedUser({
     fullName: "User",
     email: "user@test.com",
-    phone: "0911111111",
+    phone: "+251911111111",
     role: "PARENT",
   }));
 
   ({ token: moderatorToken } = await registerVerifiedUser({
     fullName: "Moderator",
     email: "mod@test.com",
-    phone: "0922222222",
+    phone: "+251922222222",
     role: "MODERATOR",
   }));
 });

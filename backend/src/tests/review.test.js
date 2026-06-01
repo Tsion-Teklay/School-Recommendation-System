@@ -17,31 +17,31 @@ beforeAll(async () => {
   const p1 = await registerVerifiedUser({
     fullName: "Parent One",
     email: "parent1@test.com",
-    phone: "0910000001",
+    phone: "+251910000001",
     role: "PARENT",
   });
   parentToken = p1.token;
   await db.parent.create({
-    data: { userId: p1.user.id, address: "Addis", latitude: 9.0, longitude: 38.0 },
+    data: { userId: p1.user.id, latitude: 9.0, longitude: 38.0 },
   });
 
   // 2. Parent 2 + manual parent profile
   const p2 = await registerVerifiedUser({
     fullName: "Parent Two",
     email: "parent2@test.com",
-    phone: "0910000002",
+    phone: "+251910000002",
     role: "PARENT",
   });
   otherParentToken = p2.token;
   await db.parent.create({
-    data: { userId: p2.user.id, address: "Addis", latitude: 9.0, longitude: 38.0 },
+    data: { userId: p2.user.id, latitude: 9.0, longitude: 38.0 },
   });
 
   // 3. School admin + school
   const admin = await registerVerifiedUser({
     fullName: "Admin",
     email: "admin@test.com",
-    phone: "0910000003",
+    phone: "+251910000003",
     role: "SCHOOL_ADMIN",
   });
   const schoolRes = await request(app)
@@ -51,7 +51,7 @@ beforeAll(async () => {
       schoolName: "Review School",
       address: "Addis",
       contactEmail: "review@school.com",
-      contactPhone: "0910000000",
+      contactPhone: "+251910000000",
       curriculum: "LOCAL",
       tuitionFee: 4000,
       latitude: 9.0,

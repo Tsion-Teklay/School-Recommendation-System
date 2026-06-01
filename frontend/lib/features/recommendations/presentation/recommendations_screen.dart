@@ -45,12 +45,21 @@ class RecommendationsScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (user != null)
-            Text('Welcome, ${user.fullName}',
-                style: Theme.of(context).textTheme.headlineSmall),
+            Row(
+              children: [
+                Text('Welcome, ${user.fullName}',
+                    style: Theme.of(context).textTheme.headlineSmall),
+                const SizedBox(width: 12),
+                OutlinedButton.icon(
+                  onPressed: () => context.go('/preferences'),
+                  icon: const Icon(Icons.tune),
+                  label: const Text('Add/change preferences'),
+                ),
+              ],
+            ),
           const SizedBox(height: 4),
           Text(
-            'Schools ranked using your stored preferences (curriculum, '
-            'budget, location, and rating). Tap a school to see details, or '
+            'Schools ranked using your stored preferences. Tap a school to see details, or '
             'add 2–5 to the compare cart.',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
@@ -60,10 +69,6 @@ class RecommendationsScreen extends ConsumerWidget {
             suggestions: _getSuggestionsForParent(cart.length),
             onSuggestionTap: (path) => context.go(path),
           ),
-          if (state.criteria.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            _CriteriaSummary(criteria: state.criteria),
-          ],
           const SizedBox(height: 16),
           const AdBannerSection(
             placement: AdPlacementType.banner,
@@ -147,98 +152,12 @@ class RecommendationsScreen extends ConsumerWidget {
                         },
                       ),
                     ),
-                    if (r.breakdown.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4, left: 4),
-                        child: _BreakdownRow(
-                          score: r.score,
-                          breakdown: r.breakdown,
-                        ),
-                      ),
                   ],
                 );
               },
             ),
         ],
       ),
-    );
-  }
-}
-
-class _CriteriaSummary extends StatelessWidget {
-  final Map<String, dynamic> criteria;
-  const _CriteriaSummary({required this.criteria});
-
-  @override
-  Widget build(BuildContext context) {
-    final entries = <String>[];
-    void add(String key, String label) {
-      final v = criteria[key];
-      if (v != null && v.toString().isNotEmpty) entries.add('$label: $v');
-    }
-
-    add('curriculum', 'curriculum');
-    add('max_budget', 'max budget');
-    add('min_budget', 'min budget');
-    add('schoolType', 'school type');
-    add('lat', 'lat');
-    add('lng', 'lng');
-
-    if (entries.isEmpty) return const SizedBox.shrink();
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        'Using ${entries.join(' · ')}',
-        style: Theme.of(context).textTheme.labelMedium,
-      ),
-    );
-  }
-}
-
-class _BreakdownRow extends StatelessWidget {
-  final num score;
-  final Map<String, num> breakdown;
-  const _BreakdownRow({required this.score, required this.breakdown});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final entries = breakdown.entries.toList();
-    return Wrap(
-      spacing: 6,
-      runSpacing: 4,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.primary,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            'score ${score.toStringAsFixed(1)}',
-            style: theme.textTheme.labelSmall
-                ?.copyWith(color: theme.colorScheme.onPrimary),
-          ),
-        ),
-        ...entries.map((e) {
-          return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              '${e.key} ${e.value.toStringAsFixed(1)}',
-              style: theme.textTheme.labelSmall,
-            ),
-          );
-        }),
-      ],
     );
   }
 }

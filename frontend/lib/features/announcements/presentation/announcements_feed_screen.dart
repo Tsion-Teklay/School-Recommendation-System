@@ -19,8 +19,11 @@ import '../../reports/data/report_dtos.dart';
 /// Parents get an additional "Followed schools only" toggle that bumps
 /// the backend's `followedOnly=true` filter on; non-parents always see
 /// every visible announcement.
+/// 
+/// If [schoolId] is provided, shows only announcements from that specific school.
 class AnnouncementsFeedScreen extends ConsumerStatefulWidget {
-  const AnnouncementsFeedScreen({super.key});
+  final int? schoolId;
+  const AnnouncementsFeedScreen({super.key, this.schoolId});
 
   @override
   ConsumerState<AnnouncementsFeedScreen> createState() =>
@@ -33,7 +36,11 @@ class _AnnouncementsFeedScreenState
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(announcementsFeedControllerProvider).ensureLoaded();
+      final controller = ref.read(announcementsFeedControllerProvider);
+      if (widget.schoolId != null) {
+        controller.applyFilters(schoolId: widget.schoolId);
+      }
+      controller.ensureLoaded();
     });
   }
 
@@ -51,13 +58,15 @@ class _AnnouncementsFeedScreenState
     final theme = Theme.of(context);
 
     return ResponsiveShell(
-      title: 'Announcements',
+      title: widget.schoolId != null ? 'School Announcements' : 'Announcements',
       onScrollNotification: _onScroll,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          _FiltersBar(controller: ctl),
-          const SizedBox(height: 16),
+          if (widget.schoolId == null) ...[
+            _FiltersBar(controller: ctl),
+            const SizedBox(height: 16),
+          ],
           if (ctl.error != null)
             Card(
               color: theme.colorScheme.errorContainer,
@@ -94,18 +103,21 @@ class _AnnouncementsFeedScreenState
               child: Center(child: Text('No announcements to show.')),
             )
           else
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: ctl.items.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (_, i) {
-                final a = ctl.items[i];
-                return AnnouncementCard(
-                  announcement: a,
-                  onTap: () => context.go('/announcements/${a.id}'),
-                );
-              },
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: ctl.items.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 8),
+                itemBuilder: (_, i) {
+                  final a = ctl.items[i];
+                  return AnnouncementCard(
+                    announcement: a,
+                    onTap: () => context.go('/announcements/${a.id}'),
+                  );
+                },
+              ),
             ),
           if (ctl.appending)
             const Padding(
@@ -134,62 +146,132 @@ class _FiltersBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            if (controller.canFollowedOnly)
-              FilterChip(
-                label: const Text('Followed schools only'),
-                selected: controller.followedOnly,
-                onSelected: (v) => controller.applyFilters(followedOnly: v),
-              ),
-            FilterChip(
-              label: Text(controller.category?.label() ?? 'Any category'),
-              selected: controller.category != null,
-              onSelected: (v) {
-                if (v) {
-                  _showCategoryDialog(context, controller);
-                } else {
-                  controller.applyFilters(category: null);
-                }
-              },
+    final theme = Theme.of(context);
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 800),
+        child: Card(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                if (controller.canFollowedOnly)
+                  FilterChip(
+                    label: const Text('Followed schools only'),
+                    selected: controller.followedOnly,
+                    onSelected: (v) => controller.applyFilters(followedOnly: v),
+                    selectedColor: theme.colorScheme.surfaceContainerHighest,
+                    checkmarkColor: theme.colorScheme.onSurface,
+                  ),
+                _DropdownFilterChip<AnnouncementCategory>(
+                  label: controller.category?.label() ?? 'Any category',
+                  value: controller.category,
+                  items: [
+                    const PopupMenuItem(value: null, child: Text('Any category')),
+                    ...AnnouncementCategory.values.map((category) =>
+                      PopupMenuItem(value: category, child: Text(category.label()))),
+                  ],
+                  onChanged: (value) => controller.applyFilters(category: value),
+                  theme: theme,
+                ),
+                _DropdownFilterChip<UrgencyLevel>(
+                  label: controller.urgency?.label() ?? 'Any urgency',
+                  value: controller.urgency,
+                  items: [
+                    const PopupMenuItem(value: null, child: Text('Any urgency')),
+                    ...UrgencyLevel.values.map((urgency) =>
+                      PopupMenuItem(value: urgency, child: Text(urgency.label()))),
+                  ],
+                  onChanged: (value) => controller.applyFilters(urgency: value),
+                  theme: theme,
+                ),
+                _DropdownFilterChip<PublisherType>(
+                  label: controller.publisherType?.label() ?? 'Any source',
+                  value: controller.publisherType,
+                  items: [
+                    const PopupMenuItem(value: null, child: Text('Any source')),
+                    ...PublisherType.values.map((type) =>
+                      PopupMenuItem(value: type, child: Text(type.label()))),
+                  ],
+                  onChanged: (value) => controller.applyFilters(publisherType: value),
+                  theme: theme,
+                ),
+                TextButton.icon(
+                    onPressed: controller.refresh,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Refresh'),
+                  ),
+              ],
             ),
-            FilterChip(
-              label: Text(controller.urgency?.label() ?? 'Any urgency'),
-              selected: controller.urgency != null,
-              onSelected: (v) {
-                if (v) {
-                  _showUrgencyDialog(context, controller);
-                } else {
-                  controller.applyFilters(urgency: null);
-                }
-              },
-            ),
-            FilterChip(
-              label: Text(controller.publisherType?.label() ?? 'Any source'),
-              selected: controller.publisherType != null,
-              onSelected: (v) {
-                if (v) {
-                  _showPublisherTypeDialog(context, controller);
-                } else {
-                  controller.applyFilters(publisherType: null);
-                }
-              },
-            ),
-            TextButton.icon(
-              onPressed: controller.refresh,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Refresh'),
-            ),
-          ],
+          ),
         ),
       ),
     );
+  }
+}
+
+class _DropdownFilterChip<T> extends StatelessWidget {
+  final String label;
+  final T? value;
+  final List<PopupMenuEntry<T>> items;
+  final ValueChanged<T?> onChanged;
+  final ThemeData theme;
+
+  const _DropdownFilterChip({
+    required this.label,
+    required this.value,
+    required this.items,
+    required this.onChanged,
+    required this.theme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isSelected = value != null;
+    return FilterChip(
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label),
+          const SizedBox(width: 4),
+          const Icon(Icons.arrow_drop_down, size: 18),
+        ],
+      ),
+      selected: isSelected,
+      onSelected: (_) {
+        _showDropdown(context);
+      },
+      selectedColor: theme.colorScheme.surfaceContainerHighest,
+      checkmarkColor: theme.colorScheme.onSurface,
+      showCheckmark: false,
+    );
+  }
+
+  void _showDropdown(BuildContext context) {
+    final RenderBox button = context.findRenderObject() as RenderBox;
+    final RenderBox overlay = Navigator.of(context).overlay!.context.findRenderObject() as RenderBox;
+    final Offset position = button.localToGlobal(Offset.zero, ancestor: overlay);
+    final Size size = button.size;
+
+    showMenu<T>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        position.dx,
+        position.dy + size.height,
+        position.dx + size.width,
+        position.dy + size.height + 200,
+      ),
+      items: items,
+      initialValue: value,
+    ).then((selected) {
+      if (selected != null) {
+        onChanged(selected);
+      }
+    });
   }
 }
 
@@ -210,113 +292,119 @@ class AnnouncementCard extends ConsumerWidget {
     final a = announcement;
     final image = a.imgUrl;
     final user = ref.watch(authControllerProvider).user;
-                     
+
     return Card(
       clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (image != null && image.isNotEmpty)
-              AspectRatio(
-                aspectRatio: 16 / 7,
-                child: Image.network(
-                  _absoluteImage(image),
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    color: theme.colorScheme.surfaceContainerHighest,
-                    child: const Center(
-                        child: Icon(Icons.image_not_supported_outlined)),
+        child: InkWell(
+          onTap: onTap,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (image != null && image.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: AspectRatio(
+                      aspectRatio: 16 / 7,
+                      child: Image.network(
+                        _absoluteImage(image),
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          color: theme.colorScheme.surfaceContainerHighest,
+                          child: const Center(
+                              child: Icon(Icons.image_not_supported_outlined)),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          a.title,
-                          style: theme.textTheme.titleMedium,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        _formatDate(a.datePosted),
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: [
-                      AppBadge(
-                        label: a.category.label(),
-                        small: true,
-                      ),
-                      if (a.urgencyLevel != UrgencyLevel.normal)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
                         AppBadge(
-                          label: a.urgencyLevel.label(),
+                          label: a.category.label(),
                           small: true,
                         ),
-                      AppBadge(
-                        icon: a.publisherType == PublisherType.moe
-                            ? Icons.account_balance_outlined
-                            : Icons.school_outlined,
-                        label: a.school?.schoolName ?? a.publisherType.label(),
-                        small: true,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    a.content,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 12),
-                  // Action bar
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      LikeAction(
-                        targetType: LikeTargetType.announcement,
-                        targetId: a.id,
-                      ),
-                      ShareAction(
-                        title: a.title,
-                        content: a.content,
-                        url: 'https://yourapp.com/announcements/${a.id}',
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.flag_outlined),
-                        onPressed: () => showDialog(
-                          context: context,
-                          builder: (_) => ReportDialog(
-                            targetType: ReportTargetType.announcement,
-                            targetId: a.id,
+                        if (a.urgencyLevel != UrgencyLevel.normal)
+                          AppBadge(
+                            label: a.urgencyLevel.label(),
+                            small: true,
+                          ),
+                        AppBadge(
+                          icon: a.publisherType == PublisherType.moe
+                              ? Icons.account_balance_outlined
+                              : Icons.school_outlined,
+                          label: a.school?.schoolName ?? a.publisherType.label(),
+                          small: true,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            a.title,
+                            style: theme.textTheme.titleMedium,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        tooltip: 'Report',
-                      ),
-                    ],
-                  ),
-                ],
+                        const SizedBox(width: 8),
+                        Text(
+                          _formatDate(a.datePosted),
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      a.content,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 12),
+                    // Action bar
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        LikeAction(
+                          targetType: LikeTargetType.announcement,
+                          targetId: a.id,
+                        ),
+                        ShareAction(
+                          title: a.title,
+                          content: a.content,
+                          url: 'https://yourapp.com/announcements/${a.id}',
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.flag_outlined),
+                          onPressed: () => showDialog(
+                            context: context,
+                            builder: (_) => ReportDialog(
+                              targetType: ReportTargetType.announcement,
+                              targetId: a.id,
+                            ),
+                          ),
+                          tooltip: 'Report',
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-    );
+      );
   }
 }
 
@@ -334,88 +422,4 @@ String _formatDate(DateTime d) {
   if (diff.inDays < 1) return '${diff.inHours}h ago';
   if (diff.inDays < 30) return '${diff.inDays}d ago';
   return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-}
-
-void _showCategoryDialog(BuildContext context, AnnouncementsFeedController controller) {
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Select Category'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            title: const Text('Any category'),
-            onTap: () {
-              controller.applyFilters(category: null);
-              Navigator.pop(context);
-            },
-          ),
-          ...AnnouncementCategory.values.map((category) => ListTile(
-            title: Text(category.label()),
-            onTap: () {
-              controller.applyFilters(category: category);
-              Navigator.pop(context);
-            },
-          )),
-        ],
-      ),
-    ),
-  );
-}
-
-void _showUrgencyDialog(BuildContext context, AnnouncementsFeedController controller) {
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Select Urgency'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            title: const Text('Any urgency'),
-            onTap: () {
-              controller.applyFilters(urgency: null);
-              Navigator.pop(context);
-            },
-          ),
-          ...UrgencyLevel.values.map((urgency) => ListTile(
-            title: Text(urgency.label()),
-            onTap: () {
-              controller.applyFilters(urgency: urgency);
-              Navigator.pop(context);
-            },
-          )),
-        ],
-      ),
-    ),
-  );
-}
-
-void _showPublisherTypeDialog(BuildContext context, AnnouncementsFeedController controller) {
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Select Source'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            title: const Text('Any source'),
-            onTap: () {
-              controller.applyFilters(publisherType: null);
-              Navigator.pop(context);
-            },
-          ),
-          ...PublisherType.values.map((type) => ListTile(
-            title: Text(type.label()),
-            onTap: () {
-              controller.applyFilters(publisherType: type);
-              Navigator.pop(context);
-            },
-          )),
-        ],
-      ),
-    ),
-  );
 }
