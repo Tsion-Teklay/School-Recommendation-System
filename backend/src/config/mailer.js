@@ -1,7 +1,9 @@
-import nodemailer from "nodemailer";
+import * as SibApiV3Sdk from "@getbrevo/brevo";
 import { logger } from "./logger.js";
 
-let transporter = null;
+let brevoClient = null;
+let senderEmail = null;
+let senderName = null;
 
 /**
  * Initialize mailer once at app startup
@@ -9,41 +11,43 @@ let transporter = null;
 export async function initMailer() {
   try {
     // =========================
-    // 1. TEST MODE (NO SMTP)
+    // 1. TEST MODE
     // =========================
     if (process.env.NODE_ENV === "test") {
-      transporter = {
-        sendMail: async (msg) => {
+      brevoClient = {
+        sendTransacEmail: async (msg) => {
           globalThis.__lastMail = msg;
           return { messageId: "test-" + Date.now() };
         },
       };
-
       logger.info("Mailer running in TEST mode");
       return;
     }
 
     // =========================
-    // 2. DEV / PROD SMTP MODE
+    // 2. BREVO HTTP API
     // =========================
-    transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT),
-      secure: Number(process.env.SMTP_PORT) === 465,
+    if (!process.env.BREVO_API_KEY) {
+      throw new Error("BREVO_API_KEY is not set");
+    }
 
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
+    const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+    apiInstance.authentications["apiKey"].apiKey = process.env.BREVO_API_KEY;
 
-      connectionTimeout: 30000,
-      greetingTimeout: 30000,
-      socketTimeout: 30000,
-    });
+    brevoClient = apiInstance;
+    senderEmail = process.env.MAIL_FROM || process.env.BREVO_SENDER_EMAIL;
+    senderName = process.env.BREVO_SENDER_NAME || "School Recommendation";
 
-    await transporter.verify();
+    if (!senderEmail) {
+      throw new Error("MAIL_FROM or BREVO_SENDER_EMAIL is not set");
+    }
 
-    logger.info("SMTP transporter initialized successfully");
+    // Verify credentials with a lightweight API call
+    const accountApi = new SibApiV3Sdk.AccountApi();
+    accountApi.authentications["apiKey"].apiKey = process.env.BREVO_API_KEY;
+    await accountApi.getAccount();
+
+    logger.info("Brevo transactional email client initialized successfully");
   } catch (err) {
     logger.error({ err }, "Failed to initialize mailer");
     throw err;
@@ -51,36 +55,30 @@ export async function initMailer() {
 }
 
 /**
- * Get transporter
- */
-export function getTransporter() {
-  if (!transporter) {
-    throw new Error("Mailer not initialized. Call initMailer() first.");
-  }
-  return transporter;
-}
-
-/**
  * Send email safely
  */
 export async function sendMail({ to, subject, text, html }) {
-  try {
-    const t = getTransporter();
+  if (!brevoClient) {
+    throw new Error("Mailer not initialized. Call initMailer() first.");
+  }
 
-    const info = await t.sendMail({
-      from: process.env.MAIL_FROM || "no-reply@schoolrec.local",
-      to,
-      subject,
-      text,
-      html,
-    });
+  try {
+    const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+
+    sendSmtpEmail.sender = { email: senderEmail, name: senderName };
+    sendSmtpEmail.to = [{ email: to }];
+    sendSmtpEmail.subject = subject;
+    sendSmtpEmail.textContent = text;
+    if (html) sendSmtpEmail.htmlContent = html;
+
+    const result = await brevoClient.sendTransacEmail(sendSmtpEmail);
 
     logger.info(
-      { to, subject, messageId: info.messageId },
+      { to, subject, messageId: result.messageId },
       "Email sent successfully"
     );
 
-    return info;
+    return result;
   } catch (err) {
     logger.error({ err, to }, "Email sending failed");
     throw err;
