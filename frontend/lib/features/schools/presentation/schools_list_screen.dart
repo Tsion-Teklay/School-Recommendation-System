@@ -276,6 +276,60 @@ class _SchoolsListScreenState extends ConsumerState<SchoolsListScreen> {
             onShowFilterDialog: _showFilterDialog,
           ),
           const SizedBox(height: 16),
+          if (isParent && cart.length == 1)
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: Colors.grey[700],
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Add 1 more school to compare',
+                      style: TextStyle(
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (isParent && cart.length == 5)
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.check_circle_outline,
+                    color: Colors.grey[700],
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Compare cart is full (max 5 schools)',
+                      style: TextStyle(
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           if (state.error != null)
             _ErrorBanner(
               message: state.error!,
@@ -374,8 +428,6 @@ class _Filters extends StatelessWidget {
                     );
                   }),
                 ),
-                if (minRating == 0)
-                  const Text('Any', style: TextStyle(color: Colors.grey)),
               ],
             ),
             const SizedBox(height: 4),

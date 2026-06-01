@@ -426,6 +426,7 @@ const SizedBox(height: 12),
                         labelText:
                             'Facilities (optional)',
                         border: OutlineInputBorder(),
+                        hintText: 'e.g., labs, library, sports field, ...',
                       ),
                       maxLines: 3,
                     ),

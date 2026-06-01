@@ -68,10 +68,9 @@ class _ForumListScreenState extends ConsumerState<ForumListScreen> {
     return ResponsiveShell(
       title: 'Forum',
       onScrollNotification: _onScroll,
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
         onPressed: _openCompose,
-        icon: const Icon(Icons.edit_outlined),
-        label: const Text('New post'),
+        child: const Icon(Icons.edit_outlined),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

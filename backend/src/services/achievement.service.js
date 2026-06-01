@@ -42,15 +42,20 @@ export async function createAchievement(data, userId) {
 
   // Notify MOE officer based on subcity
   try {
+    console.log({ achievementId: result.id }, "Attempting to notify MOE officer");
     const assignedOfficer = await assignAchievementRequest(result.id);
+    console.log({ assignedOfficer: assignedOfficer?.userId }, "MOE officer assigned");
     if (assignedOfficer) {
-      await createNotification({
+      const notification = await createNotification({
         recipientId: assignedOfficer.userId,
         recipientType: "MOE",
         message: `New achievement request "${result.title}" from school "${school.schoolName}" in ${school.subCity || 'your assigned area'}.`,
         sourceType: "SCHOOL",
         sourceId: school.id,
       });
+      console.log({ notificationId: notification.id, recipientId: assignedOfficer.userId }, "Notification created successfully");
+    } else {
+      console.warn({ achievementId: result.id }, "No MOE officer available to notify");
     }
   } catch (err) {
     // Log but don't fail the achievement creation
@@ -74,13 +79,14 @@ export async function getPendingAchievements(user) {
 
   // Get the MOE officer's subcity assignment
   try {
-    const officer = await db.moeOfficer.findUnique({
+    const officer = await db.moEOfficer.findUnique({
       where: { userId: user.id }
     });
 
     // If officer has a subcity assignment, filter by it
+    // Convert MOE officer's uppercase subCity to lowercase for school query
     if (officer && officer.subCity) {
-      where.school = { subCity: officer.subCity };
+      where.school = { subCity: officer.subCity.toLowerCase() };
     }
   } catch (error) {
     // If officer lookup fails, log but don't block the request
@@ -101,13 +107,14 @@ export async function getAchievementsByStatus(status, user) {
 
   // Get the MOE officer's subcity assignment
   try {
-    const officer = await db.moeOfficer.findUnique({
+    const officer = await db.moEOfficer.findUnique({
       where: { userId: user.id }
     });
 
     // If officer has a subcity assignment, filter by it
+    // Convert MOE officer's uppercase subCity to lowercase for school query
     if (officer && officer.subCity) {
-      where.school = { subCity: officer.subCity };
+      where.school = { subCity: officer.subCity.toLowerCase() };
     }
   } catch (error) {
     // If officer lookup fails, log but don't block the request
@@ -262,14 +269,23 @@ export async function assignAchievementRequest(achievementId) {
 
   if (!achievement) throw new NotFoundError("Achievement not found");
 
+  console.log({ achievementId, schoolSubCity: achievement.school.subCity }, "Assigning achievement request");
+
+  // Convert school subCity to uppercase for MOE officer query
+  const schoolSubCityUpper = achievement.school.subCity?.toUpperCase();
+
   // Try to find MoE officer for the school's sub-city
-  const assignedOfficer = await db.moeOfficer.findFirst({
-    where: { subCity: achievement.school.subCity }
+  const assignedOfficer = await db.moEOfficer.findFirst({
+    where: { subCity: schoolSubCityUpper }
   });
+
+  console.log({ assignedOfficer: assignedOfficer?.userId, schoolSubCityUpper }, "Found MOE officer by subcity");
 
   // Fallback to any available MoE officer if no sub-city match
   if (!assignedOfficer) {
-    return db.moeOfficer.findFirst();
+    const anyOfficer = await db.moEOfficer.findFirst();
+    console.log({ anyOfficer: anyOfficer?.userId }, "Found fallback MOE officer");
+    return anyOfficer;
   }
 
   return assignedOfficer;
