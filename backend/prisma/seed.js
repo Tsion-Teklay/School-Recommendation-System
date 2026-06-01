@@ -2,22 +2,24 @@ import "dotenv/config";
 import { PrismaClient } from "@prisma/client/index.js";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { faker } from "@faker-js/faker";
+import fs from "fs";
 
-// 1. Safely break down your environment connection URL
 const dbUrl = new URL(process.env.DATABASE_URL);
 const dbName = dbUrl.pathname.replace(/^\//, "");
 
-// 2. Instantiate the PrismaMariaDb driver adapter natively
 const adapter = new PrismaMariaDb({
-  host: dbUrl.hostname,
-  port: parseInt(dbUrl.port, 10) || 3306,
-  user: dbUrl.username,
-  password: decodeURIComponent(dbUrl.password),
-  database: dbName,
+  host: process.env.DATABASE_HOST,
+  port: Number(process.env.DATABASE_PORT),
+  user: process.env.DATABASE_USER,
+  password: process.env.DATABASE_PASSWORD,
+  database: process.env.DATABASE_NAME,
   connectionLimit: 10,
+  ssl: {
+    rejectUnauthorized: true,
+    ca: fs.readFileSync("./prisma/ca.pem", "utf8"),
+  },
 });
 
-// 3. Supply the native adapter to your Prisma Client instance
 const prisma = new PrismaClient({ adapter });
 
 const schools = [
@@ -153,81 +155,121 @@ const schools = [
   },
 ];
 
+const HASHED_PASSWORD =
+  "$2b$10$XPpUD9bGIL4uIqhUdL1TOeEnBqpYLFXEGkpTizvcu9f4POerIAcea";
+
+const seedAccounts = [
+  { email: "p@gmail.com", role: "PARENT" },
+  { email: "s@gmail.com", role: "SCHOOL_ADMIN" },
+  { email: "a@gmail.com", role: "MODERATOR" },
+  { email: "m@gmail.com", role: "MOE_OFFICER" },
+];
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 async function main() {
   console.log("🌱 Starting recommendation test seeding...");
 
+  // Seed fixed accounts
+  console.log("👤 Seeding fixed accounts...");
+  for (const account of seedAccounts) {
+    try {
+      await prisma.user.upsert({
+        where: { email: account.email },
+        update: {},
+        create: {
+          email: account.email,
+          fullName: faker.person.fullName(),
+          password: HASHED_PASSWORD,
+          role: account.role,
+          accountStatus: "ACTIVE",
+          emailVerified: true,   // ✅ Boolean, not Int
+          phoneVerified: true,   // ✅ Boolean, not Int
+        },
+      });
+      console.log(`✅ Seeded account: ${account.email} (${account.role})`);
+    } catch (error) {
+      console.error(`❌ Error seeding account ${account.email}:`, error.message);
+    }
+  }
+
+  // Seed schools sequentially with a timeout + delay to avoid connection exhaustion
   for (const schoolData of schools) {
     try {
-      // Wrapping with transaction logic like your previous working seeder script
-      await prisma.$transaction(async (tx) => {
-        const admin = await tx.user.create({
-          data: {
-            fullName: faker.person.fullName(),
-            email: faker.internet.email(),
-            password: "hashed_password",
-            role: "SCHOOL_ADMIN",
-            accountStatus: "ACTIVE", // Included to match previous working schema properties
-          },
-        });
+      await prisma.$transaction(
+        async (tx) => {
+          const admin = await tx.user.create({
+            data: {
+              fullName: faker.person.fullName(),
+              email: faker.internet.email(),
+              password: "hashed_password",
+              role: "SCHOOL_ADMIN",
+              accountStatus: "ACTIVE",
+            },
+          });
 
-        const school = await tx.school.create({
-          data: {
-            adminId: admin.id,
-            schoolName: schoolData.schoolName,
-            contactEmail: faker.internet.email(),
-            contactPhone: "+251911000000",
-            curriculum: schoolData.curriculum,
-            tuitionFee: schoolData.tuitionFee,
-            facilities: "Library, Science Lab, Football Field, ICT Lab",
-            verificationStatus: "VERIFIED",
-            latitude: schoolData.latitude,
-            longitude: schoolData.longitude,
-            rating: schoolData.rating,
-            reviewCount: faker.number.int({ min: 5, max: 200 }),
-            schoolLevel: schoolData.schoolLevel,
-            schoolType: schoolData.schoolType,
-            subCity: "BOLE",
-            totalAchievementScore: schoolData.achievementScore,
-          },
-        });
+          const school = await tx.school.create({
+            data: {
+              adminId: admin.id,
+              schoolName: schoolData.schoolName,
+              contactEmail: faker.internet.email(),
+              contactPhone: "+251911000000",
+              curriculum: schoolData.curriculum,
+              tuitionFee: schoolData.tuitionFee,
+              facilities: "Library, Science Lab, Football Field, ICT Lab",
+              verificationStatus: "VERIFIED",
+              latitude: schoolData.latitude,
+              longitude: schoolData.longitude,
+              rating: schoolData.rating,
+              reviewCount: faker.number.int({ min: 5, max: 200 }),
+              schoolLevel: schoolData.schoolLevel,
+              schoolType: schoolData.schoolType,
+              subCity: "BOLE",
+              totalAchievementScore: schoolData.achievementScore,
+            },
+          });
 
-        await tx.schoolDemographics.create({
-          data: {
-            schoolId: school.id,
-            academicYear: 2025,
-            totalStudents: faker.number.int({ min: 300, max: 3000 }),
-            girlsCount: faker.number.int({ min: 100, max: 1500 }),
-            boysCount: faker.number.int({ min: 100, max: 1500 }),
-            passingRate: schoolData.passingRate,
-            nationalExamScore: schoolData.nationalExamScore,
-          },
-        });
+          await tx.schoolDemographics.create({
+            data: {
+              schoolId: school.id,
+              academicYear: 2025,
+              totalStudents: faker.number.int({ min: 300, max: 3000 }),
+              girlsCount: faker.number.int({ min: 100, max: 1500 }),
+              boysCount: faker.number.int({ min: 100, max: 1500 }),
+              passingRate: schoolData.passingRate,
+              nationalExamScore: schoolData.nationalExamScore,
+            },
+          });
 
-        await tx.achievement.create({
-          data: {
-            schoolId: school.id,
-            title: "National Science Competition",
-            year: 2025,
-            tier: "GOLD",
-            score: schoolData.achievementScore,
-            status: "APPROVED",
-          },
-        });
+          await tx.achievement.create({
+            data: {
+              schoolId: school.id,
+              title: "National Science Competition",
+              year: 2025,
+              tier: "GOLD",
+              score: schoolData.achievementScore,
+              status: "APPROVED",
+            },
+          });
 
-        await tx.staffBreakdown.create({
-          data: {
-            schoolId: school.id,
-            educationLevel: "DEGREE",
-            count: faker.number.int({ min: 10, max: 60 }),
-          },
-        });
+          await tx.staffBreakdown.create({
+            data: {
+              schoolId: school.id,
+              educationLevel: "DEGREE",
+              count: faker.number.int({ min: 10, max: 60 }),
+            },
+          });
 
-        console.log(`✅ Seeded ${school.schoolName}`);
-      });
+          console.log(`✅ Seeded ${school.schoolName}`);
+        },
+        { timeout: 15000 } // ✅ 15s timeout per transaction
+      );
+
+      await sleep(200); // ✅ small pause between transactions
     } catch (error) {
       console.error(
         `❌ Error seeding row for ${schoolData.schoolName}:`,
-        error.message,
+        error.message
       );
     }
   }
