@@ -3,8 +3,7 @@ import { logger } from "../config/logger.js";
 
 const CHAPPA_API_KEY = process.env.CHAPPA_API_KEY;
 const CHAPPA_SECRET_KEY = process.env.CHAPPA_SECRET_KEY;
-const CHAPPA_BASE_URL = process.env.CHAPPA_BASE_URL || "https://api.chappa.co";
-
+const CHAPPA_BASE_URL = process.env.CHAPPA_BASE_URL ;
 export async function initializeChappaPayment({
   amount,
   email,
@@ -12,19 +11,8 @@ export async function initializeChappaPayment({
   adId,
   title,
 }) {
-  const frontendUrl = process.env.FRONTEND_URL || process.env.APP_URL || "http://localhost:3000";
+  const frontendUrl = process.env.FRONTEND_URL;
   const txRef = `ad_${adId}_${Date.now()}`;
-
-  // If mock mode is explicitly enabled via environment variable
-  if (process.env.MOCK_CHAPPA === "true") {
-    const mockTxRef = `mock_tx_ref_${adId}_${Date.now()}`;
-    logger.info({ adId }, "Mock Chappa Payment Enabled. Skipping external network call.");
-    return {
-      checkoutUrl: `${frontendUrl}/advertise/success/${adId}?tx_ref=${mockTxRef}`,
-      checkoutId: `mock_checkout_id_${adId}`,
-      txRef: mockTxRef,
-    };
-  }
 
   try {
     const response = await axios.post(
@@ -61,12 +49,14 @@ export async function initializeChappaPayment({
     // If the network call failed because of offline status/DNS issue, fall back to mock in dev/test mode
     if (
       process.env.NODE_ENV !== "production" &&
-      (error.code === "ENOTFOUND" || error.code === "ECONNREFUSED" || error.code === "ETIMEDOUT")
+      (error.code === "ENOTFOUND" ||
+        error.code === "ECONNREFUSED" ||
+        error.code === "ETIMEDOUT")
     ) {
       const fallbackTxRef = `mock_tx_ref_${adId}_${Date.now()}`;
       logger.warn(
         { error: error.message, adId },
-        "Chappa API unreachable. Falling back to Mock Payment Checkout for development/testing."
+        "Chappa API unreachable. Falling back to Mock Payment Checkout for development/testing.",
       );
       return {
         checkoutUrl: `${frontendUrl}/advertise/success/${adId}?tx_ref=${fallbackTxRef}`,
@@ -90,11 +80,14 @@ export async function verifyChappaPayment(txRef) {
   }
 
   try {
-    const response = await axios.get(`${CHAPPA_BASE_URL}/v1/transaction/verify/${txRef}`, {
-      headers: {
-        Authorization: `Bearer ${CHAPPA_SECRET_KEY}`,
+    const response = await axios.get(
+      `${CHAPPA_BASE_URL}/v1/transaction/verify/${txRef}`,
+      {
+        headers: {
+          Authorization: `Bearer ${CHAPPA_SECRET_KEY}`,
+        },
       },
-    });
+    );
 
     return {
       status: response.data.data.status,
