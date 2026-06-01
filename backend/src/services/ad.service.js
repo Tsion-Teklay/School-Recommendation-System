@@ -115,11 +115,43 @@ export async function createAdRequest({
 
 export async function getAdRequestStatus(adId) {
   const id = toIntId(adId, "adId");
-  const ad = await db.advertisement.findUnique({
+  let ad = await db.advertisement.findUnique({
     where: { id },
     include: { payment: true },
   });
   if (!ad) throw new NotFoundError("Advertisement request not found");
+
+  // Reconciliation: If the payment is initialized with Chappa but still pending locally, check Chappa directly!
+  if (ad.status === "AWAITING_PAYMENT" && ad.payment && ad.payment.status === "PENDING" && ad.chappaTransactionId) {
+    try {
+      const { verifyChappaPayment } = await import("./chappa.service.js");
+      const verification = await verifyChappaPayment(ad.chappaTransactionId);
+      if (verification.status === "success") {
+        logger.info({ adId: id }, "Payment verified via reconciliation pull. Activating advertisement.");
+        
+        const now = new Date();
+        const endDate = new Date(now);
+        endDate.setDate(endDate.getDate() + ad.durationDays);
+        
+        ad = await db.advertisement.update({
+          where: { id },
+          data: {
+            status: "ACTIVE",
+            startDate: now,
+            endDate,
+            payment: {
+              update: {
+                status: "COMPLETED",
+              },
+            },
+          },
+          include: { payment: true },
+        });
+      }
+    } catch (err) {
+      logger.warn({ err, adId: id }, "Reconciliation verification failed or payment still pending at Chappa.");
+    }
+  }
 
   return {
     advertisement: serializeAd(ad),
@@ -442,11 +474,6 @@ export async function initializeAdPayment({ adId }) {
       chappaTransactionId: chappaResult.txRef,  
     },  
   });  
-  
-  if (chappaResult.txRef.startsWith("mock_")) {
-    logger.info({ adId: id, txRef: chappaResult.txRef }, "Auto-processing callback for mock payment in development mode.");
-    await handleChappaCallback({ txRef: chappaResult.txRef });
-  }
   
   return {  
     paymentUrl: chappaResult.checkoutUrl,  
