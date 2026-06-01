@@ -369,13 +369,13 @@ Future<void> _handleRegularAccountDeletion() async {
               decoration: const InputDecoration(
                 labelText: 'Phone',
                 prefixText: '+251',
-                helperText: 'Enter 9 or 7 followed by 8 digits, or leave empty',
+                helperText: 'Add your phone number (optional)',
               ),
               validator: (v) {
                 final t = (v ?? '').trim();
                 if (t.isEmpty) return null;
-                if (t.length != 9) return 'Enter 9 digits after +251';
-                if (!t.startsWith('9') && !t.startsWith('7')) return 'Must start with 9 or 7';
+                if (t.length != 9) return 'Please enter a valid phone number';
+                if (!t.startsWith('9') && !t.startsWith('7')) return 'Please enter a valid phone number';
                 return null;
               },
             ),

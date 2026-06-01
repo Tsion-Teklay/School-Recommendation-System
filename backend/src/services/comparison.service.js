@@ -22,7 +22,7 @@ const DEFAULT_METRICS = [
   "schoolLevel",
   "schoolType",
   "totalStudents",
-  "genderBalance",
+  "genderBreakdown",
   "passingRate",
   "nationalExamScore",
   "achievementScore",
@@ -80,16 +80,17 @@ async function fetchSchoolMetrics(schoolIds) {
     const schoolAchievements = achievements.filter(a => a.schoolId === schoolId);
     const achievementScore = schoolAchievements.reduce((sum, a) => sum + (a.score || 0), 0);
     
-    // Calculate gender balance (ratio of girls to total, closer to 0.5 is more balanced)
-    let genderBalance = 0;
+    // Calculate gender breakdown (actual percentages)
+    let genderBreakdown = null;
     if (schoolDemographics && schoolDemographics.totalStudents > 0) {
-      const girlsRatio = schoolDemographics.girlsCount / schoolDemographics.totalStudents;
-      genderBalance = 1 - Math.abs(0.5 - girlsRatio) * 2; // 1 = perfectly balanced, 0 = completely imbalanced
+      const girlsPercent = Math.round((schoolDemographics.girlsCount / schoolDemographics.totalStudents) * 100);
+      const boysPercent = Math.round((schoolDemographics.boysCount / schoolDemographics.totalStudents) * 100);
+      genderBreakdown = `${girlsPercent}% Girls • ${boysPercent}% Boys`;
     }
-    
+
     metricsMap[schoolId] = {
       totalStudents: schoolDemographics?.totalStudents || 0,
-      genderBalance: genderBalance,
+      genderBreakdown: genderBreakdown,
       passingRate: schoolDemographics?.passingRate ? Number(schoolDemographics.passingRate) : 0,
       nationalExamScore: schoolDemographics?.nationalExamScore ? Number(schoolDemographics.nationalExamScore) : 0,
       achievementScore: achievementScore,

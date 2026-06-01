@@ -19,27 +19,38 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _form = GlobalKey<FormState>();
-  final _identifier = TextEditingController();
+  final _email = TextEditingController();
+  final _phone = TextEditingController();
   final _password = TextEditingController();
   bool _loading = false;
   String? _error;
   bool _isSelfDeactivated = false;
+  bool _identifierKind = false; // false = email, true = phone
 
   @override
   void dispose() {
-    _identifier.dispose();
+    _email.dispose();
+    _phone.dispose();
     _password.dispose();
     super.dispose();
   }
 
-  String? _validateIdentifier(String? raw) {  
-  final v = (raw ?? '').trim();  
-  if (v.isEmpty) return null; // Don't show error for empty during interaction  
-  if (v.contains('@')) {  
-    return EmailValidator.validate(v) ? null : 'Invalid email';  
-  }  
-  if (v.length < 5 || v.length > 15) return 'Phone must be 5–15 characters';  
-  return null;  
+  String? _validateEmail(String? raw) {
+  final v = (raw ?? '').trim();
+  if (v.isEmpty) return null; // Don't show error for empty during interaction
+  return EmailValidator.validate(v) ? null : 'Invalid email';
+}
+
+String? _validatePhone(String? raw) {
+  final v = (raw ?? '').trim();
+  if (v.isEmpty) return null; // Don't show error for empty during interaction
+  if (v.length != 9) {
+    return 'Please enter a valid phone number';
+  }
+  if (!v.startsWith('9') && !v.startsWith('7')) {
+    return 'Please enter a valid phone number';
+  }
+  return null;
 }
 
   Future<void> _submit() async {
@@ -51,9 +62,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
 
     try {
+      final identifier = _identifierKind
+          ? '+251${_phone.text.trim()}'
+          : _email.text.trim();
+
       await ref
           .read(authControllerProvider)
-          .login(_identifier.text.trim(), _password.text);
+          .login(identifier, _password.text);
 
       // Show success message
       if (mounted) {
@@ -64,8 +79,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (e is ApiException && e.code == 'PHONE_NOT_VERIFIED') {
         if (mounted) {
           MessageHelper.showInfo(context, 'Please verify your phone number to continue.');
+          final phone = _identifierKind ? _phone.text.trim() : _email.text.trim();
           context.go(
-            '/verify-phone?phone=${Uri.encodeComponent(_identifier.text.trim())}',
+            '/verify-phone?phone=${Uri.encodeComponent(phone)}',
           );
         }
         return;
@@ -98,20 +114,47 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             Text('Welcome back',
                 style: Theme.of(context).textTheme.headlineMedium),
             const SizedBox(height: 24),
-            TextFormField(
-              controller: _identifier,
-              keyboardType: TextInputType.emailAddress,
-              autofillHints: const [
-                AutofillHints.email,
-                AutofillHints.telephoneNumber,
+            SegmentedButton<bool>(
+              segments: const [
+                ButtonSegment(
+                  value: false,
+                  label: Text('Email'),
+                  icon: Icon(Icons.mail_outline),
+                ),
+                ButtonSegment(
+                  value: true,
+                  label: Text('Phone'),
+                  icon: Icon(Icons.phone_outlined),
+                ),
               ],
-              decoration: const InputDecoration(
-                labelText: 'Email or phone',
-                hintText: 'enter email or phone you registered with',
-                helperText: 'Use email or phone (+2519xxxxxxxx or +2517xxxxxxxx)',
-              ),
-              validator: _validateIdentifier,
+              selected: {_identifierKind},
+              onSelectionChanged: (s) =>
+                  setState(() => _identifierKind = s.first),
             ),
+            const SizedBox(height: 12),
+            if (!_identifierKind)
+              TextFormField(
+                controller: _email,
+                keyboardType: TextInputType.emailAddress,
+                autofillHints: const [AutofillHints.email],
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  hintText: 'example@gmail.com',
+                ),
+                validator: _validateEmail,
+              )
+            else
+              TextFormField(
+                controller: _phone,
+                keyboardType: TextInputType.phone,
+                autofillHints: const [AutofillHints.telephoneNumber],
+                decoration: const InputDecoration(
+                  labelText: 'Phone',
+                  prefixText: '+251',
+                  helperText: 'Add your phone number',
+                ),
+                validator: _validatePhone,
+              ),
             const SizedBox(height: 12),
             PasswordField(
               controller: _password,
@@ -168,7 +211,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   void _showReactivateDialog(BuildContext context) {
-    final identifierController = TextEditingController(text: _identifier.text);
+    final identifierController = TextEditingController(
+      text: _identifierKind ? '+251${_phone.text}' : _email.text,
+    );
     final passwordController = TextEditingController();
 
     showDialog(

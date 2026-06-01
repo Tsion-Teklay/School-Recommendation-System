@@ -184,22 +184,22 @@ class _ResponsiveShellState extends ConsumerState<ResponsiveShell> {
         final bottomSelected =
             _selectedIndex(location, bottomDests).clamp(-1, bottomDests.length - 1);
 
-        return Scaffold(
-          appBar: AppNavigationBar(
-            title: widget.title,
-            actions: [...?widget.actions, ...defaultActions],
-            leading: widget.leading ??
-                (context.canPop()
-                    ? IconButton(
-                        icon: const Icon(Icons.arrow_back),
-                        onPressed: () => context.pop(),
-                      )
-                    : null),
-          ),
-          floatingActionButton: widget.floatingActionButton,
-          body: Stack(
-            children: [
-              dests.isEmpty || isCompact
+        return Stack(
+          children: [
+            Scaffold(
+              appBar: AppNavigationBar(
+                title: widget.title,
+                actions: [...?widget.actions, ...defaultActions],
+                leading: widget.leading ??
+                    (context.canPop()
+                        ? IconButton(
+                            icon: const Icon(Icons.arrow_back),
+                            onPressed: () => context.pop(),
+                          )
+                        : null),
+              ),
+              floatingActionButton: widget.floatingActionButton,
+              body: dests.isEmpty || isCompact
                   ? body
                   : Row(
                       children: [
@@ -218,32 +218,32 @@ class _ResponsiveShellState extends ConsumerState<ResponsiveShell> {
                         Expanded(child: body),
                       ],
                     ),
-              // Floating notification button
-              if (auth.isAuthenticated)
-                FloatingNotificationButton(
-                  unreadCount: ref.watch(notificationsControllerProvider).unreadTotal,
-                  onTap: () => context.go('/notifications'),
-                ),
-              // Floating profile button (consistent - at very top corner)
-              // Only show when not on profile page
-              if (auth.isAuthenticated && !location.startsWith('/profile'))
-                FloatingProfileButton(
-                  onTap: () => context.go('/profile'),
-                ),
-            ],
-          ),
-          bottomNavigationBar: bottomDests.isNotEmpty && isCompact
-              ? AppBottomNavigation(
-                  selectedIndex: bottomSelected >= 0 ? bottomSelected : 0,
-                  items: bottomDests
-                      .map((d) => NavigationItem(
-                            label: d.label,
-                            icon: d.icon,
-                          ))
-                      .toList(),
-                  onDestinationSelected: (i) => context.go(bottomDests[i].path),
-                )
-              : null,
+              bottomNavigationBar: bottomDests.isNotEmpty && isCompact
+                  ? AppBottomNavigation(
+                      selectedIndex: bottomSelected >= 0 ? bottomSelected : 0,
+                      items: bottomDests
+                          .map((d) => NavigationItem(
+                                label: d.label,
+                                icon: d.icon,
+                              ))
+                          .toList(),
+                      onDestinationSelected: (i) => context.go(bottomDests[i].path),
+                    )
+                  : null,
+            ),
+            // Floating notification button
+            if (auth.isAuthenticated)
+              FloatingNotificationButton(
+                unreadCount: ref.watch(notificationsControllerProvider).unreadTotal,
+                onTap: () => context.go('/notifications'),
+              ),
+            // Floating profile button (on top of navbar)
+            // Only show when not on profile page
+            if (auth.isAuthenticated && !location.startsWith('/profile'))
+              FloatingProfileButton(
+                onTap: () => context.go('/profile'),
+              ),
+          ],
         );
       },
     );

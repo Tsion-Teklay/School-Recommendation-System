@@ -232,46 +232,49 @@ class MoeRankingBreakdown {
   }
 }
 
-class SchoolAnalytics {  
+class SchoolAnalytics {
   final double achievementScore;
   final double genderBalanceIndex;
   final double yearOverYearGrowth;
   final double percentileRanking;
   final double parentEngagementScore;
   final double communityTrustScore;
+  final double staffQualityScore;
   final List<SchoolDemographics> demographics;
   final List<Achievement> achievements;
 
-  SchoolAnalytics({  
+  SchoolAnalytics({
     required this.achievementScore,
     required this.genderBalanceIndex,
     required this.yearOverYearGrowth,
     required this.percentileRanking,
     required this.parentEngagementScore,
     required this.communityTrustScore,
+    required this.staffQualityScore,
     required this.demographics,
     required this.achievements,
-  });  
+  });
 
   factory SchoolAnalytics.fromJson(Map<String, dynamic> json) {
-    double parseDouble(dynamic v) {  
-      if (v is num) return v.toDouble();  
-      if (v is String) return double.tryParse(v) ?? 0;  
-      return 0;  
+    double parseDouble(dynamic v) {
+      if (v is num) return v.toDouble();
+      if (v is String) return double.tryParse(v) ?? 0;
+      return 0;
     }
-    return SchoolAnalytics(  
+    return SchoolAnalytics(
       achievementScore: parseDouble(json['achievementScore']),
       genderBalanceIndex: parseDouble(json['genderBalanceIndex']),
       yearOverYearGrowth: parseDouble(json['yearOverYearGrowth']),
       percentileRanking: parseDouble(json['percentileRanking']),
       parentEngagementScore: parseDouble(json['parentEngagementScore']),
       communityTrustScore: parseDouble(json['communityTrustScore']),
-      demographics: (json['demographics'] as List? ?? const [])  
-          .map((e) => SchoolDemographics.fromJson(e as Map<String, dynamic>))  
-          .toList(),  
-      achievements: (json['achievements'] as List? ?? const [])  
-          .map((e) => Achievement.fromJson(e as Map<String, dynamic>))  
-          .toList(),  
-    );  
-  }  
+      staffQualityScore: parseDouble(json['staffQualityScore']),
+      demographics: (json['demographics'] as List? ?? const [])
+          .map((e) => SchoolDemographics.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      achievements: (json['achievements'] as List? ?? const [])
+          .map((e) => Achievement.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+  }
 }

@@ -248,30 +248,51 @@ class _ComposeDialogState extends State<_ComposeDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(widget.title),
-      content: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 480),
-        child: TextField(
-          controller: _ctrl,
-          autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'What do you want to discuss?',
+    return Dialog(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 500, maxHeight: 400),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                widget.title,
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 16),
+              Expanded(
+                child: TextField(
+                  controller: _ctrl,
+                  autofocus: true,
+                  decoration: const InputDecoration(
+                    hintText: 'What do you want to discuss?',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: null,
+                  expands: true,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    onPressed: () => Navigator.of(context).pop(_ctrl.text.trim()),
+                    child: const Text('Post'),
+                  ),
+                ],
+              ),
+            ],
           ),
-          minLines: 3,
-          maxLines: 8,
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.of(context).pop(_ctrl.text.trim()),
-          child: const Text('Post'),
-        ),
-      ],
     );
   }
 }
