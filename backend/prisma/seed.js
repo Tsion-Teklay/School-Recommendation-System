@@ -2,24 +2,23 @@ import "dotenv/config";
 import { PrismaClient } from "@prisma/client/index.js";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import { faker } from "@faker-js/faker";
-import fs from "fs";
 
-const dbUrl = new URL(process.env.DATABASE_URL);
-const dbName = dbUrl.pathname.replace(/^\//, "");
+// 1. Safely break down your environment connection URL
+// const dbUrl = new URL(process.env.DATABASE_URL);
+// const dbName = dbUrl.pathname.replace(/^\//, "");
 
+// 2. Instantiate the PrismaMariaDb driver adapter natively
 const adapter = new PrismaMariaDb({
-  host: process.env.DATABASE_HOST,
-  port: Number(process.env.DATABASE_PORT),
-  user: process.env.DATABASE_USER,
-  password: process.env.DATABASE_PASSWORD,
-  database: process.env.DATABASE_NAME,
-  connectionLimit: 10,
-  ssl: {
-    rejectUnauthorized: true,
-    ca: fs.readFileSync("./prisma/ca.pem", "utf8"),
-  },
+    host: process.env.DATABASE_HOST,
+    port: Number(process.env.DATABASE_PORT),
+    user: process.env.DATABASE_USER,
+    password: process.env.DATABASE_PASSWORD,
+    database: process.env.DATABASE_NAME,
+    connectTimeout: 10000,
+    ssl: { rejectUnauthorized: false },
 });
 
+// 3. Supply the native adapter to your Prisma Client instance
 const prisma = new PrismaClient({ adapter });
 
 const schools = [
