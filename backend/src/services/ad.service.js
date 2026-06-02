@@ -159,7 +159,7 @@ export async function listActiveAds({ placement, limit = 5 }) {
 
   const ads = await db.advertisement.findMany({
     where,
-    take: limit,
+    take: Number(limit),
     orderBy: { createdAt: "desc" },
     select: publicAdSelect,
   });
