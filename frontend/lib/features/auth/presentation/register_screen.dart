@@ -9,6 +9,7 @@ import '../../../shared/widgets/loading_button.dart';
 import '../../../shared/widgets/password_field.dart';
 import '../../../shared/widgets/responsive_shell.dart';
 import '../data/auth_dtos.dart';
+import '../data/auth_repository.dart';
 import '../state/auth_controller.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -36,6 +37,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _loading = false;
   String? _error;
   bool _success = false;
+  bool _resending = false;
+  String? _resendMessage;
 
   @override
   void dispose() {
@@ -79,6 +82,30 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     }
   }
 
+  Future<void> _resendVerification() async {
+    setState(() {
+      _resending = true;
+      _resendMessage = null;
+    });
+    try {
+      final isEmail = _identifierKind == _IdentifierKind.email;
+      if (isEmail) {
+        await ref.read(authRepositoryProvider).resendVerification(_email.text.trim());
+      } else {
+        await ref.read(authRepositoryProvider).resendPhoneVerification('+251${_phone.text.trim()}');
+      }
+      if (mounted) {
+        setState(() => _resendMessage = 'New verification sent!');
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _resendMessage = ErrorHandler.getUserFriendlyMessage(e));
+      }
+    } finally {
+      if (mounted) setState(() => _resending = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_success) {
@@ -108,6 +135,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   : "Enter the SMS verification code to activate your account.",
               textAlign: TextAlign.center,
             ),
+            if (_resendMessage != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                _resendMessage!,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: _resendMessage == 'New verification sent!'
+                      ? Colors.green
+                      : Theme.of(context).colorScheme.error,
+                ),
+              ),
+            ],
             const SizedBox(height: 24),
             FilledButton(
               onPressed: () {
@@ -122,6 +161,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               child: Text(
                 isEmail ? 'Back to sign in' : 'Verify phone',
               ),
+            ),
+            const SizedBox(height: 16),
+            Center(
+              child: _resending
+                  ? const CircularProgressIndicator()
+                  : TextButton(
+                      onPressed: _resendVerification,
+                      child: Text(
+                        isEmail
+                            ? "Didn't get the email? Resend verification link"
+                            : "Didn't get the SMS? Resend verification code",
+                      ),
+                    ),
             ),
           ],
         ),
