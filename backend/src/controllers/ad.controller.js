@@ -14,6 +14,7 @@ import {
   getAdRevenueAnalytics,
   initializeAdPayment,
   handleChappaCallback,
+  verifyAdPayment,
 } from "../services/ad.service.js";
 
 export const requestAd = asyncHandler(async (req, res) => {
@@ -93,3 +94,9 @@ export const chappaCallback = asyncHandler(async (req, res) => {
   const result = await handleChappaCallback({ txRef: req.body.tx_ref });
   res.json({ message: "Payment processed successfully", ...result });
 });
+
+export const verifyPaymentStatus = asyncHandler(async (req, res) => {
+  const ad = await verifyAdPayment(req.params.id);
+  res.json({ message: "Payment status verified", advertisement: ad });
+});
+

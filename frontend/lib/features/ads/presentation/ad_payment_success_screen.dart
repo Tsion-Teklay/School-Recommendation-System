@@ -27,7 +27,7 @@ class _AdPaymentSuccessScreenState extends ConsumerState<AdPaymentSuccessScreen>
   
   Future<void> _checkStatus() async {  
     try {  
-      final ad = await ref.read(adRepositoryProvider).getRequestStatus(widget.adId);  
+      final ad = await ref.read(adRepositoryProvider).verifyPaymentStatus(widget.adId);  
       if (mounted) {  
         setState(() {  
           _ad = ad;  

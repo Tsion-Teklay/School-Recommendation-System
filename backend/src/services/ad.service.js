@@ -182,7 +182,6 @@ export async function getAdForPayment(adId) {
   };
 }
 
-
 // -----------------------------------------------------------------------------
 // Public — display + analytics
 // -----------------------------------------------------------------------------
@@ -192,7 +191,7 @@ export async function listActiveAds({ placement, limit = 5 }) {
 
   const ads = await db.advertisement.findMany({
     where,
-    take: limit,
+    take: Number(limit),
     orderBy: { createdAt: "desc" },
     select: publicAdSelect,
   });
@@ -256,7 +255,7 @@ export async function listAdsForAdmin({ query }) {
       take: Number(limit),
       orderBy: { createdAt: "desc" },
       include: {
-        payment: true
+        payment: true,
       },
     }),
     db.advertisement.count({ where }),
@@ -316,7 +315,10 @@ export async function approveAd({ adId }) {
       placementType: updated.placementType,
     });
   } catch (err) {
-    logger.error({ err, adId: updated.id }, "Failed to send ad payment instructions email, continuing");
+    logger.error(
+      { err, adId: updated.id },
+      "Failed to send ad payment instructions email, continuing",
+    );
   }
 
   return serializeAd(updated);
@@ -436,84 +438,179 @@ export function assertModerator(user) {
   }
 }
 
-export async function initializeAdPayment({ adId }) {  
-  const id = toIntId(adId, "adId");  
-  const ad = await db.advertisement.findUnique({  
-    where: { id },  
-    include: { payment: true },  
-  });  
-  if (!ad) throw new NotFoundError("Advertisement not found");  
-  if (ad.status !== "AWAITING_PAYMENT") {  
-    throw new ConflictError("This advertisement is not awaiting payment");  
-  }  
-  if (!ad.payment) {  
-    throw new ValidationError("Payment record missing for this advertisement");  
-  }  
-  
-  const { initializeChappaPayment } = await import("./chappa.service.js");  
-  const chappaResult = await initializeChappaPayment({  
-    amount: Number(ad.payment.amount),  
-    email: ad.contactEmail,  
-    phone: ad.contactPhone,  
-    adId: id,  
-    title: ad.title,  
-  });  
-  
-  await db.payment.update({  
-    where: { id: ad.paymentId },  
-    data: {  
-      chappaCheckoutId: chappaResult.checkoutId,  
-      chappaReference: chappaResult.txRef,  
-    },  
-  });  
-  
-  await db.advertisement.update({  
-    where: { id },  
-    data: {  
-      chappaPaymentUrl: chappaResult.checkoutUrl,  
-      chappaTransactionId: chappaResult.txRef,  
-    },  
-  });  
-  
-  return {  
-    paymentUrl: chappaResult.checkoutUrl,  
-    checkoutId: chappaResult.checkoutId,  
-  };  
+export async function initializeAdPayment({ adId }) {
+  const id = toIntId(adId, "adId");
+
+  const ad = await db.advertisement.findUnique({
+    where: { id },
+    include: { payment: true },
+  });
+
+  if (!ad) throw new NotFoundError("Advertisement not found");
+  if (ad.status !== "AWAITING_PAYMENT") {
+    throw new ConflictError("This advertisement is not awaiting payment");
+  }
+  if (!ad.payment) {
+    throw new ValidationError("Payment record missing for this advertisement");
+  }
+
+  // Dynamic import is perfectly fine here if optimizing startup times
+  const { initializeChappaPayment } = await import("./chappa.service.js");
+
+  // 1. Call the payment gateway
+  let chappaResult;
+  try {
+    chappaResult = await initializeChappaPayment({
+      amount: Number(ad.payment.amount),
+      email: ad.contactEmail,
+      phone: ad.contactPhone,
+      adId: id,
+      title: ad.title,
+    });
+  } catch (error) {
+    logger.error(
+      { adId: id, error: error.message },
+      "Chapa API initialization failed",
+    );
+    throw new Error(`Payment Gateway Error: ${error.message}`);
+  }
+
+  // 2. Single atomic database operation using Prisma nested updates
+  await db.advertisement.update({
+    where: { id },
+    data: {
+      chappaPaymentUrl: chappaResult.checkoutUrl,
+      chappaTransactionId: chappaResult.txRef,
+      payment: {
+        update: {
+          chappaCheckoutId: chappaResult.checkoutId,
+          chappaReference: chappaResult.txRef,
+        },
+      },
+    },
+  });
+
+  // 3. Handle Development/Mock Payments
+  if (chappaResult.txRef?.startsWith("mock_")) {
+    logger.info(
+      { adId: id, txRef: chappaResult.txRef },
+      "Auto-processing callback for mock payment in development mode.",
+    );
+    try {
+      // Assuming handleChappaCallback is imported or available in scope
+      await handleChappaCallback({ txRef: chappaResult.txRef });
+    } catch (callbackError) {
+      logger.error(
+        { txRef: chappaResult.txRef, err: callbackError },
+        "Failed to auto-process mock callback",
+      );
+      // Do not block the user response if the local mock processor fails
+    }
+  }
+
+  return {
+    paymentUrl: chappaResult.checkoutUrl,
+    checkoutId: chappaResult.checkoutId,
+  };
+}
+export async function handleChappaCallback({ txRef }) {
+  const { verifyChappaPayment } = await import("./chappa.service.js");
+  const verification = await verifyChappaPayment(txRef);
+
+  if (
+    verification.status !== "success" &&
+    verification.status !== "COMPLETED"
+  ) {
+    throw new Error("Payment verification failed at provider level");
+  }
+
+  const ad = await db.advertisement.findFirst({
+    where: { chappaTransactionId: txRef },
+    include: { payment: true },
+  });
+
+  if (!ad) throw new NotFoundError("Advertisement not found");
+
+  const now = new Date();
+  const endDate = new Date(now);
+  endDate.setDate(endDate.getDate() + ad.durationDays);
+
+  await db.$transaction([
+    db.payment.update({
+      where: { id: ad.paymentId },
+      data: { status: "COMPLETED" },
+    }),
+    db.advertisement.update({
+      where: { id: ad.id },
+      data: {
+        status: "ACTIVE",
+        startDate: now,
+        endDate,
+      },
+    }),
+  ]);
+
+  return { success: true, adId: ad.id };
 }
 
-export async function handleChappaCallback({ txRef }) {  
-  const { verifyChappaPayment } = await import("./chappa.service.js");  
-  const verification = await verifyChappaPayment(txRef);  
-  
-  if (verification.status !== 'success') {  
-    throw new Error('Payment not successful');  
-  }  
-  
-  const ad = await db.advertisement.findFirst({  
-    where: { chappaTransactionId: txRef },  
-    include: { payment: true },  
-  });  
-  
-  if (!ad) throw new NotFoundError("Advertisement not found");  
-  
-  const now = new Date();  
-  const endDate = new Date(now);  
-  endDate.setDate(endDate.getDate() + ad.durationDays);  
-  
-  await db.$transaction([  
-    db.payment.update({  
-      where: { id: ad.paymentId },  
-      data: { status: "COMPLETED" },  
-    }),  
-    db.advertisement.update({  
-      where: { id: ad.id },  
-      data: {  
-        status: "ACTIVE",  
-        startDate: now,  
-        endDate,  
-      },  
-    }),  
-  ]);  
-  
-  return { success: true, adId: ad.id };  
+export async function verifyAdPayment(adId) {
+  const id = toIntId(adId, "adId");
+  const ad = await db.advertisement.findUnique({
+    where: { id },
+    include: { payment: true },
+  });
+
+  if (!ad) throw new NotFoundError("Advertisement not found");
+
+  // If already active/completed, no need to verify again
+  if (ad.status === "ACTIVE" && ad.payment?.status === "COMPLETED") {
+    return serializeAd(ad);
+  }
+
+  const txRef = ad.chappaTransactionId;
+  if (!txRef) {
+    // Payment hasn't been initialized yet
+    return serializeAd(ad);
+  }
+
+  const { verifyChappaPayment } = await import("./chappa.service.js");
+  let verification;
+  try {
+    verification = await verifyChappaPayment(txRef);
+  } catch (error) {
+    logger.error(
+      { adId: id, txRef, error: error.message },
+      "Chappa verification check failed",
+    );
+    return serializeAd(ad); // Return current state without crashing
+  }
+
+  if (
+    verification.status === "success" ||
+    verification.status === "COMPLETED"
+  ) {
+    const now = new Date();
+    const endDate = new Date(now);
+    endDate.setDate(endDate.getDate() + ad.durationDays);
+
+    const updated = await db.$transaction([
+      db.payment.update({
+        where: { id: ad.paymentId },
+        data: { status: "COMPLETED" },
+      }),
+      db.advertisement.update({
+        where: { id: ad.id },
+        data: {
+          status: "ACTIVE",
+          startDate: now,
+          endDate,
+        },
+        include: { payment: true },
+      }),
+    ]);
+    return serializeAd(updated[1]);
+  }
+
+  return serializeAd(ad);
 }
+

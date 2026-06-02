@@ -113,6 +113,15 @@ class AdRepository {
     );
   }
 
+  Future<Advertisement> verifyPaymentStatus(int id) async {
+    final res = await _dio.get('/api/ads/$id/verify-payment');
+    if (res.statusCode != 200) throw _toApiException(res);
+    return Advertisement.fromJson(
+      (res.data as Map<String, dynamic>)['advertisement']
+          as Map<String, dynamic>,
+    );
+  }
+
   Future<void> recordImpression(int adId) async {
     await _dio.post('/api/ads/$adId/impression');
   }
