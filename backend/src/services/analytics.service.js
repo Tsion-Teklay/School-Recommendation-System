@@ -459,6 +459,31 @@ export async function calculateCommunityTrustScore(schoolId) {
 }
 
 /**
+ * Calculate staff quality score (based on education levels)
+ */
+export async function calculateStaffQualityScore(schoolId) {
+  const staffBreakdowns = await db.staffBreakdown.findMany({
+    where: { schoolId },
+  });
+
+  if (staffBreakdowns.length === 0) return 0;
+
+  const phdCount =
+    staffBreakdowns.find((s) => s.educationLevel === "PHD")?.count || 0;
+  const mastersCount =
+    staffBreakdowns.find((s) => s.educationLevel === "MASTERS")?.count || 0;
+  const degreeCount =
+    staffBreakdowns.find((s) => s.educationLevel === "DEGREE")?.count || 0;
+  const totalStaff = staffBreakdowns.reduce((sum, s) => sum + s.count, 0);
+
+  if (totalStaff === 0) return 0;
+
+  // Weighted score: PhD (4), Masters (3), Degree (2), others (0)
+  // Normalized to 0-1 by dividing by (totalStaff * 4)
+  return (phdCount * 4 + mastersCount * 3 + degreeCount * 2) / (totalStaff * 4);
+}
+
+/**
  * Batch calculate analytics metrics for multiple schools
  * Optimized to reduce N+1 query problems
  */
@@ -632,6 +657,7 @@ export async function getSchoolCompositeAnalytics(schoolId) {
     const parentEngagementScore =
       await calculateParentEngagementScore(schoolId);
     const communityTrustScore = await calculateCommunityTrustScore(schoolId);
+    const staffQualityScore = await calculateStaffQualityScore(schoolId);
 
     const [demographics, achievements] = await Promise.all([
       db.schoolDemographics.findMany({
@@ -654,6 +680,7 @@ export async function getSchoolCompositeAnalytics(schoolId) {
       percentileRanking,
       parentEngagementScore,
       communityTrustScore,
+      staffQualityScore,
       demographics,
       achievements,
     };

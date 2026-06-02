@@ -82,7 +82,7 @@ class MoeHomeScreen extends ConsumerWidget {
                   for (final card in cards) ...[
                     SizedBox(
                       width: double.infinity,
-                      height: 200,
+                      height: 260,
                       child: card,
                     ),
                     const SizedBox(height: 12),
@@ -116,7 +116,7 @@ class _ActionCard extends StatelessWidget {
     final theme = Theme.of(context);
     return Card(
       child: SizedBox(
-        height: 200,
+        height: 260,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -125,16 +125,18 @@ class _ActionCard extends StatelessWidget {
               Icon(icon, size: 32, color: theme.colorScheme.primary),
               const SizedBox(height: 8),
               Text(title, style: theme.textTheme.titleLarge),
-              const SizedBox(height: 4),
+              const SizedBox(height: 8),
               Expanded(
                 child: Text(
                   body,
                   style: theme.textTheme.bodyMedium,
-                  overflow: TextOverflow.fade,
                 ),
               ),
               const SizedBox(height: 8),
-              FilledButton(onPressed: onTap, child: Text(buttonLabel)),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(onPressed: onTap, child: Text(buttonLabel)),
+              ),
             ],
           ),
         ),
