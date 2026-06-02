@@ -24,7 +24,11 @@ export async function initializeChappaPayment({
 
   // 2. Safely clean first and last name variables to prevent validation hiccups
   const cleanFirstName = "Advertisement";
-  const cleanLastName = `AdID${adId}`; // Removed the hyphen (-) just to be safe with Chapa validators
+  const cleanLastName = `AdID${adId}`;
+
+  // 🟢 Construct a clean description and tightly bound it to Chapa's strict 50-character ceiling
+  const rawDescription = `Ad Pay: ${title || ""}`.trim();
+  const cleanDescription = rawDescription.substring(0, 50);
 
   try {
     const response = await axios.post(
@@ -40,12 +44,8 @@ export async function initializeChappaPayment({
         callback_url: `${process.env.APP_URL}/api/ads/chappa/callback`,
         return_url: `${frontendUrl}/advertise/success/${adId}`,
         customization: {
-          title: `Advertisement ${adId}`,
-          description:
-            `Payment for advertisement placement ${title || ""}`.substring(
-              0,
-              100,
-            ), // Ensures it doesn't get excessively long
+          title: `Ad Payment`,
+          description: `Payment for Advertisement ID ${adId}`, // Safe: only contains letters, spaces, and numbers
         },
       },
       {
@@ -60,7 +60,7 @@ export async function initializeChappaPayment({
     return {
       checkoutUrl: response.data?.data?.checkout_url,
       checkoutId: response.data?.data?.id || `chapa_${Date.now()}`,
-      txRef: txRef, // Using the local txRef variable to guarantee consistency
+      txRef: txRef,
     };
   } catch (error) {
     // Helpful debugging fallback: Log the EXACT text response from Chapa's API validators
@@ -97,7 +97,6 @@ export async function initializeChappaPayment({
     throw new Error("Failed to initialize payment");
   }
 }
-
 export async function verifyChappaPayment(txRef) {
   if (!txRef)
     throw new Error("Transaction reference token is required for verification");
