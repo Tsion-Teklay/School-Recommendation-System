@@ -72,55 +72,65 @@ class _ForumDetailScreenState extends ConsumerState<ForumDetailScreen> {
               child: Center(child: Text('Post not found.')),
             )
           else ...[
-            _PostBody(
-              post: post,
-              isMine: post.authorId == me?.id,
-              isModerator: me != null && me.role.toWire() == 'MODERATOR',
-              onEdit: () => _editPost(post),
-              onDelete: () => _deletePost(post),
-            ),
-            const SizedBox(height: 16),
-            Text('Replies', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            if ((post.replies ?? []).isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                child: Text('No replies yet.'),
-              )
-            else
-              for (final r in post.replies!)
-                _PostBody(
-                  post: r,
-                  isMine: r.authorId == me?.id,
-                  isModerator: me != null && me.role.toWire() == 'MODERATOR',
-                  onEdit: () => _editPost(r),
-                  onDelete: () => _deletePost(r),
-                  isReply: true,
-                ),
-            const SizedBox(height: 16),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 800),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    TextField(
-                      controller: _replyCtrl,
-                      decoration: const InputDecoration(
-                        labelText: 'Add a reply',
-                      ),
-                      minLines: 2,
-                      maxLines: 5,
+                    _PostBody(
+                      post: post,
+                      isMine: post.authorId == me?.id,
+                      isModerator: me != null && me.role.toWire() == 'MODERATOR',
+                      onEdit: () => _editPost(post),
+                      onDelete: () => _deletePost(post),
                     ),
+                    const SizedBox(height: 16),
+                    Text('Replies', style: Theme.of(context).textTheme.titleMedium),
                     const SizedBox(height: 8),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: FilledButton.icon(
-                        onPressed: controller.saving
-                            ? null
-                            : () => _sendReply(controller),
-                        icon: const Icon(Icons.send),
-                        label: const Text('Reply'),
+                    if ((post.replies ?? []).isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        child: Text('No replies yet.'),
+                      )
+                    else
+                      for (final r in post.replies!)
+                        _PostBody(
+                          post: r,
+                          isMine: r.authorId == me?.id,
+                          isModerator: me != null && me.role.toWire() == 'MODERATOR',
+                          onEdit: () => _editPost(r),
+                          onDelete: () => _deletePost(r),
+                          isReply: true,
+                        ),
+                    const SizedBox(height: 16),
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            TextField(
+                              controller: _replyCtrl,
+                              decoration: const InputDecoration(
+                                labelText: 'Add a reply',
+                              ),
+                              minLines: 2,
+                              maxLines: 5,
+                            ),
+                            const SizedBox(height: 8),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: FilledButton.icon(
+                                onPressed: controller.saving
+                                    ? null
+                                    : () => _sendReply(controller),
+                                icon: const Icon(Icons.send),
+                                label: const Text('Reply'),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -245,6 +255,10 @@ class _PostBodyState extends ConsumerState<_PostBody> {
     return Padding(
       padding: EdgeInsets.only(left: isReply ? 24 : 0, bottom: 8),
       child: Card(
+        shape: RoundedRectangleBorder(
+          side: BorderSide(color: theme.colorScheme.primary.withOpacity(0.3)),
+          borderRadius: BorderRadius.circular(12),
+        ),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(

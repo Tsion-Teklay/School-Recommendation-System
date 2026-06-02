@@ -226,8 +226,8 @@ String _label(String metric) {
       return 'Distance';
     case 'totalStudents':
       return 'Total Students';
-    case 'genderBalance':
-      return 'Gender Balance';
+    case 'genderBreakdown':
+      return 'Gender Distribution';
     case 'achievementScore':
       return 'Achievement Score';
     default:
@@ -263,13 +263,8 @@ String _value(School s, String metric) {
       return s.nationalExamScore != null ? '${s.nationalExamScore}%' : '—';
     case 'totalStudents':
       return s.totalStudents != null ? '${s.totalStudents}' : '—';
-    case 'genderBalance':
-      if (s.genderBalance == null) return '—';
-      final balance = s.genderBalance!;
-      if (balance == 0) return 'Not balanced';
-      if (balance >= 0.8) return 'Well balanced';
-      if (balance >= 0.5) return 'Moderately balanced';
-      return 'Poorly balanced';
+    case 'genderBreakdown':
+      return s.genderBreakdown ?? '—';
     case 'achievementScore':
       return s.achievementScore != null ? '${s.achievementScore}' : '—';
     default:

@@ -243,7 +243,7 @@ class School {
 
   /// Additional metrics from comparisons and analytics
   final int? totalStudents;
-  final num? genderBalance;
+  final String? genderBreakdown;
   final int? achievementScore;
 
   /// Facility images attached to this school. Only populated on
@@ -279,7 +279,7 @@ class School {
     this.passingRate,
     this.nationalExamScore,
     this.totalStudents,
-    this.genderBalance,
+    this.genderBreakdown,
     this.achievementScore,
     required this.facilityImages,
     this.followerCount,
@@ -334,7 +334,7 @@ class School {
       passingRate: coerceDouble(json['passingRate']),
       nationalExamScore: coerceDouble(json['nationalExamScore']),
       totalStudents: coerceInt(json['totalStudents']),
-      genderBalance: coerceDouble(json['genderBalance']),
+      genderBreakdown: json['genderBreakdown'] as String?,
       achievementScore: coerceInt(json['achievementScore']),
       facilityImages: imgs
           .whereType<Map>()

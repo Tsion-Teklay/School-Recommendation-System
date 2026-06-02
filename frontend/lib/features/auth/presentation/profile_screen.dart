@@ -148,6 +148,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _logout() async {
+    final confirmed = await MessageHelper.showConfirmationDialog(
+      context,
+      'Sign out?',
+      'Are you sure you want to sign out?',
+      confirmText: 'Sign out',
+    );
+    if (confirmed != true) return;
     await ref.read(authControllerProvider).logout();
   }
 
@@ -312,7 +319,7 @@ Future<void> _handleRegularAccountDeletion() async {
           children: [
             // User info with signout button
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const CircleAvatar(child: Icon(Icons.person)),
                 const SizedBox(width: 16),
@@ -328,6 +335,19 @@ Future<void> _handleRegularAccountDeletion() async {
                     ],
                   ),
                 ),
+                if (user.role == UserRole.parent)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: OutlinedButton(
+                      onPressed: () => context.go('/followed-schools'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        minimumSize: const Size(0, 32),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: const Text('Followed schools', style: TextStyle(fontSize: 12)),
+                    ),
+                  ),
                 IconButton(
                   tooltip: 'Sign out',
                   onPressed: _logout,
@@ -349,13 +369,13 @@ Future<void> _handleRegularAccountDeletion() async {
               decoration: const InputDecoration(
                 labelText: 'Phone',
                 prefixText: '+251',
-                helperText: 'Enter 9 or 7 followed by 8 digits, or leave empty',
+                helperText: 'Add your phone number (optional)',
               ),
               validator: (v) {
                 final t = (v ?? '').trim();
                 if (t.isEmpty) return null;
-                if (t.length != 9) return 'Enter 9 digits after +251';
-                if (!t.startsWith('9') && !t.startsWith('7')) return 'Must start with 9 or 7';
+                if (t.length != 9) return 'Please enter a valid phone number';
+                if (!t.startsWith('9') && !t.startsWith('7')) return 'Please enter a valid phone number';
                 return null;
               },
             ),
@@ -369,21 +389,20 @@ Future<void> _handleRegularAccountDeletion() async {
               onPressed: _save,
               child: const Text('Save changes'),
             ),
+            const SizedBox(height: 12),
+            OutlinedButton(
+              onPressed: _changePassword,
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                minimumSize: const Size(0, 32),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: const Text('Change password', style: TextStyle(fontSize: 12)),
+            ),
             const SizedBox(height: 32),
-            if (user.role == UserRole.parent)  
-              OutlinedButton(  
-                onPressed: () => context.go('/followed-schools'),  
-                child: const Text('Followed schools'),  
-              ),  
-            if (user.role == UserRole.parent) const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                IconButton(
-                  tooltip: 'Change password',
-                  onPressed: _changePassword,
-                  icon: const Icon(Icons.lock_reset),
-                ),
                 IconButton(
                   tooltip: 'Deactivate account',
                   onPressed: _confirmDeactivate,

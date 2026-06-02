@@ -368,22 +368,14 @@ class _AnnouncementComposeDialogState extends State<AnnouncementComposeDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Header
-            Container(
+            // Header - simplified without colored background
+            Padding(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-              ),
               child: Row(
                 children: [
-                  Icon(Icons.add_circle_outline, color: theme.colorScheme.onPrimaryContainer),
-                  const SizedBox(width: 12),
                   Text(
                     widget.forMoE ? 'New ministry announcement' : 'New school announcement',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      color: theme.colorScheme.onPrimaryContainer,
-                    ),
+                    style: theme.textTheme.titleLarge,
                   ),
                   const Spacer(),
                   IconButton(
@@ -393,6 +385,7 @@ class _AnnouncementComposeDialogState extends State<AnnouncementComposeDialog> {
                 ],
               ),
             ),
+            const Divider(height: 1),
             // Form content
             Expanded(
               child: SingleChildScrollView(
@@ -423,7 +416,7 @@ class _AnnouncementComposeDialogState extends State<AnnouncementComposeDialog> {
                                 const SizedBox(height: 4),
                                 Text(
                                   widget.schools.first.schoolName,
-                                  style: theme.textTheme.bodyLarge?.copyWith(
+                                  style: theme.textTheme.bodyMedium?.copyWith(
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -434,14 +427,9 @@ class _AnnouncementComposeDialogState extends State<AnnouncementComposeDialog> {
                           // Show dropdown when there are multiple schools (for other cases)
                           DropdownButtonFormField<int>(
                             initialValue: _schoolId,
-                            decoration: InputDecoration(
+                            decoration: const InputDecoration(
                               labelText: 'School',
-                              filled: true,
-                              fillColor: theme.colorScheme.surfaceContainerHighest,
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide.none,
-                              ),
+                              border: OutlineInputBorder(),
                             ),
                             items: [
                               for (final s in widget.schools)
@@ -449,17 +437,12 @@ class _AnnouncementComposeDialogState extends State<AnnouncementComposeDialog> {
                             ],
                             onChanged: (v) => setState(() => _schoolId = v),
                           ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       TextFormField(
                         controller: _titleCtrl,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           labelText: 'Title',
-                          filled: true,
-                          fillColor: theme.colorScheme.surfaceContainerHighest,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide.none,
-                          ),
+                          border: OutlineInputBorder(),
                         ),
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
@@ -468,20 +451,15 @@ class _AnnouncementComposeDialogState extends State<AnnouncementComposeDialog> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       TextFormField(
                         controller: _contentCtrl,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           labelText: 'Content',
-                          filled: true,
-                          fillColor: theme.colorScheme.surfaceContainerHighest,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide.none,
-                          ),
+                          border: OutlineInputBorder(),
                         ),
-                        minLines: 4,
-                        maxLines: 8,
+                        minLines: 3,
+                        maxLines: 6,
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
                             return 'Content is required';
@@ -489,25 +467,22 @@ class _AnnouncementComposeDialogState extends State<AnnouncementComposeDialog> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       Row(
                         children: [
                           Expanded(
                             child: DropdownButtonFormField<AnnouncementCategory>(
                               initialValue: _category,
-                              decoration: InputDecoration(
+                              decoration: const InputDecoration(
                                 labelText: 'Category',
-                                filled: true,
-                                fillColor: theme.colorScheme.surfaceContainerHighest,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: BorderSide.none,
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                border: OutlineInputBorder(),
                               ),
                               items: [
                                 for (final c in AnnouncementCategory.values)
-                                  DropdownMenuItem(value: c, child: Text(c.label())),
+                                  DropdownMenuItem(
+                                    value: c,
+                                    child: Text(c.label()),
+                                  ),
                               ],
                               onChanged: (v) => setState(() => _category = v ?? _category),
                             ),
@@ -516,26 +491,23 @@ class _AnnouncementComposeDialogState extends State<AnnouncementComposeDialog> {
                           Expanded(
                             child: DropdownButtonFormField<UrgencyLevel>(
                               initialValue: _urgency,
-                              decoration: InputDecoration(
+                              decoration: const InputDecoration(
                                 labelText: 'Urgency',
-                                filled: true,
-                                fillColor: theme.colorScheme.surfaceContainerHighest,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: BorderSide.none,
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                border: OutlineInputBorder(),
                               ),
                               items: [
                                 for (final u in UrgencyLevel.values)
-                                  DropdownMenuItem(value: u, child: Text(u.label())),
+                                  DropdownMenuItem(
+                                    value: u,
+                                    child: Text(u.label()),
+                                  ),
                               ],
                               onChanged: (v) => setState(() => _urgency = v ?? _urgency),
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       Container(
                         decoration: BoxDecoration(
                           border: Border.all(color: theme.colorScheme.outline.withOpacity(0.3)),
@@ -868,29 +840,21 @@ class _EditAnnouncementDialogState extends ConsumerState<_EditAnnouncementDialog
     final theme = Theme.of(context);
     final hasExistingImage = widget.announcement.imgUrl != null && widget.announcement.imgUrl!.isNotEmpty;
     final displayImage = _pickedImage ?? (hasExistingImage && !_removeExistingImage ? widget.announcement.imgUrl : null);
-    
+
     return Dialog(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Header
-            Container(
+            // Header - simplified without colored background
+            Padding(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-              ),
               child: Row(
                 children: [
-                  Icon(Icons.edit, color: theme.colorScheme.onPrimaryContainer),
-                  const SizedBox(width: 12),
                   Text(
                     'Edit Announcement',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      color: theme.colorScheme.onPrimaryContainer,
-                    ),
+                    style: theme.textTheme.titleLarge,
                   ),
                   const Spacer(),
                   IconButton(
@@ -900,6 +864,7 @@ class _EditAnnouncementDialogState extends ConsumerState<_EditAnnouncementDialog
                 ],
               ),
             ),
+            const Divider(height: 1),
             // Form content
             Expanded(
               child: SingleChildScrollView(
@@ -912,14 +877,9 @@ class _EditAnnouncementDialogState extends ConsumerState<_EditAnnouncementDialog
                       // Title field
                       TextFormField(
                         controller: _titleController,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           labelText: 'Title',
-                          filled: true,
-                          fillColor: theme.colorScheme.surfaceContainerHighest,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide.none,
-                          ),
+                          border: OutlineInputBorder(),
                         ),
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
@@ -933,14 +893,9 @@ class _EditAnnouncementDialogState extends ConsumerState<_EditAnnouncementDialog
                       TextFormField(
                         controller: _contentController,
                         maxLines: 3,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           labelText: 'Content',
-                          filled: true,
-                          fillColor: theme.colorScheme.surfaceContainerHighest,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide.none,
-                          ),
+                          border: OutlineInputBorder(),
                         ),
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
@@ -956,15 +911,9 @@ class _EditAnnouncementDialogState extends ConsumerState<_EditAnnouncementDialog
                           Expanded(
                             child: DropdownButtonFormField<AnnouncementCategory>(
                               value: _selectedCategory,
-                              decoration: InputDecoration(
+                              decoration: const InputDecoration(
                                 labelText: 'Category',
-                                filled: true,
-                                fillColor: theme.colorScheme.surfaceContainerHighest,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: BorderSide.none,
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                border: OutlineInputBorder(),
                               ),
                               items: AnnouncementCategory.values.map((category) {
                                 return DropdownMenuItem(
@@ -983,15 +932,9 @@ class _EditAnnouncementDialogState extends ConsumerState<_EditAnnouncementDialog
                           Expanded(
                             child: DropdownButtonFormField<UrgencyLevel>(
                               value: _selectedUrgency,
-                              decoration: InputDecoration(
+                              decoration: const InputDecoration(
                                 labelText: 'Urgency',
-                                filled: true,
-                                fillColor: theme.colorScheme.surfaceContainerHighest,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: BorderSide.none,
-                                ),
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                border: OutlineInputBorder(),
                               ),
                               items: UrgencyLevel.values.map((level) {
                                 return DropdownMenuItem(
@@ -1008,7 +951,7 @@ class _EditAnnouncementDialogState extends ConsumerState<_EditAnnouncementDialog
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       // Image section
                       Container(
                         decoration: BoxDecoration(

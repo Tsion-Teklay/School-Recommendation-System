@@ -80,20 +80,30 @@ export async function submitVerificationRequest({
     },
   });  
   
-  // Notify MOE officer based on subcity  
-  try {  
-    const assignedOfficer = await assignVerificationRequest(request.id);  
-    if (assignedOfficer) {  
-      await createNotification({  
-        recipientId: assignedOfficer.userId,  
-        recipientType: "MOE",  
-        message: `New verification request for school "${school.schoolName}" in ${school.subCity || 'your assigned area'}.`,  
-        sourceType: "SCHOOL",  
-        sourceId: school.id,  
-      });  
-    }  
+  // Notify MOE officer based on subcity
+  try {
+    logger.info({ requestId: request.id }, "Attempting to notify MOE officer");
+
+    // First, check if any MOE officers exist at all
+    const allOfficers = await db.moEOfficer.findMany();
+    logger.info({ totalOfficers: allOfficers.length, officers: allOfficers.map(o => ({ userId: o.userId, subCity: o.subCity })) }, "All MOE officers in database");
+
+    const assignedOfficer = await assignVerificationRequest(request.id);
+    logger.info({ assignedOfficer: assignedOfficer?.userId }, "MOE officer assigned");
+    if (assignedOfficer) {
+      const notification = await createNotification({
+        recipientId: assignedOfficer.userId,
+        recipientType: "MOE",
+        message: `New verification request for school "${school.schoolName}" in ${school.subCity || 'your assigned area'}.`,
+        sourceType: "SCHOOL",
+        sourceId: school.id,
+      });
+      logger.info({ notificationId: notification.id, recipientId: assignedOfficer.userId }, "Notification created successfully");
+    } else {
+      logger.warn({ requestId: request.id }, "No MOE officer available to notify");
+    }
   } catch (err) {
-    logger.warn({ err, requestId: request.id }, "Failed to notify MOE officer of verification request");
+    logger.error({ err, requestId: request.id, stack: err.stack }, "Failed to notify MOE officer of verification request");
   }
 
   // Return the created request with parsed documents
@@ -123,13 +133,14 @@ export async function listVerificationRequests({ user, query }) {
   } else if (user.role === "MOE_OFFICER") {
     // Get the MOE officer's subcity assignment
     try {
-      const officer = await db.moeOfficer.findUnique({
+      const officer = await db.moEOfficer.findUnique({
         where: { userId: user.id }
       });
 
       // If officer has a subcity assignment, filter by it
+      // Convert MOE officer's uppercase subCity to lowercase for school query
       if (officer && officer.subCity) {
-        where.school = { subCity: officer.subCity };
+        where.school = { subCity: officer.subCity.toLowerCase() };
       }
       // If no subcity assignment, show all requests (fallback behavior)
     } catch (error) {
@@ -292,23 +303,32 @@ const parsedVr = {
 }
 
 
-export async function assignVerificationRequest(requestId) {  
-  const request = await db.verificationRequest.findUnique({  
-    where: { id: requestId },  
-    include: { school: true }  
-  });  
-    
-  if (!request) throw new NotFoundError("Verification request not found");  
-    
-  // Try to find MoE officer for the school's sub-city  
-  const assignedOfficer = await db.moeOfficer.findFirst({  
-    where: { subCity: request.school.subCity }  
-  });  
-    
-  // Fallback to any available MoE officer if no sub-city match  
-  if (!assignedOfficer) {  
-    return db.moeOfficer.findFirst();  
-  }  
-    
-  return assignedOfficer;  
+export async function assignVerificationRequest(requestId) {
+  const request = await db.verificationRequest.findUnique({
+    where: { id: requestId },
+    include: { school: true }
+  });
+
+  if (!request) throw new NotFoundError("Verification request not found");
+
+  logger.info({ requestId, schoolSubCity: request.school.subCity }, "Assigning verification request");
+
+  // Convert school subCity to uppercase for MOE officer query
+  const schoolSubCityUpper = request.school.subCity?.toUpperCase();
+
+  // Try to find MoE officer for the school's sub-city
+  const assignedOfficer = await db.moEOfficer.findFirst({
+    where: { subCity: schoolSubCityUpper }
+  });
+
+  logger.info({ assignedOfficer: assignedOfficer?.userId, schoolSubCityUpper }, "Found MOE officer by subcity");
+
+  // Fallback to any available MoE officer if no sub-city match
+  if (!assignedOfficer) {
+    const anyOfficer = await db.moEOfficer.findFirst();
+    logger.info({ anyOfficer: anyOfficer?.userId }, "Found fallback MOE officer");
+    return anyOfficer;
+  }
+
+  return assignedOfficer;
 }

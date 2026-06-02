@@ -279,50 +279,63 @@ class _ReviewDialogState extends State<_ReviewDialog> {
   
   @override  
   Widget build(BuildContext context) {  
-    return AlertDialog(  
-      title: Text(widget.req.schoolName ?? 'Review request'),  
-      content: ConstrainedBox(  
-        constraints: const BoxConstraints(maxWidth: 480),  
-        child: Column(  
-          mainAxisSize: MainAxisSize.min,  
-          crossAxisAlignment: CrossAxisAlignment.start,  
-          children: [  
-            SegmentedButton<VerificationRequestStatus>(  
-              segments: const [  
-                ButtonSegment(  
-                    value: VerificationRequestStatus.approved,  
-                    label: Text('Approve')),  
-                ButtonSegment(  
-                    value: VerificationRequestStatus.rejected,  
-                    label: Text('Reject')),  
-              ],  
-              selected: {_decision},  
-              onSelectionChanged: (s) =>  
-                  setState(() => _decision = s.first),  
-            ),  
-            const SizedBox(height: 12),  
-            TextField(  
-              controller: _notesCtrl,  
-              decoration: const InputDecoration(  
-                labelText: 'Review notes (optional)',  
-              ),  
-              minLines: 2,  
-              maxLines: 5,  
-            ),  
-          ],  
-        ),  
-      ),  
-      actions: [  
-        TextButton(  
-            onPressed: () => Navigator.of(context).pop(),  
-            child: const Text('Cancel')),  
-        FilledButton(  
-          onPressed: () => Navigator.of(context).pop(  
-            (status: _decision, notes: _notesCtrl.text.trim()),  
-          ),  
-          child: const Text('Submit decision'),  
-        ),  
-      ],  
+    return Dialog(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 700, minWidth: 500),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.req.schoolName ?? 'Review request',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 20),
+              SegmentedButton<VerificationRequestStatus>(
+                segments: const [
+                  ButtonSegment(
+                      value: VerificationRequestStatus.approved,
+                      label: Text('Approve')),
+                  ButtonSegment(
+                      value: VerificationRequestStatus.rejected,
+                      label: Text('Reject')),
+                ],
+                selected: {_decision},
+                onSelectionChanged: (s) =>
+                    setState(() => _decision = s.first),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _notesCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Review notes (optional)',
+                  border: OutlineInputBorder(),
+                ),
+                minLines: 4,
+                maxLines: 8,
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Cancel')),
+                  const SizedBox(width: 8),
+                  FilledButton(
+                    onPressed: () => Navigator.of(context).pop(
+                      (status: _decision, notes: _notesCtrl.text.trim()),
+                    ),
+                    child: const Text('Submit decision'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );  
   }  
 }

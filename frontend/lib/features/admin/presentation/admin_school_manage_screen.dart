@@ -930,9 +930,22 @@ class _SchoolSummary extends StatelessWidget {
                 controller: controllers[2],
                 decoration: const InputDecoration(
                   labelText: 'Contact phone',
+                  prefixText: '+251',
+                  helperText: 'Add school contact phone number',
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.phone,
+                validator: (v) {
+                  final t = (v ?? '').trim();
+                  if (t.isEmpty) return null;
+                  if (t.length != 9) {
+                    return 'Please enter a valid phone number';
+                  }
+                  if (!t.startsWith('9') && !t.startsWith('7')) {
+                    return 'Please enter a valid phone number';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<SubCity>(
