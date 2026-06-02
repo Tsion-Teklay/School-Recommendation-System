@@ -16,7 +16,7 @@ import { validate } from "../middlewares/validate.middleware.js";
 import {
   registerBodySchema,
   loginBodySchema,
-  verifyEmailBodySchema,
+  verifyEmailQuerySchema,
   verifyPhoneBodySchema,
   resendVerificationBodySchema,
   resendPhoneBodySchema,
