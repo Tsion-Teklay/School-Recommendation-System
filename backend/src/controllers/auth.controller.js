@@ -27,12 +27,9 @@ export const login = asyncHandler(async (req, res) => {
 });
 
 export const verify = asyncHandler(async (req, res) => {
-  const result = await verifyEmail(req.body);
-  res.json({
-    message: result.alreadyVerified
-      ? "Email already verified"
-      : "Email verified successfully",
-  });
+  const result = await verifyEmail(req.query);
+
+  return res.redirect(`${process.env.FRONTEND}/verify-email`);
 });
 
 export const verifyPhone = asyncHandler(async (req, res) => {

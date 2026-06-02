@@ -133,7 +133,7 @@ router.post(
  *       200: { description: Email verified }
  *       400: { description: Invalid or expired token }
  */
-router.post("/verify-email", validate({ body: verifyEmailBodySchema }), verify);
+router.get("/verify-email", validate({ query: verifyEmailQuerySchema }), verify);
 
 router.post(
   "/verify-phone",

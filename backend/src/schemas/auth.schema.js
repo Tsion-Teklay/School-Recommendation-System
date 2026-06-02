@@ -48,7 +48,7 @@ export const loginBodySchema = z
     path: ["identifier"],
   });
 
-export const verifyEmailBodySchema = z.object({
+export const verifyEmailQuerySchema = z.object({
   token: z.string().min(1).max(128),
 });
 

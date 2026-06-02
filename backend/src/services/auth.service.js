@@ -194,7 +194,7 @@ export async function registerUser({ fullName, email, phone, password, role, sub
         text:
           `Hi ${fullName},\n\n` +
           `Welcome! Please verify your email by visiting:\n\n` +
-          `${appBaseUrl()}/verify-email?token=${emailVerificationToken}\n\n` +
+          `${appBaseUrl()}/api/auth/verify-email?token=${emailVerificationToken}\n\n` +
           `The link expires in 24 hours.`,
       },
       {
@@ -316,7 +316,7 @@ export async function resendVerificationEmail({ email }) {
       text:
         `Hi ${user.fullName},\n\n` +
         `Here is a fresh verification link (expires in 24 hours):\n` +
-        `${appBaseUrl()}/verify-email?token=${verificationToken}`,
+        `${appBaseUrl()}/api/auth/verify-email?token=${verificationToken}`,
     },
     { event: "resend_verification", userId: user.id },
   );
