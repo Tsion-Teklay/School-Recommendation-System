@@ -41,9 +41,9 @@ import '../features/auth/presentation/phone_verify_screen.dart';
 import '../features/demographics/presentation/demographics_manage_screen.dart';
 import '../features/analytics/presentation/school_analytics_screen.dart';
 
-import '../features/achievements/presentation/achievements_manage_screen.dart';  
-import '../features/achievements/presentation/achievement_detail_screen.dart';  
-import '../features/achievements/presentation/staff_breakdown_screen.dart';  
+import '../features/achievements/presentation/achievements_manage_screen.dart';
+import '../features/achievements/presentation/achievement_detail_screen.dart';
+import '../features/achievements/presentation/staff_breakdown_screen.dart';
 import '../features/achievements/presentation/moe_achievement_review_screen.dart';
 import '../features/ads/presentation/ad_payment_success_screen.dart';
 
@@ -88,7 +88,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
       if (auth.isAuthenticated && goingPublic) {
         if (state.matchedLocation.startsWith('/verify-email') ||
-            state.matchedLocation.startsWith('/reset-password')) {
+            state.matchedLocation.startsWith('/reset-password') ||
+            state.matchedLocation.startsWith('/advertise/pay') ||
+            state.matchedLocation.startsWith('/advertise/success')) {
           return null;
         }
         if (state.matchedLocation == '/landing') {
@@ -108,18 +110,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
 
-      GoRoute(  
-  path: '/advertise/success/:id',  
-  builder: (_, state) {  
-    final id = int.tryParse(state.pathParameters['id'] ?? '');  
-    if (id == null) {  
-      return const Scaffold(  
-        body: Center(child: Text('Invalid advertisement id')),  
-      );  
-    }  
-    return AdPaymentSuccessScreen(adId: id);  
-  },  
-),
+      GoRoute(
+        path: '/advertise/success/:id',
+        builder: (_, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '');
+          if (id == null) {
+            return const Scaffold(
+              body: Center(child: Text('Invalid advertisement id')),
+            );
+          }
+          return AdPaymentSuccessScreen(adId: id);
+        },
+      ),
       GoRoute(
         path: '/advertise',
         builder: (_, __) => const AdRequestScreen(),
@@ -427,62 +429,64 @@ final routerProvider = Provider<GoRouter>((ref) {
           child: const AdminUserCreateScreen(),
         ),
       ),
-      GoRoute(  
-        path: '/admin/schools/:schoolId/demographics',  
-        pageBuilder: (context, state) {  
-          final schoolId = int.parse(state.pathParameters['schoolId']!);  
+      GoRoute(
+        path: '/admin/schools/:schoolId/demographics',
+        pageBuilder: (context, state) {
+          final schoolId = int.parse(state.pathParameters['schoolId']!);
           return AppAnimations.slideInFromRight(
             key: state.pageKey,
-            child: DemographicsManageScreen(schoolId: schoolId),  
+            child: DemographicsManageScreen(schoolId: schoolId),
           );
-        },  
+        },
       ),
-      GoRoute(  
-        path: '/schools/:schoolId/analytics',  
-        pageBuilder: (_, state) {  
-          final schoolId = int.parse(state.pathParameters['schoolId']!);  
+      GoRoute(
+        path: '/schools/:schoolId/analytics',
+        pageBuilder: (_, state) {
+          final schoolId = int.parse(state.pathParameters['schoolId']!);
           return AppAnimations.slideInFromRight(
             key: state.pageKey,
-            child: SchoolAnalyticsScreen(schoolId: schoolId),  
+            child: SchoolAnalyticsScreen(schoolId: schoolId),
           );
-        },  
+        },
       ),
-      GoRoute(  
-        path: '/admin/schools/:schoolId/achievements',  
-        pageBuilder: (context, state) {  
-          final schoolId = int.parse(state.pathParameters['schoolId']!);  
+      GoRoute(
+        path: '/admin/schools/:schoolId/achievements',
+        pageBuilder: (context, state) {
+          final schoolId = int.parse(state.pathParameters['schoolId']!);
           return AppAnimations.slideInFromRight(
             key: state.pageKey,
-            child: AchievementsManageScreen(schoolId: schoolId),  
+            child: AchievementsManageScreen(schoolId: schoolId),
           );
-        },  
+        },
       ),
-      GoRoute(  
-        path: '/admin/schools/:schoolId/achievements/:achievementId',  
-        pageBuilder: (context, state) {  
-          final schoolId = int.parse(state.pathParameters['schoolId']!);  
-          final achievementId = int.parse(state.pathParameters['achievementId']!);  
+      GoRoute(
+        path: '/admin/schools/:schoolId/achievements/:achievementId',
+        pageBuilder: (context, state) {
+          final schoolId = int.parse(state.pathParameters['schoolId']!);
+          final achievementId =
+              int.parse(state.pathParameters['achievementId']!);
           return AppAnimations.slideInFromRight(
             key: state.pageKey,
-            child: AchievementDetailScreen(schoolId: schoolId, achievementId: achievementId),  
+            child: AchievementDetailScreen(
+                schoolId: schoolId, achievementId: achievementId),
           );
-        },  
+        },
       ),
-      GoRoute(  
-        path: '/admin/schools/:schoolId/staff-breakdown',  
-        pageBuilder: (context, state) {  
-          final schoolId = int.parse(state.pathParameters['schoolId']!);  
+      GoRoute(
+        path: '/admin/schools/:schoolId/staff-breakdown',
+        pageBuilder: (context, state) {
+          final schoolId = int.parse(state.pathParameters['schoolId']!);
           return AppAnimations.slideInFromRight(
             key: state.pageKey,
-            child: StaffBreakdownScreen(schoolId: schoolId),  
+            child: StaffBreakdownScreen(schoolId: schoolId),
           );
-        },  
+        },
       ),
-      GoRoute(  
-        path: '/moe/achievements',  
+      GoRoute(
+        path: '/moe/achievements',
         pageBuilder: (_, __) => AppAnimations.slideInFromRight(
           key: const ValueKey('moe-achievements'),
-          child: const MoeAchievementReviewScreen(),  
+          child: const MoeAchievementReviewScreen(),
         ),
       ),
       GoRoute(

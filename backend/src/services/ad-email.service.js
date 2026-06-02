@@ -1,13 +1,7 @@
 import { sendMail } from "../config/mailer.js";
 import { logger } from "../config/logger.js";
 
-function frontendBaseUrl() {
-  return (
-    process.env.FRONTEND_URL ||
-    process.env.APP_URL?.replace(":5050", ":3000") ||
-    "http://localhost:3000"
-  );
-}
+const frontendBaseUrl = process.env.FRONTEND_URL;
 
 /**
  * Sent when a moderator approves the ad content — includes amount and pay link.
@@ -20,7 +14,7 @@ export async function sendAdPaymentInstructionsEmail({
   durationDays,
   placementType,
 }) {
-  const payUrl = `${frontendBaseUrl()}/advertise/pay/${adId}`;
+  const payUrl = `${frontendBaseUrl}/advertise/pay/${adId}`;
   const subject = `Your advertisement was approved — payment required`;
   const text = [
     `Your advertisement "${title}" has been approved.`,
