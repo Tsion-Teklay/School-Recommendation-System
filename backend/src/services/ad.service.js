@@ -520,3 +520,65 @@ export async function handleChappaCallback({ txRef }) {
 
   return { success: true, adId: ad.id };
 }
+
+export async function verifyAdPayment(adId) {
+  const id = toIntId(adId, "adId");
+  const ad = await db.advertisement.findUnique({
+    where: { id },
+    include: { payment: true },
+  });
+
+  if (!ad) throw new NotFoundError("Advertisement not found");
+
+  // If already active/completed, no need to verify again
+  if (ad.status === "ACTIVE" && ad.payment?.status === "COMPLETED") {
+    return serializeAd(ad);
+  }
+
+  const txRef = ad.chappaTransactionId;
+  if (!txRef) {
+    // Payment hasn't been initialized yet
+    return serializeAd(ad);
+  }
+
+  const { verifyChappaPayment } = await import("./chappa.service.js");
+  let verification;
+  try {
+    verification = await verifyChappaPayment(txRef);
+  } catch (error) {
+    logger.error(
+      { adId: id, txRef, error: error.message },
+      "Chappa verification check failed",
+    );
+    return serializeAd(ad); // Return current state without crashing
+  }
+
+  if (
+    verification.status === "success" ||
+    verification.status === "COMPLETED"
+  ) {
+    const now = new Date();
+    const endDate = new Date(now);
+    endDate.setDate(endDate.getDate() + ad.durationDays);
+
+    const updated = await db.$transaction([
+      db.payment.update({
+        where: { id: ad.paymentId },
+        data: { status: "COMPLETED" },
+      }),
+      db.advertisement.update({
+        where: { id: ad.id },
+        data: {
+          status: "ACTIVE",
+          startDate: now,
+          endDate,
+        },
+        include: { payment: true },
+      }),
+    ]);
+    return serializeAd(updated[1]);
+  }
+
+  return serializeAd(ad);
+}
+

@@ -29,6 +29,7 @@ import {
 import {  
   initializePayment,  
   chappaCallback,  
+  verifyPaymentStatus,  
 } from "../controllers/ad.controller.js";
 
 const router = express.Router();
@@ -152,5 +153,12 @@ router.post(
   "/chappa/callback",  
   chappaCallback  
 );
+
+router.get(
+  "/:id/verify-payment", 
+  validate({ params: idParamsSchema }), 
+  verifyPaymentStatus
+);
+
 
 export default router;
